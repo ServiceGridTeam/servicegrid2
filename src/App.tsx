@@ -13,6 +13,9 @@ import CustomerNew from "./pages/CustomerNew";
 import CustomerDetail from "./pages/CustomerDetail";
 import CustomerEdit from "./pages/CustomerEdit";
 import Quotes from "./pages/Quotes";
+import QuoteNew from "./pages/QuoteNew";
+import QuoteDetail from "./pages/QuoteDetail";
+import QuoteEdit from "./pages/QuoteEdit";
 import Jobs from "./pages/Jobs";
 import Invoices from "./pages/Invoices";
 import CalendarPage from "./pages/Calendar";
@@ -39,6 +42,9 @@ const App = () => (
               <Route path="/customers/:id" element={<CustomerDetail />} />
               <Route path="/customers/:id/edit" element={<CustomerEdit />} />
               <Route path="/quotes" element={<Quotes />} />
+              <Route path="/quotes/new" element={<QuoteNew />} />
+              <Route path="/quotes/:id" element={<QuoteDetail />} />
+              <Route path="/quotes/:id/edit" element={<QuoteEdit />} />
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/invoices" element={<Invoices />} />
               <Route path="/calendar" element={<CalendarPage />} />
