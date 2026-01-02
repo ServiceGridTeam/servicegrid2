@@ -9,6 +9,9 @@ import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Customers from "./pages/Customers";
+import CustomerNew from "./pages/CustomerNew";
+import CustomerDetail from "./pages/CustomerDetail";
+import CustomerEdit from "./pages/CustomerEdit";
 import Quotes from "./pages/Quotes";
 import Jobs from "./pages/Jobs";
 import Invoices from "./pages/Invoices";
@@ -32,6 +35,9 @@ const App = () => (
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/customers" element={<Customers />} />
+              <Route path="/customers/new" element={<CustomerNew />} />
+              <Route path="/customers/:id" element={<CustomerDetail />} />
+              <Route path="/customers/:id/edit" element={<CustomerEdit />} />
               <Route path="/quotes" element={<Quotes />} />
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/invoices" element={<Invoices />} />
