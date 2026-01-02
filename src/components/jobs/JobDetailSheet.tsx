@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Sheet,
   SheetContent,
@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { JobStatusBadge } from "./JobStatusBadge";
 import { JobPriorityBadge } from "./JobPriorityBadge";
 import { DeleteJobDialog } from "./DeleteJobDialog";
@@ -27,6 +26,7 @@ import {
   XCircle,
   Trash2,
   FileText,
+  Receipt,
 } from "lucide-react";
 
 interface JobDetailSheetProps {
@@ -38,6 +38,7 @@ interface JobDetailSheetProps {
 
 export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailSheetProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const updateJob = useUpdateJob();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -309,6 +310,17 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
                 >
                   <CheckCircle className="mr-2 h-4 w-4" />
                   Complete Job
+                </Button>
+              )}
+
+              {job.status === "completed" && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate(`/invoices/new?job_id=${job.id}&customer_id=${job.customer_id}`)}
+                >
+                  <Receipt className="mr-2 h-4 w-4" />
+                  Create Invoice
                 </Button>
               )}
 
