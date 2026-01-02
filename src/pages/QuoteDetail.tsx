@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { QuoteStatusBadge } from "@/components/quotes/QuoteStatusBadge";
 import { DeleteQuoteDialog } from "@/components/quotes/DeleteQuoteDialog";
 import { SendQuoteDialog } from "@/components/quotes/SendQuoteDialog";
+import { JobFormDialog } from "@/components/jobs";
 import { useQuote } from "@/hooks/useQuotes";
 import { format } from "date-fns";
 
@@ -26,6 +27,7 @@ export default function QuoteDetail() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [jobDialogOpen, setJobDialogOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -98,9 +100,9 @@ export default function QuoteDetail() {
             </Button>
           )}
           {quote.status === "approved" && (
-            <Button>
+            <Button onClick={() => setJobDialogOpen(true)}>
               <Briefcase className="mr-2 h-4 w-4" />
-              Convert to Job
+              Create Job
             </Button>
           )}
           <Button
@@ -280,6 +282,14 @@ export default function QuoteDetail() {
         quoteNumber={quote.quote_number}
         customerName={customerName}
         customerEmail={quote.customer?.email}
+      />
+
+      <JobFormDialog
+        open={jobDialogOpen}
+        onOpenChange={setJobDialogOpen}
+        defaultCustomerId={quote.customer_id}
+        quoteId={quote.id}
+        onSuccess={() => navigate("/jobs")}
       />
     </div>
   );
