@@ -6,3 +6,5 @@ export { InvoiceLineItemsEditor, type InvoiceLineItem } from "./InvoiceLineItems
 export { DeleteInvoiceDialog } from "./DeleteInvoiceDialog";
 export { SendInvoiceDialog } from "./SendInvoiceDialog";
 export { RecordPaymentDialog } from "./RecordPaymentDialog";
+export { InvoicePDF } from "./InvoicePDF";
+export { PaymentHistory } from "./PaymentHistory";

@@ -1,4 +1,7 @@
 export { JobCard } from "./JobCard";
+export { DraggableJobCard } from "./DraggableJobCard";
+export { DraggableUnscheduledCard } from "./DraggableUnscheduledCard";
+export { DroppableTimeSlot } from "./DroppableTimeSlot";
 export { WeekCalendar } from "./WeekCalendar";
 export { DayCalendar } from "./DayCalendar";
 export { UnscheduledSidebar } from "./UnscheduledSidebar";

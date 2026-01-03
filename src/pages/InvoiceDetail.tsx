@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { ArrowLeft, Pencil, Send, Trash2, CreditCard, FileText, Briefcase } from "lucide-react";
+import { ArrowLeft, Pencil, Send, Trash2, CreditCard, FileText, Briefcase, Download, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -18,18 +18,26 @@ import {
   DeleteInvoiceDialog,
   SendInvoiceDialog,
   RecordPaymentDialog,
+  InvoicePDF,
 } from "@/components/invoices";
-import { useInvoice } from "@/hooks/useInvoices";
-import { format } from "date-fns";
+import { useInvoice, useUpdateInvoice } from "@/hooks/useInvoices";
+import { useBusiness } from "@/hooks/useBusiness";
+import { useToast } from "@/hooks/use-toast";
+import { format, isBefore, startOfDay } from "date-fns";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function InvoiceDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { data: invoice, isLoading } = useInvoice(id);
+  const { data: business } = useBusiness();
+  const updateInvoice = useUpdateInvoice();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -62,6 +70,29 @@ export default function InvoiceDetail() {
     : "Unknown Customer";
 
   const canRecordPayment = invoice.status === "sent" || invoice.status === "overdue";
+  
+  const isOverdue = invoice.status === "sent" && 
+    invoice.due_date && 
+    isBefore(new Date(invoice.due_date), startOfDay(new Date()));
+
+  const handleSendReminder = async () => {
+    try {
+      await updateInvoice.mutateAsync({
+        id: invoice.id,
+        sent_at: new Date().toISOString(),
+      });
+      toast({
+        title: "Reminder sent",
+        description: `Payment reminder has been sent to ${customerName}.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send reminder.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -81,6 +112,10 @@ export default function InvoiceDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setPdfDialogOpen(true)}>
+            <Download className="mr-2 h-4 w-4" />
+            PDF
+          </Button>
           <Button variant="outline" asChild>
             <Link to={`/invoices/${invoice.id}/edit`}>
               <Pencil className="mr-2 h-4 w-4" />
@@ -91,6 +126,12 @@ export default function InvoiceDetail() {
             <Button onClick={() => setSendDialogOpen(true)}>
               <Send className="mr-2 h-4 w-4" />
               Send
+            </Button>
+          )}
+          {isOverdue && (
+            <Button variant="outline" onClick={handleSendReminder} disabled={updateInvoice.isPending}>
+              <AlertTriangle className="mr-2 h-4 w-4" />
+              Send Reminder
             </Button>
           )}
           {canRecordPayment && (
@@ -108,6 +149,15 @@ export default function InvoiceDetail() {
           </Button>
         </div>
       </div>
+
+      {isOverdue && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            This invoice is overdue. The payment was due on {format(new Date(invoice.due_date!), "MMM d, yyyy")}.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Left column - Details & Line Items */}
@@ -370,6 +420,27 @@ export default function InvoiceDetail() {
         invoiceNumber={invoice.invoice_number}
         balanceDue={Number(invoice.balance_due)}
       />
+
+      {business && (
+        <InvoicePDF
+          open={pdfDialogOpen}
+          onOpenChange={setPdfDialogOpen}
+          invoice={{
+            ...invoice,
+            business: {
+              id: business.id,
+              name: business.name,
+              phone: business.phone,
+              email: business.email,
+              logo_url: business.logo_url,
+              address_line1: business.address_line1,
+              city: business.city,
+              state: business.state,
+              zip: business.zip,
+            },
+          }}
+        />
+      )}
     </div>
   );
 }

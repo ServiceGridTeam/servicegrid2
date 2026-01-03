@@ -164,21 +164,24 @@ export function useCreateInvoice() {
   });
 }
 
-interface UpdateInvoiceInput {
+type UpdateInvoiceInput = {
   id: string;
-  invoice: TablesUpdate<"invoices">;
+  invoice?: TablesUpdate<"invoices">;
   items?: Omit<TablesInsert<"invoice_items">, "invoice_id">[];
-}
+} & TablesUpdate<"invoices">;
 
 export function useUpdateInvoice() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, invoice, items }: UpdateInvoiceInput) => {
+    mutationFn: async ({ id, invoice, items, ...directUpdates }: UpdateInvoiceInput) => {
+      // Merge direct updates with invoice object
+      const updateData = { ...directUpdates, ...invoice };
+      
       // Update invoice
       const { data, error } = await supabase
         .from("invoices")
-        .update(invoice)
+        .update(updateData)
         .eq("id", id)
         .select()
         .single();
