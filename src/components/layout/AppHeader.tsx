@@ -10,7 +10,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -49,7 +49,9 @@ export function AppHeader() {
       <Breadcrumb className="hidden md:flex">
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href="/dashboard">Home</BreadcrumbLink>
+            <BreadcrumbLink asChild>
+              <Link to="/dashboard">Home</Link>
+            </BreadcrumbLink>
           </BreadcrumbItem>
           {breadcrumbs.map((crumb, index) => (
             <span key={crumb.path} className="flex items-center gap-2">
@@ -58,7 +60,9 @@ export function AppHeader() {
                 {index === breadcrumbs.length - 1 ? (
                   <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
                 ) : (
-                  <BreadcrumbLink href={crumb.path}>{crumb.label}</BreadcrumbLink>
+                  <BreadcrumbLink asChild>
+                    <Link to={crumb.path}>{crumb.label}</Link>
+                  </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
             </span>

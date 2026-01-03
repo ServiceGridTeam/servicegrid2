@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,9 +47,30 @@ export default function Onboarding() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { data: profile } = useProfile();
+  const { data: profile, isLoading: profileLoading } = useProfile();
   const updateProfile = useUpdateProfile();
   const setupBusiness = useSetupBusiness();
+
+  // Phase 2: Guard - redirect if already onboarded or not authenticated
+  useEffect(() => {
+    if (!user && !profileLoading) {
+      navigate("/auth", { replace: true });
+      return;
+    }
+    if (profile?.is_onboarded) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, profile, profileLoading, navigate]);
+
+  // Phase 3: Fix prefill logic - use useEffect instead of useState initializer
+  useEffect(() => {
+    if (profile) {
+      setFirstName(profile.first_name || "");
+      setLastName(profile.last_name || "");
+      setPhone(profile.phone || "");
+      setJobTitle(profile.job_title || "");
+    }
+  }, [profile]);
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,23 +108,29 @@ export default function Onboarding() {
 
     try {
       // Call atomic backend function - does all 3 operations in one transaction
-      await setupBusiness.mutateAsync({
+      const businessId = await setupBusiness.mutateAsync({
         name: businessName,
         industry: industry || undefined,
         phone: businessPhone || undefined,
         email: businessEmail || user?.email || undefined,
       });
 
+      // Phase 1: Immediately update cache to prevent race condition
+      if (user?.id) {
+        queryClient.setQueryData(["profile", user.id], (old: any) => 
+          old ? { ...old, business_id: businessId, is_onboarded: true } : old
+        );
+      }
+
       // Wait for profile to refetch with is_onboarded = true before navigating
-      // This prevents AppLayout from redirecting back to /onboarding
-      await queryClient.refetchQueries({ queryKey: ["profile"] });
+      await queryClient.refetchQueries({ queryKey: ["profile", user?.id], exact: true });
 
       toast({
         title: "Welcome to ServiceGrid!",
         description: "Your account is all set up. Let's get started.",
       });
 
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -115,15 +142,6 @@ export default function Onboarding() {
     }
   };
 
-  // Pre-fill profile data if available
-  useState(() => {
-    if (profile) {
-      setFirstName(profile.first_name || "");
-      setLastName(profile.last_name || "");
-      setPhone(profile.phone || "");
-      setJobTitle(profile.job_title || "");
-    }
-  });
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
