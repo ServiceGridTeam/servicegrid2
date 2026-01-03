@@ -20,9 +20,10 @@ import {
 import { QuoteStatusBadge } from "./QuoteStatusBadge";
 import { DeleteQuoteDialog } from "./DeleteQuoteDialog";
 import { SendQuoteDialog } from "./SendQuoteDialog";
-import { QuoteWithCustomer } from "@/hooks/useQuotes";
+import { QuoteWithCustomer, useDuplicateQuote } from "@/hooks/useQuotes";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuoteTableProps {
   quotes: QuoteWithCustomer[] | undefined;
@@ -31,8 +32,10 @@ interface QuoteTableProps {
 
 export function QuoteTable({ quotes, isLoading }: QuoteTableProps) {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [deleteQuote, setDeleteQuote] = useState<QuoteWithCustomer | null>(null);
   const [sendQuote, setSendQuote] = useState<QuoteWithCustomer | null>(null);
+  const duplicateQuote = useDuplicateQuote();
 
   if (isLoading) {
     return (
@@ -128,11 +131,27 @@ export function QuoteTable({ quotes, isLoading }: QuoteTableProps) {
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/quotes/new?duplicate=${quote.id}`);
+                        duplicateQuote.mutate(quote.id, {
+                          onSuccess: (newQuote) => {
+                            toast({
+                              title: "Quote duplicated",
+                              description: `Created ${newQuote.quote_number}`,
+                            });
+                            navigate(`/quotes/${newQuote.id}/edit`);
+                          },
+                          onError: () => {
+                            toast({
+                              title: "Failed to duplicate",
+                              description: "Please try again.",
+                              variant: "destructive",
+                            });
+                          },
+                        });
                       }}
+                      disabled={duplicateQuote.isPending}
                     >
                       <Copy className="mr-2 h-4 w-4" />
-                      Duplicate
+                      {duplicateQuote.isPending ? "Duplicating..." : "Duplicate"}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem

@@ -266,3 +266,51 @@
     opacity: 1;
   }
 }
+
+/* Print styles for calendar */
+@media print {
+  body {
+    background: white !important;
+  }
+
+  /* Hide non-essential elements */
+  header,
+  nav,
+  .sidebar,
+  [data-sidebar],
+  button:not(.print-visible),
+  .dropdown-menu,
+  [role="dialog"] {
+    display: none !important;
+  }
+
+  /* Calendar print styles */
+  .print-calendar {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Ensure job cards print clearly */
+  .job-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Ensure proper contrast */
+  .text-muted-foreground {
+    color: #666 !important;
+  }
+
+  /* Remove shadows for cleaner print */
+  .shadow,
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg {
+    box-shadow: none !important;
+  }
+
+  /* Ensure borders print */
+  .border {
+    border-color: #ddd !important;
+  }
+}

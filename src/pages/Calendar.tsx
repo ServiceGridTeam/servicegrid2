@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useJobs, type JobWithCustomer } from "@/hooks/useJobs";
-import { JobDetailSheet, JobFormDialog, JobStatusBadge } from "@/components/jobs";
+import { JobDetailSheet, JobFormDialog } from "@/components/jobs";
 import { WeekCalendar, DayCalendar, JobCard, UnscheduledSidebar } from "@/components/calendar";
+import { TeamMemberFilter } from "@/components/calendar/TeamMemberFilter";
+import { CalendarExport } from "@/components/calendar/CalendarExport";
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfWeek, endOfWeek } from "date-fns";
 
 const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -19,6 +21,7 @@ export default function CalendarPage() {
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTeamMembers, setSelectedTeamMembers] = useState<string[]>([]);
 
   // Date range based on view
   const getDateRange = () => {
@@ -33,8 +36,74 @@ export default function CalendarPage() {
   };
 
   const { from, to } = getDateRange();
-  const { data: jobs = [] } = useJobs({ dateFrom: from, dateTo: to });
   const { data: allJobs = [] } = useJobs(); // For unscheduled sidebar
+
+  // Filter jobs by date range and team member selection
+  const jobs = allJobs.filter((job) => {
+    // Date filter
+    if (job.scheduled_start) {
+      const start = new Date(job.scheduled_start);
+      if (start < from || start > to) return false;
+    }
+    // Team member filter
+    if (selectedTeamMembers.length > 0 && job.assigned_to) {
+      if (!selectedTeamMembers.includes(job.assigned_to)) return false;
+    }
+    return true;
+  });
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.key) {
+        case "t":
+        case "T":
+          e.preventDefault();
+          setCurrentDate(new Date());
+          break;
+        case "d":
+        case "D":
+          e.preventDefault();
+          setView("day");
+          break;
+        case "w":
+        case "W":
+          e.preventDefault();
+          setView("week");
+          break;
+        case "m":
+        case "M":
+          e.preventDefault();
+          setView("month");
+          break;
+        case "n":
+        case "N":
+          e.preventDefault();
+          handleScheduleJob();
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          navigate("prev");
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          navigate("next");
+          break;
+        case "Escape":
+          setDetailSheetOpen(false);
+          setFormDialogOpen(false);
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentDate, view]);
 
   const navigate = (direction: "prev" | "next") => {
     const add = direction === "next";
@@ -166,7 +235,12 @@ export default function CalendarPage() {
             <h1 className="text-2xl font-bold tracking-tight">Calendar</h1>
             <p className="text-muted-foreground">View and manage your job schedule</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <TeamMemberFilter
+              selectedIds={selectedTeamMembers}
+              onChange={setSelectedTeamMembers}
+            />
+            <CalendarExport jobs={jobs} currentDate={currentDate} view={view} />
             <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as ViewType)}>
               <ToggleGroupItem value="day" size="sm">Day</ToggleGroupItem>
               <ToggleGroupItem value="week" size="sm">Week</ToggleGroupItem>

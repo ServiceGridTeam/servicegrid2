@@ -22,8 +22,15 @@ import { DeleteInvoiceDialog } from "./DeleteInvoiceDialog";
 import { SendInvoiceDialog } from "./SendInvoiceDialog";
 import { RecordPaymentDialog } from "./RecordPaymentDialog";
 import { useInvoices, type InvoiceWithCustomer } from "@/hooks/useInvoices";
-import { format } from "date-fns";
-import { MoreHorizontal, Eye, Pencil, Send, CreditCard, Trash2 } from "lucide-react";
+import { format, isPast, parseISO, startOfDay } from "date-fns";
+import { MoreHorizontal, Eye, Pencil, Send, CreditCard, Trash2, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const isOverdue = (invoice: InvoiceWithCustomer) => {
+  if (invoice.status === "paid" || invoice.status === "draft") return false;
+  if (!invoice.due_date) return false;
+  return isPast(startOfDay(parseISO(invoice.due_date)));
+};
 
 interface InvoiceTableProps {
   search?: string;
@@ -82,32 +89,42 @@ export function InvoiceTable({ search, status }: InvoiceTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {invoices.map((invoice) => (
-              <TableRow
-                key={invoice.id}
-                className="cursor-pointer"
-                onClick={() => navigate(`/invoices/${invoice.id}`)}
-              >
-                <TableCell className="font-medium">
-                  {invoice.invoice_number}
-                </TableCell>
-                <TableCell>{getCustomerName(invoice)}</TableCell>
-                <TableCell>
-                  <InvoiceStatusBadge status={invoice.status || "draft"} />
-                </TableCell>
-                <TableCell>
-                  {invoice.due_date
-                    ? format(new Date(invoice.due_date), "MMM d, yyyy")
-                    : "-"}
-                </TableCell>
-                <TableCell className="text-right">
-                  ${Number(invoice.total).toFixed(2)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <span className={Number(invoice.balance_due) > 0 ? "text-destructive" : "text-green-600"}>
-                    ${Number(invoice.balance_due).toFixed(2)}
-                  </span>
-                </TableCell>
+            {invoices.map((invoice) => {
+              const overdue = isOverdue(invoice);
+              return (
+                <TableRow
+                  key={invoice.id}
+                  className={cn(
+                    "cursor-pointer",
+                    overdue && "bg-destructive/5 hover:bg-destructive/10"
+                  )}
+                  onClick={() => navigate(`/invoices/${invoice.id}`)}
+                >
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {invoice.invoice_number}
+                      {overdue && (
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>{getCustomerName(invoice)}</TableCell>
+                  <TableCell>
+                    <InvoiceStatusBadge status={overdue ? "overdue" : invoice.status || "draft"} />
+                  </TableCell>
+                  <TableCell className={cn(overdue && "text-destructive font-medium")}>
+                    {invoice.due_date
+                      ? format(new Date(invoice.due_date), "MMM d, yyyy")
+                      : "-"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    ${Number(invoice.total).toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <span className={Number(invoice.balance_due) > 0 ? "text-destructive" : "text-green-600"}>
+                      ${Number(invoice.balance_due).toFixed(2)}
+                    </span>
+                  </TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -164,8 +181,9 @@ export function InvoiceTable({ search, status }: InvoiceTableProps) {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
-              </TableRow>
-            ))}
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
