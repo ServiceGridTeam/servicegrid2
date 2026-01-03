@@ -10,19 +10,17 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_15px_-3px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_20px_-3px_hsl(var(--primary)/0.6)]",
+          "bg-primary text-primary-foreground hover:bg-primary/90 shadow-subtle hover:shadow-soft",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-[0_0_15px_-3px_hsl(var(--destructive)/0.4)] hover:shadow-[0_0_20px_-3px_hsl(var(--destructive)/0.6)]",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-subtle hover:shadow-soft",
         outline:
-          "border border-input bg-background/50 hover:bg-accent/10 hover:text-accent hover:border-accent/50 hover:shadow-[0_0_15px_-5px_hsl(var(--accent)/0.3)]",
+          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border/50",
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border",
         ghost:
-          "hover:bg-accent/10 hover:text-accent",
+          "hover:bg-accent/10 hover:text-foreground",
         link:
-          "text-primary underline-offset-4 hover:underline text-glow",
-        glow:
-          "bg-primary text-primary-foreground animate-pulse-glow hover:shadow-glow-lg",
+          "text-primary underline-offset-4 hover:underline",
       },
       size: {
         default: "h-10 px-4 py-2",

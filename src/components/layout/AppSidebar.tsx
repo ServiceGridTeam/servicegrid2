@@ -66,17 +66,17 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
-      <SidebarHeader className="border-b border-sidebar-border/50 p-4">
+      <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/20 text-primary shrink-0 shadow-glow-sm animate-pulse-glow">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-foreground text-background shrink-0">
             <Zap className="h-5 w-5" />
           </div>
           {!collapsed && (
             <div className="flex flex-col overflow-hidden">
-              <span className="font-display font-semibold text-sidebar-foreground truncate tracking-wide">
+              <span className="font-semibold text-sidebar-foreground truncate tracking-tight">
                 {business?.name || "ServiceGrid"}
               </span>
-              <span className="text-xs text-primary/70 truncate">
+              <span className="text-xs text-muted-foreground truncate">
                 Field Service
               </span>
             </div>
@@ -86,7 +86,7 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/50 font-display text-xs tracking-widest uppercase">
+          <SidebarGroupLabel className="text-muted-foreground text-xs tracking-wide uppercase">
             {collapsed ? "" : "Main"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -98,8 +98,8 @@ export function AppSidebar() {
                     isActive={isActive(item.url)}
                     tooltip={item.title}
                     className={isActive(item.url) 
-                      ? "bg-primary/15 text-primary border-l-2 border-primary shadow-[inset_0_0_20px_-10px_hsl(var(--primary)/0.3)]" 
-                      : "hover:bg-sidebar-accent/50 hover:text-accent"
+                      ? "bg-foreground/10 text-foreground border-l-2 border-foreground" 
+                      : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     }
                   >
                     <NavLink
@@ -107,10 +107,10 @@ export function AppSidebar() {
                       className="flex items-center gap-3"
                       activeClassName=""
                     >
-                      <item.icon className={`h-4 w-4 shrink-0 ${isActive(item.url) ? "text-primary" : ""}`} />
+                      <item.icon className={`h-4 w-4 shrink-0 ${isActive(item.url) ? "text-foreground" : ""}`} />
                       {!collapsed && <span>{item.title}</span>}
                       {!collapsed && isActive(item.url) && (
-                        <ChevronRight className="ml-auto h-4 w-4 text-primary" />
+                        <ChevronRight className="ml-auto h-4 w-4 text-foreground" />
                       )}
                     </NavLink>
                   </SidebarMenuButton>
@@ -121,7 +121,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/50 font-display text-xs tracking-widest uppercase">
+          <SidebarGroupLabel className="text-muted-foreground text-xs tracking-wide uppercase">
             {collapsed ? "" : "System"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -133,8 +133,8 @@ export function AppSidebar() {
                     isActive={isActive(item.url)}
                     tooltip={item.title}
                     className={isActive(item.url) 
-                      ? "bg-primary/15 text-primary border-l-2 border-primary" 
-                      : "hover:bg-sidebar-accent/50 hover:text-accent"
+                      ? "bg-foreground/10 text-foreground border-l-2 border-foreground" 
+                      : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     }
                   >
                     <NavLink
@@ -142,7 +142,7 @@ export function AppSidebar() {
                       className="flex items-center gap-3"
                       activeClassName=""
                     >
-                      <item.icon className={`h-4 w-4 shrink-0 ${isActive(item.url) ? "text-primary" : ""}`} />
+                      <item.icon className={`h-4 w-4 shrink-0 ${isActive(item.url) ? "text-foreground" : ""}`} />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
@@ -153,11 +153,11 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border/50 p-3">
+      <SidebarFooter className="border-t border-sidebar-border p-3">
         <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8 shrink-0 ring-2 ring-primary/30 ring-offset-2 ring-offset-sidebar">
+          <Avatar className="h-8 w-8 shrink-0 ring-1 ring-border ring-offset-2 ring-offset-sidebar">
             <AvatarImage src={profile?.avatar_url || undefined} />
-            <AvatarFallback className="bg-primary/20 text-primary text-xs font-display">
+            <AvatarFallback className="bg-muted text-muted-foreground text-xs">
               {getInitials()}
             </AvatarFallback>
           </Avatar>
@@ -169,14 +169,14 @@ export function AppSidebar() {
                     ? `${profile.first_name} ${profile.last_name}`
                     : "User"}
                 </span>
-                <span className="text-xs text-sidebar-foreground/50 truncate">
+                <span className="text-xs text-muted-foreground truncate">
                   {profile?.email}
                 </span>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className="shrink-0 text-sidebar-foreground/50 hover:text-destructive hover:bg-destructive/10"
+                className="shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted"
                 onClick={signOut}
                 title="Sign out"
               >
