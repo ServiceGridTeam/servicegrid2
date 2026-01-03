@@ -7,16 +7,20 @@ import {
   setHours,
   setMinutes,
 } from "date-fns";
-import { JobCard } from "./JobCard";
+import { DraggableJobCard } from "./DraggableJobCard";
+import { DroppableTimeSlot } from "./DroppableTimeSlot";
 import type { JobWithCustomer } from "@/hooks/useJobs";
+import { findConflicts } from "@/hooks/useCheckConflicts";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface DayCalendarProps {
   currentDate: Date;
   jobs: JobWithCustomer[];
+  allJobs: JobWithCustomer[];
   onJobClick: (job: JobWithCustomer) => void;
   onTimeSlotClick: (date: Date) => void;
+  onJobResize?: (job: JobWithCustomer, newEndTime: Date) => void;
 }
 
 const HOUR_HEIGHT = 80; // pixels per hour (larger for day view)
@@ -27,8 +31,10 @@ const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR
 export function DayCalendar({
   currentDate,
   jobs,
+  allJobs,
   onJobClick,
   onTimeSlotClick,
+  onJobResize,
 }: DayCalendarProps) {
   const dayJobs = jobs.filter((job) => {
     if (!job.scheduled_start) return false;
@@ -49,6 +55,15 @@ export function DayCalendar({
       top: (topMinutes / 60) * HOUR_HEIGHT,
       height: Math.max((duration / 60) * HOUR_HEIGHT, 40),
     };
+  };
+
+  const getJobConflicts = (job: JobWithCustomer) => {
+    return findConflicts(allJobs, {
+      jobId: job.id,
+      assignedTo: job.assigned_to,
+      scheduledStart: job.scheduled_start,
+      scheduledEnd: job.scheduled_end,
+    });
   };
 
   const handleTimeSlotClick = (hour: number) => {
@@ -116,14 +131,17 @@ export function DayCalendar({
           <div className="flex-1 relative">
             {/* Hour slots */}
             {HOURS.map((hour) => (
-              <div
+              <DroppableTimeSlot
                 key={hour}
+                id={`day-${format(currentDate, 'yyyy-MM-dd')}-${hour}`}
+                day={currentDate}
+                hour={hour}
                 className="h-[80px] border-b hover:bg-muted/50 cursor-pointer"
                 onClick={() => handleTimeSlotClick(hour)}
               >
                 {/* Half hour line */}
                 <div className="h-1/2 border-b border-dashed border-muted" />
-              </div>
+              </DroppableTimeSlot>
             ))}
 
             {/* Current time indicator */}
@@ -143,17 +161,21 @@ export function DayCalendar({
             <div className="absolute inset-0 p-1 pointer-events-none">
               {dayJobs.map((job) => {
                 const { top, height } = getJobPosition(job);
+                const conflicts = getJobConflicts(job);
                 return (
                   <div
                     key={job.id}
                     className="absolute left-1 right-1 pointer-events-auto"
                     style={{ top, height }}
                   >
-                    <JobCard
+                    <DraggableJobCard
                       job={job}
                       variant="day"
                       onClick={onJobClick}
+                      onResize={onJobResize}
                       className="h-full"
+                      hasConflict={conflicts.length > 0}
+                      conflictMessage={conflicts[0]?.message}
                     />
                   </div>
                 );

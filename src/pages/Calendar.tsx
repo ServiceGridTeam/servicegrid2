@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { useJobs, type JobWithCustomer } from "@/hooks/useJobs";
+import { useJobs, useUpdateJob, type JobWithCustomer } from "@/hooks/useJobs";
 import { JobDetailSheet, JobFormDialog } from "@/components/jobs";
 import { WeekCalendar, DayCalendar, JobCard, UnscheduledSidebar } from "@/components/calendar";
 import { TeamMemberFilter } from "@/components/calendar/TeamMemberFilter";
 import { CalendarExport } from "@/components/calendar/CalendarExport";
-import { format, startOfMonth, endOfMonth, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfWeek, endOfWeek } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { format, startOfMonth, endOfMonth, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfWeek, endOfWeek, setHours, setMinutes, addHours } from "date-fns";
 
 const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -22,6 +24,19 @@ export default function CalendarPage() {
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTeamMembers, setSelectedTeamMembers] = useState<string[]>([]);
+  const [draggingJob, setDraggingJob] = useState<JobWithCustomer | null>(null);
+  
+  const { toast } = useToast();
+  const updateJob = useUpdateJob();
+
+  // Configure sensors for drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   // Date range based on view
   const getDateRange = () => {
@@ -36,16 +51,14 @@ export default function CalendarPage() {
   };
 
   const { from, to } = getDateRange();
-  const { data: allJobs = [] } = useJobs(); // For unscheduled sidebar
+  const { data: allJobs = [] } = useJobs();
 
   // Filter jobs by date range and team member selection
   const jobs = allJobs.filter((job) => {
-    // Date filter
     if (job.scheduled_start) {
       const start = new Date(job.scheduled_start);
       if (start < from || start > to) return false;
     }
-    // Team member filter
     if (selectedTeamMembers.length > 0 && job.assigned_to) {
       if (!selectedTeamMembers.includes(job.assigned_to)) return false;
     }
@@ -55,7 +68,6 @@ export default function CalendarPage() {
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
@@ -166,6 +178,102 @@ export default function CalendarPage() {
     setFormDialogOpen(true);
   };
 
+  const handleJobResize = useCallback(async (job: JobWithCustomer, newEndTime: Date) => {
+    try {
+      await updateJob.mutateAsync({
+        id: job.id,
+        scheduled_end: newEndTime.toISOString(),
+      });
+      toast({
+        title: "Duration updated",
+        description: `Job duration changed to end at ${format(newEndTime, "h:mm a")}.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update job duration.",
+        variant: "destructive",
+      });
+    }
+  }, [updateJob, toast]);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const job = active.data.current?.job as JobWithCustomer | undefined;
+    if (job) {
+      setDraggingJob(job);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setDraggingJob(null);
+
+    if (!over) return;
+
+    const dragData = active.data.current;
+    const dropData = over.data.current;
+
+    if (!dragData?.job || !dropData) return;
+
+    const job = dragData.job as JobWithCustomer;
+
+    // Dropping on a time slot
+    if (dropData.type === "timeslot") {
+      const { day, hour, minute = 0 } = dropData;
+      const newStart = setMinutes(setHours(day, hour), minute);
+      
+      // Calculate duration from existing job or default to 1 hour
+      let duration = 60; // Default 1 hour in minutes
+      if (job.scheduled_start && job.scheduled_end) {
+        const existingStart = new Date(job.scheduled_start);
+        const existingEnd = new Date(job.scheduled_end);
+        duration = (existingEnd.getTime() - existingStart.getTime()) / (1000 * 60);
+      }
+      
+      const newEnd = addHours(newStart, duration / 60);
+
+      try {
+        await updateJob.mutateAsync({
+          id: job.id,
+          scheduled_start: newStart.toISOString(),
+          scheduled_end: newEnd.toISOString(),
+        });
+        toast({
+          title: "Job scheduled",
+          description: `${job.title || job.job_number} scheduled for ${format(newStart, "MMM d 'at' h:mm a")}.`,
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to schedule job.",
+          variant: "destructive",
+        });
+      }
+    }
+
+    // Dropping back to unscheduled area
+    if (dropData.type === "unscheduled-area" && job.scheduled_start) {
+      try {
+        await updateJob.mutateAsync({
+          id: job.id,
+          scheduled_start: null,
+          scheduled_end: null,
+        });
+        toast({
+          title: "Job unscheduled",
+          description: `${job.title || job.job_number} moved to unscheduled.`,
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to unschedule job.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   // Month view rendering
   const renderMonthView = () => {
     const year = currentDate.getFullYear();
@@ -227,69 +335,98 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-8rem)]">
-      <div className="flex-1 flex flex-col space-y-4 animate-fade-in overflow-hidden">
-        {/* Header */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between shrink-0">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Calendar</h1>
-            <p className="text-muted-foreground">View and manage your job schedule</p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <TeamMemberFilter
-              selectedIds={selectedTeamMembers}
-              onChange={setSelectedTeamMembers}
-            />
-            <CalendarExport jobs={jobs} currentDate={currentDate} view={view} />
-            <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as ViewType)}>
-              <ToggleGroupItem value="day" size="sm">Day</ToggleGroupItem>
-              <ToggleGroupItem value="week" size="sm">Week</ToggleGroupItem>
-              <ToggleGroupItem value="month" size="sm">Month</ToggleGroupItem>
-            </ToggleGroup>
-            <Button onClick={() => handleScheduleJob()}>
-              <Plus className="mr-2 h-4 w-4" />
-              Schedule Job
-            </Button>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <Card className="shrink-0">
-          <CardHeader className="flex flex-row items-center justify-between py-3">
-            <CardTitle className="text-lg">{getHeaderTitle()}</CardTitle>
-            <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" onClick={() => navigate("prev")}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>Today</Button>
-              <Button variant="outline" size="icon" onClick={() => navigate("next")}>
-                <ChevronRight className="h-4 w-4" />
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="flex h-[calc(100vh-8rem)]">
+        <div className="flex-1 flex flex-col space-y-4 animate-fade-in overflow-hidden">
+          {/* Header */}
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between shrink-0">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Calendar</h1>
+              <p className="text-muted-foreground">View and manage your job schedule</p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <TeamMemberFilter
+                selectedIds={selectedTeamMembers}
+                onChange={setSelectedTeamMembers}
+              />
+              <CalendarExport jobs={jobs} currentDate={currentDate} view={view} />
+              <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as ViewType)}>
+                <ToggleGroupItem value="day" size="sm">Day</ToggleGroupItem>
+                <ToggleGroupItem value="week" size="sm">Week</ToggleGroupItem>
+                <ToggleGroupItem value="month" size="sm">Month</ToggleGroupItem>
+              </ToggleGroup>
+              <Button onClick={() => handleScheduleJob()}>
+                <Plus className="mr-2 h-4 w-4" />
+                Schedule Job
               </Button>
             </div>
-          </CardHeader>
-        </Card>
+          </div>
 
-        {/* Calendar Views */}
-        <div className="flex-1 overflow-hidden">
-          {view === "month" && renderMonthView()}
-          {view === "week" && (
-            <Card className="h-full">
-              <WeekCalendar currentDate={currentDate} jobs={jobs} onJobClick={handleJobClick} onTimeSlotClick={handleTimeSlotClick} />
-            </Card>
-          )}
-          {view === "day" && (
-            <Card className="h-full">
-              <DayCalendar currentDate={currentDate} jobs={jobs} onJobClick={handleJobClick} onTimeSlotClick={handleTimeSlotClick} />
-            </Card>
-          )}
+          {/* Navigation */}
+          <Card className="shrink-0">
+            <CardHeader className="flex flex-row items-center justify-between py-3">
+              <CardTitle className="text-lg">{getHeaderTitle()}</CardTitle>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="icon" onClick={() => navigate("prev")}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>Today</Button>
+                <Button variant="outline" size="icon" onClick={() => navigate("next")}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+          </Card>
+
+          {/* Calendar Views */}
+          <div className="flex-1 overflow-hidden">
+            {view === "month" && renderMonthView()}
+            {view === "week" && (
+              <Card className="h-full">
+                <WeekCalendar
+                  currentDate={currentDate}
+                  jobs={jobs}
+                  allJobs={allJobs}
+                  onJobClick={handleJobClick}
+                  onTimeSlotClick={handleTimeSlotClick}
+                  onJobResize={handleJobResize}
+                />
+              </Card>
+            )}
+            {view === "day" && (
+              <Card className="h-full">
+                <DayCalendar
+                  currentDate={currentDate}
+                  jobs={jobs}
+                  allJobs={allJobs}
+                  onJobClick={handleJobClick}
+                  onTimeSlotClick={handleTimeSlotClick}
+                  onJobResize={handleJobResize}
+                />
+              </Card>
+            )}
+          </div>
         </div>
+
+        {/* Unscheduled Sidebar */}
+        <UnscheduledSidebar jobs={allJobs} onJobClick={handleJobClick} onScheduleJob={handleScheduleJob} />
+
+        <JobDetailSheet job={selectedJob} open={detailSheetOpen} onOpenChange={setDetailSheetOpen} onEdit={handleEditJob} />
+        <JobFormDialog open={formDialogOpen} onOpenChange={setFormDialogOpen} job={selectedJob && !detailSheetOpen ? selectedJob : undefined} defaultDate={selectedDate} onSuccess={() => setSelectedJob(null)} />
       </div>
 
-      {/* Unscheduled Sidebar */}
-      <UnscheduledSidebar jobs={allJobs} onJobClick={handleJobClick} onScheduleJob={handleScheduleJob} />
-
-      <JobDetailSheet job={selectedJob} open={detailSheetOpen} onOpenChange={setDetailSheetOpen} onEdit={handleEditJob} />
-      <JobFormDialog open={formDialogOpen} onOpenChange={setFormDialogOpen} job={selectedJob && !detailSheetOpen ? selectedJob : undefined} defaultDate={selectedDate} onSuccess={() => setSelectedJob(null)} />
-    </div>
+      {/* Drag Overlay */}
+      <DragOverlay>
+        {draggingJob && (
+          <div className="opacity-80 pointer-events-none">
+            <JobCard job={draggingJob} variant="week" />
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { ArrowLeft, Pencil, Send, Trash2, Copy, Briefcase } from "lucide-react";
+import { ArrowLeft, Pencil, Send, Trash2, Copy, Briefcase, Download, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,8 +16,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { QuoteStatusBadge } from "@/components/quotes/QuoteStatusBadge";
 import { DeleteQuoteDialog } from "@/components/quotes/DeleteQuoteDialog";
 import { SendQuoteDialog } from "@/components/quotes/SendQuoteDialog";
+import { QuotePDF } from "@/components/quotes/QuotePDF";
 import { JobFormDialog } from "@/components/jobs";
 import { useQuote } from "@/hooks/useQuotes";
+import { useBusiness } from "@/hooks/useBusiness";
 import { format } from "date-fns";
 
 export default function QuoteDetail() {
@@ -25,9 +27,11 @@ export default function QuoteDetail() {
   const navigate = useNavigate();
   const { data: quote, isLoading } = useQuote(id);
 
+  const { data: business } = useBusiness();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [jobDialogOpen, setJobDialogOpen] = useState(false);
+  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -80,6 +84,10 @@ export default function QuoteDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setPdfDialogOpen(true)}>
+            <Download className="mr-2 h-4 w-4" />
+            PDF
+          </Button>
           <Button variant="outline" asChild>
             <Link to={`/quotes/${quote.id}/edit`}>
               <Pencil className="mr-2 h-4 w-4" />
@@ -100,10 +108,16 @@ export default function QuoteDetail() {
             </Button>
           )}
           {quote.status === "approved" && (
-            <Button onClick={() => setJobDialogOpen(true)}>
-              <Briefcase className="mr-2 h-4 w-4" />
-              Create Job
-            </Button>
+            <>
+              <Button variant="outline" onClick={() => setJobDialogOpen(true)}>
+                <Briefcase className="mr-2 h-4 w-4" />
+                Create Job
+              </Button>
+              <Button onClick={() => navigate(`/invoices/new?quote_id=${quote.id}`)}>
+                <Receipt className="mr-2 h-4 w-4" />
+                Create Invoice
+              </Button>
+            </>
           )}
           <Button
             variant="destructive"
@@ -291,6 +305,27 @@ export default function QuoteDetail() {
         quoteId={quote.id}
         onSuccess={() => navigate("/jobs")}
       />
+
+      {business && (
+        <QuotePDF
+          open={pdfDialogOpen}
+          onOpenChange={setPdfDialogOpen}
+          quote={{
+            ...quote,
+            business: {
+              id: business.id,
+              name: business.name,
+              phone: business.phone,
+              email: business.email,
+              logo_url: business.logo_url,
+              address_line1: business.address_line1,
+              city: business.city,
+              state: business.state,
+              zip: business.zip,
+            },
+          }}
+        />
+      )}
     </div>
   );
 }

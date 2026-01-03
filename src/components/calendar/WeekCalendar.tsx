@@ -9,16 +9,20 @@ import {
   setHours,
   setMinutes,
 } from "date-fns";
-import { JobCard } from "./JobCard";
+import { DraggableJobCard } from "./DraggableJobCard";
+import { DroppableTimeSlot } from "./DroppableTimeSlot";
 import type { JobWithCustomer } from "@/hooks/useJobs";
+import { findConflicts } from "@/hooks/useCheckConflicts";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface WeekCalendarProps {
   currentDate: Date;
   jobs: JobWithCustomer[];
+  allJobs: JobWithCustomer[];
   onJobClick: (job: JobWithCustomer) => void;
   onTimeSlotClick: (date: Date) => void;
+  onJobResize?: (job: JobWithCustomer, newEndTime: Date) => void;
 }
 
 const HOUR_HEIGHT = 60; // pixels per hour
@@ -29,8 +33,10 @@ const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR
 export function WeekCalendar({
   currentDate,
   jobs,
+  allJobs,
   onJobClick,
   onTimeSlotClick,
+  onJobResize,
 }: WeekCalendarProps) {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -56,6 +62,15 @@ export function WeekCalendar({
       top: (topMinutes / 60) * HOUR_HEIGHT,
       height: Math.max((duration / 60) * HOUR_HEIGHT, 30),
     };
+  };
+
+  const getJobConflicts = (job: JobWithCustomer) => {
+    return findConflicts(allJobs, {
+      jobId: job.id,
+      assignedTo: job.assigned_to,
+      scheduledStart: job.scheduled_start,
+      scheduledEnd: job.scheduled_end,
+    });
   };
 
   const handleTimeSlotClick = (day: Date, hour: number) => {
@@ -132,8 +147,11 @@ export function WeekCalendar({
               >
                 {/* Hour slots */}
                 {HOURS.map((hour) => (
-                  <div
+                  <DroppableTimeSlot
                     key={hour}
+                    id={`week-${format(day, 'yyyy-MM-dd')}-${hour}`}
+                    day={day}
+                    hour={hour}
                     className="h-[60px] border-b hover:bg-muted/50 cursor-pointer"
                     onClick={() => handleTimeSlotClick(day, hour)}
                   />
@@ -156,17 +174,21 @@ export function WeekCalendar({
                 <div className="absolute inset-0 p-0.5 pointer-events-none">
                   {dayJobs.map((job) => {
                     const { top, height } = getJobPosition(job);
+                    const conflicts = getJobConflicts(job);
                     return (
                       <div
                         key={job.id}
                         className="absolute left-0.5 right-0.5 pointer-events-auto"
                         style={{ top, height: Math.max(height, 24) }}
                       >
-                        <JobCard
+                        <DraggableJobCard
                           job={job}
                           variant="week"
                           onClick={onJobClick}
+                          onResize={onJobResize}
                           className="h-full"
+                          hasConflict={conflicts.length > 0}
+                          conflictMessage={conflicts[0]?.message}
                         />
                       </div>
                     );
