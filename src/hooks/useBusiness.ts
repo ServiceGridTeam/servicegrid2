@@ -111,6 +111,7 @@ export function useUpdateBusiness() {
 
 export function useSetupBusiness() {
   const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
 
   return useMutation({
     mutationFn: async (businessData: { 
@@ -129,9 +130,12 @@ export function useSetupBusiness() {
       if (error) throw error;
       return data as string;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["business"] });
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
+    onSuccess: (businessId) => {
+      queryClient.invalidateQueries({ queryKey: ["business", businessId] });
+      // Use exact profile key for invalidation
+      if (profile?.id) {
+        queryClient.invalidateQueries({ queryKey: ["profile", profile.id] });
+      }
     },
   });
 }
