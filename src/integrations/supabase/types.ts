@@ -328,6 +328,7 @@ export type Database = {
           job_id: string | null
           notes: string | null
           paid_at: string | null
+          public_token: string | null
           quote_id: string | null
           sent_at: string | null
           status: string | null
@@ -351,6 +352,7 @@ export type Database = {
           job_id?: string | null
           notes?: string | null
           paid_at?: string | null
+          public_token?: string | null
           quote_id?: string | null
           sent_at?: string | null
           status?: string | null
@@ -374,6 +376,7 @@ export type Database = {
           job_id?: string | null
           notes?: string | null
           paid_at?: string | null
+          public_token?: string | null
           quote_id?: string | null
           sent_at?: string | null
           status?: string | null
@@ -727,7 +730,9 @@ export type Database = {
           id: string
           internal_notes: string | null
           notes: string | null
+          public_token: string | null
           quote_number: string
+          sent_at: string | null
           signature_url: string | null
           status: string | null
           subtotal: number | null
@@ -737,6 +742,7 @@ export type Database = {
           total: number | null
           updated_at: string
           valid_until: string | null
+          view_count: number | null
         }
         Insert: {
           approved_at?: string | null
@@ -748,7 +754,9 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           notes?: string | null
+          public_token?: string | null
           quote_number: string
+          sent_at?: string | null
           signature_url?: string | null
           status?: string | null
           subtotal?: number | null
@@ -758,6 +766,7 @@ export type Database = {
           total?: number | null
           updated_at?: string
           valid_until?: string | null
+          view_count?: number | null
         }
         Update: {
           approved_at?: string | null
@@ -769,7 +778,9 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           notes?: string | null
+          public_token?: string | null
           quote_number?: string
+          sent_at?: string | null
           signature_url?: string | null
           status?: string | null
           subtotal?: number | null
@@ -779,6 +790,7 @@ export type Database = {
           total?: number | null
           updated_at?: string
           valid_until?: string | null
+          view_count?: number | null
         }
         Relationships: [
           {
