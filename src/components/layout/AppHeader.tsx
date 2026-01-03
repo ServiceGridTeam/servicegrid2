@@ -1,7 +1,5 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { Bell, Search } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -11,6 +9,8 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { useLocation, Link } from "react-router-dom";
+import { GlobalSearch } from "./GlobalSearch";
+import { NotificationsDropdown } from "./NotificationsDropdown";
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -71,13 +71,8 @@ export function AppHeader() {
       </Breadcrumb>
 
       <div className="ml-auto flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="hidden md:flex">
-          <Search className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-4 w-4" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive" />
-        </Button>
+        <GlobalSearch />
+        <NotificationsDropdown />
       </div>
     </header>
   );

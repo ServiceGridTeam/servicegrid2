@@ -571,6 +571,50 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          business_id: string
+          created_at: string
+          data: Json | null
+          id: string
+          message: string | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          data?: Json | null
+          id?: string
+          message?: string | null
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          data?: Json | null
+          id?: string
+          message?: string | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
