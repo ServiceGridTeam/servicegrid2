@@ -21,7 +21,7 @@ import {
   Receipt,
   Calendar,
   Settings,
-  Wrench,
+  Zap,
   ChevronRight,
   LogOut,
 } from "lucide-react";
@@ -65,18 +65,18 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      <SidebarHeader className="border-b border-sidebar-border p-4">
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
+      <SidebarHeader className="border-b border-sidebar-border/50 p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shrink-0">
-            <Wrench className="h-5 w-5" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/20 text-primary shrink-0 shadow-glow-sm animate-pulse-glow">
+            <Zap className="h-5 w-5" />
           </div>
           {!collapsed && (
             <div className="flex flex-col overflow-hidden">
-              <span className="font-semibold text-sidebar-foreground truncate">
+              <span className="font-display font-semibold text-sidebar-foreground truncate tracking-wide">
                 {business?.name || "ServiceGrid"}
               </span>
-              <span className="text-xs text-sidebar-foreground/60 truncate">
+              <span className="text-xs text-primary/70 truncate">
                 Field Service
               </span>
             </div>
@@ -86,7 +86,7 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/60">
+          <SidebarGroupLabel className="text-sidebar-foreground/50 font-display text-xs tracking-widest uppercase">
             {collapsed ? "" : "Main"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -97,16 +97,20 @@ export function AppSidebar() {
                     asChild
                     isActive={isActive(item.url)}
                     tooltip={item.title}
+                    className={isActive(item.url) 
+                      ? "bg-primary/15 text-primary border-l-2 border-primary shadow-[inset_0_0_20px_-10px_hsl(var(--primary)/0.3)]" 
+                      : "hover:bg-sidebar-accent/50 hover:text-accent"
+                    }
                   >
                     <NavLink
                       to={item.url}
                       className="flex items-center gap-3"
-                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
+                      activeClassName=""
                     >
-                      <item.icon className="h-4 w-4 shrink-0" />
+                      <item.icon className={`h-4 w-4 shrink-0 ${isActive(item.url) ? "text-primary" : ""}`} />
                       {!collapsed && <span>{item.title}</span>}
                       {!collapsed && isActive(item.url) && (
-                        <ChevronRight className="ml-auto h-4 w-4" />
+                        <ChevronRight className="ml-auto h-4 w-4 text-primary" />
                       )}
                     </NavLink>
                   </SidebarMenuButton>
@@ -117,7 +121,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/60">
+          <SidebarGroupLabel className="text-sidebar-foreground/50 font-display text-xs tracking-widest uppercase">
             {collapsed ? "" : "System"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -128,13 +132,17 @@ export function AppSidebar() {
                     asChild
                     isActive={isActive(item.url)}
                     tooltip={item.title}
+                    className={isActive(item.url) 
+                      ? "bg-primary/15 text-primary border-l-2 border-primary" 
+                      : "hover:bg-sidebar-accent/50 hover:text-accent"
+                    }
                   >
                     <NavLink
                       to={item.url}
                       className="flex items-center gap-3"
-                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
+                      activeClassName=""
                     >
-                      <item.icon className="h-4 w-4 shrink-0" />
+                      <item.icon className={`h-4 w-4 shrink-0 ${isActive(item.url) ? "text-primary" : ""}`} />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
@@ -145,11 +153,11 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-3">
+      <SidebarFooter className="border-t border-sidebar-border/50 p-3">
         <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8 shrink-0">
+          <Avatar className="h-8 w-8 shrink-0 ring-2 ring-primary/30 ring-offset-2 ring-offset-sidebar">
             <AvatarImage src={profile?.avatar_url || undefined} />
-            <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-xs">
+            <AvatarFallback className="bg-primary/20 text-primary text-xs font-display">
               {getInitials()}
             </AvatarFallback>
           </Avatar>
@@ -161,14 +169,14 @@ export function AppSidebar() {
                     ? `${profile.first_name} ${profile.last_name}`
                     : "User"}
                 </span>
-                <span className="text-xs text-sidebar-foreground/60 truncate">
+                <span className="text-xs text-sidebar-foreground/50 truncate">
                   {profile?.email}
                 </span>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className="shrink-0 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                className="shrink-0 text-sidebar-foreground/50 hover:text-destructive hover:bg-destructive/10"
                 onClick={signOut}
                 title="Sign out"
               >

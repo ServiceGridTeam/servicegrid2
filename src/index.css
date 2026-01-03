@@ -2,124 +2,125 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ServiceGrid Design System
-   A professional field service management platform
-   Aesthetic: Clean, trustworthy, efficient - like a well-run business
+/* ServiceGrid - Hyperlight Drifter Theme
+   Aesthetic: Glowy neon, deep void, futuristic professional
+   Inspired by: Hyperlight Drifter's atmospheric visuals
 */
 
 @layer base {
   :root {
-    /* Core brand - Deep navy blue for trust and professionalism */
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
+    /* Core - Deep void with magenta/cyan neon */
+    --background: 270 30% 6%;
+    --foreground: 180 20% 95%;
 
-    /* Cards with subtle warmth */
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    /* Cards - Elevated glass surfaces */
+    --card: 270 25% 10%;
+    --card-foreground: 180 20% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 270 25% 10%;
+    --popover-foreground: 180 20% 95%;
 
-    /* Primary - Vibrant blue that conveys reliability */
-    --primary: 217 91% 50%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary - Electric magenta/pink */
+    --primary: 330 85% 60%;
+    --primary-foreground: 270 30% 6%;
 
-    /* Secondary - Warm slate for balance */
-    --secondary: 215 20% 94%;
-    --secondary-foreground: 222 47% 11%;
+    /* Secondary - Deep purple */
+    --secondary: 270 30% 15%;
+    --secondary-foreground: 180 20% 90%;
 
-    --muted: 215 20% 94%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 270 25% 15%;
+    --muted-foreground: 270 15% 55%;
 
-    /* Accent - Teal for actions and highlights */
-    --accent: 173 80% 40%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent - Neon cyan */
+    --accent: 180 100% 50%;
+    --accent-foreground: 270 30% 6%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 100% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 20% 88%;
-    --input: 215 20% 88%;
-    --ring: 217 91% 50%;
+    --border: 270 30% 18%;
+    --input: 270 30% 18%;
+    --ring: 330 85% 60%;
 
     --radius: 0.625rem;
 
-    /* Status colors for jobs/quotes/invoices */
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-    --info: 199 89% 48%;
-    --info-foreground: 0 0% 100%;
+    /* Status colors - Neon variants */
+    --success: 120 100% 45%;
+    --success-foreground: 0 0% 0%;
+    --warning: 45 100% 55%;
+    --warning-foreground: 0 0% 0%;
+    --info: 190 100% 60%;
+    --info-foreground: 0 0% 0%;
 
-    /* Sidebar - Professional dark navy */
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 215 20% 85%;
-    --sidebar-primary: 217 91% 60%;
+    /* Sidebar - Even deeper void */
+    --sidebar-background: 270 35% 4%;
+    --sidebar-foreground: 180 20% 80%;
+    --sidebar-primary: 330 85% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 47% 18%;
-    --sidebar-accent-foreground: 215 20% 95%;
-    --sidebar-border: 222 47% 18%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-accent: 270 30% 12%;
+    --sidebar-accent-foreground: 180 20% 95%;
+    --sidebar-border: 270 30% 12%;
+    --sidebar-ring: 330 85% 60%;
 
-    /* Chart colors for analytics */
-    --chart-1: 217 91% 50%;
-    --chart-2: 173 80% 40%;
-    --chart-3: 142 76% 36%;
-    --chart-4: 38 92% 50%;
-    --chart-5: 280 68% 52%;
+    /* Chart colors - Vibrant neons */
+    --chart-1: 330 85% 60%;
+    --chart-2: 180 100% 50%;
+    --chart-3: 120 100% 45%;
+    --chart-4: 45 100% 55%;
+    --chart-5: 280 100% 65%;
   }
 
   .dark {
-    --background: 222 47% 6%;
-    --foreground: 215 20% 95%;
+    /* Dark mode is the default for this theme */
+    --background: 270 30% 4%;
+    --foreground: 180 20% 95%;
 
-    --card: 222 47% 9%;
-    --card-foreground: 215 20% 95%;
+    --card: 270 25% 8%;
+    --card-foreground: 180 20% 95%;
 
-    --popover: 222 47% 9%;
-    --popover-foreground: 215 20% 95%;
+    --popover: 270 25% 8%;
+    --popover-foreground: 180 20% 95%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 6%;
+    --primary: 330 85% 65%;
+    --primary-foreground: 270 30% 6%;
 
-    --secondary: 222 47% 15%;
-    --secondary-foreground: 215 20% 95%;
+    --secondary: 270 30% 12%;
+    --secondary-foreground: 180 20% 90%;
 
-    --muted: 222 47% 15%;
-    --muted-foreground: 215 16% 55%;
+    --muted: 270 25% 12%;
+    --muted-foreground: 270 15% 50%;
 
-    --accent: 173 80% 45%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 180 100% 55%;
+    --accent-foreground: 270 30% 6%;
 
-    --destructive: 0 62% 45%;
+    --destructive: 0 100% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 222 47% 18%;
-    --input: 222 47% 18%;
-    --ring: 217 91% 60%;
+    --border: 270 30% 15%;
+    --input: 270 30% 15%;
+    --ring: 330 85% 65%;
 
-    --success: 142 76% 42%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 55%;
+    --success: 120 100% 50%;
+    --success-foreground: 0 0% 0%;
+    --warning: 45 100% 60%;
     --warning-foreground: 0 0% 0%;
-    --info: 199 89% 55%;
-    --info-foreground: 0 0% 100%;
+    --info: 190 100% 65%;
+    --info-foreground: 0 0% 0%;
 
-    --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 215 20% 85%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-background: 270 35% 3%;
+    --sidebar-foreground: 180 20% 80%;
+    --sidebar-primary: 330 85% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 47% 12%;
-    --sidebar-accent-foreground: 215 20% 95%;
-    --sidebar-border: 222 47% 12%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-accent: 270 30% 10%;
+    --sidebar-accent-foreground: 180 20% 95%;
+    --sidebar-border: 270 30% 10%;
+    --sidebar-ring: 330 85% 65%;
 
-    --chart-1: 217 91% 60%;
-    --chart-2: 173 80% 50%;
-    --chart-3: 142 76% 45%;
-    --chart-4: 38 92% 55%;
-    --chart-5: 280 68% 60%;
+    --chart-1: 330 85% 65%;
+    --chart-2: 180 100% 55%;
+    --chart-3: 120 100% 50%;
+    --chart-4: 45 100% 60%;
+    --chart-5: 280 100% 70%;
   }
 }
 
@@ -133,59 +134,100 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* Custom scrollbar */
+  /* Selection highlight */
+  ::selection {
+    background: hsl(330 85% 60% / 0.3);
+    color: hsl(180 20% 95%);
+  }
+
+  /* Custom scrollbar - neon themed */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-muted/50;
+    background: hsl(270 30% 8%);
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/20 rounded-full;
+    background: hsl(330 85% 60% / 0.3);
+    border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/30;
+    background: hsl(330 85% 60% / 0.5);
   }
 }
 
 @layer utilities {
-  /* Glass effect for cards */
+  /* Glass effect with neon glow */
   .glass {
-    @apply bg-card/80 backdrop-blur-sm border border-border/50;
+    @apply bg-card/60 backdrop-blur-xl border border-accent/20;
+    box-shadow: 
+      0 0 20px -5px hsl(var(--accent) / 0.15),
+      inset 0 1px 0 hsl(var(--foreground) / 0.05);
+  }
+
+  .glass-card {
+    @apply bg-card/70 backdrop-blur-lg border border-primary/15 rounded-lg;
+    box-shadow: 0 0 30px -10px hsl(var(--primary) / 0.25);
+  }
+
+  /* Neon border effect */
+  .neon-border {
+    @apply border border-accent/30;
+    box-shadow: 
+      0 0 15px -5px hsl(var(--accent) / 0.4),
+      inset 0 0 15px -10px hsl(var(--accent) / 0.1);
+  }
+
+  .neon-border-primary {
+    @apply border border-primary/30;
+    box-shadow: 
+      0 0 15px -5px hsl(var(--primary) / 0.4),
+      inset 0 0 15px -10px hsl(var(--primary) / 0.1);
   }
 
   /* Gradient backgrounds */
+  .gradient-bg {
+    background: 
+      radial-gradient(ellipse at top left, hsl(var(--primary) / 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, hsl(var(--accent) / 0.08) 0%, transparent 50%),
+      hsl(var(--background));
+  }
+
   .gradient-primary {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(217 91% 40%) 100%);
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(330 85% 45%) 100%);
   }
 
   .gradient-accent {
-    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(173 80% 30%) 100%);
+    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(190 100% 40%) 100%);
   }
 
-  /* Status badge utilities */
+  /* Status badge utilities with neon glow */
   .status-draft {
-    @apply bg-muted text-muted-foreground;
+    @apply bg-muted/50 text-muted-foreground border border-muted-foreground/20;
   }
 
   .status-pending {
-    @apply bg-warning/10 text-warning;
+    @apply bg-warning/10 text-warning border border-warning/30;
+    box-shadow: 0 0 10px -3px hsl(var(--warning) / 0.3);
   }
 
   .status-approved {
-    @apply bg-success/10 text-success;
+    @apply bg-success/10 text-success border border-success/30;
+    box-shadow: 0 0 10px -3px hsl(var(--success) / 0.3);
   }
 
   .status-completed {
-    @apply bg-primary/10 text-primary;
+    @apply bg-accent/10 text-accent border border-accent/30;
+    box-shadow: 0 0 10px -3px hsl(var(--accent) / 0.3);
   }
 
   .status-cancelled {
-    @apply bg-destructive/10 text-destructive;
+    @apply bg-destructive/10 text-destructive border border-destructive/30;
+    box-shadow: 0 0 10px -3px hsl(var(--destructive) / 0.3);
   }
 
   /* Smooth transitions */
@@ -193,8 +235,60 @@
     @apply transition-all duration-200 ease-out;
   }
 
-  /* Focus ring */
+  /* Focus ring with neon glow */
   .focus-ring {
     @apply focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
+  }
+
+  /* Glow text effect */
+  .text-glow {
+    text-shadow: 0 0 20px hsl(var(--primary) / 0.5);
+  }
+
+  .text-glow-accent {
+    text-shadow: 0 0 20px hsl(var(--accent) / 0.5);
+  }
+}
+
+/* Pulse glow animation for special elements */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px -5px hsl(var(--primary) / 0.6);
+  }
+}
+
+@keyframes neon-flicker {
+  0%, 100% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  93% {
+    opacity: 0.8;
+  }
+  94% {
+    opacity: 1;
+  }
+  96% {
+    opacity: 0.9;
+  }
+  97% {
+    opacity: 1;
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }

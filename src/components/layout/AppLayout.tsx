@@ -29,7 +29,7 @@ export function AppLayout() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full gradient-bg">
         <AppSidebar />
         <SidebarInset className="flex flex-col flex-1">
           <AppHeader />
