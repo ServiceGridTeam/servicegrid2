@@ -108,3 +108,30 @@ export function useUpdateBusiness() {
     },
   });
 }
+
+export function useSetupBusiness() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (businessData: { 
+      name: string; 
+      industry?: string; 
+      phone?: string; 
+      email?: string;
+    }) => {
+      const { data, error } = await supabase.rpc('setup_business_for_user', {
+        _name: businessData.name,
+        _industry: businessData.industry ?? null,
+        _phone: businessData.phone ?? null,
+        _email: businessData.email ?? null,
+      });
+
+      if (error) throw error;
+      return data as string;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["business"] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+    },
+  });
+}

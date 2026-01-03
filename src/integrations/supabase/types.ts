@@ -831,6 +831,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      setup_business_for_user: {
+        Args: {
+          _email?: string
+          _industry?: string
+          _name: string
+          _phone?: string
+        }
+        Returns: string
+      }
       user_belongs_to_business: {
         Args: { _business_id: string }
         Returns: boolean
