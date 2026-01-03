@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { useSetupBusiness } from "@/hooks/useBusiness";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +44,7 @@ export default function Onboarding() {
   const [businessEmail, setBusinessEmail] = useState("");
 
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
   const { data: profile } = useProfile();
@@ -92,6 +93,10 @@ export default function Onboarding() {
         phone: businessPhone || undefined,
         email: businessEmail || user?.email || undefined,
       });
+
+      // Wait for profile to refetch with is_onboarded = true before navigating
+      // This prevents AppLayout from redirecting back to /onboarding
+      await queryClient.refetchQueries({ queryKey: ["profile"] });
 
       toast({
         title: "Welcome to ServiceGrid!",
