@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
-import { useCreateBusiness } from "@/hooks/useBusiness";
+import { useSetupBusiness } from "@/hooks/useBusiness";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,7 +48,7 @@ export default function Onboarding() {
   const { user } = useAuth();
   const { data: profile } = useProfile();
   const updateProfile = useUpdateProfile();
-  const createBusiness = useCreateBusiness();
+  const setupBusiness = useSetupBusiness();
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,24 +85,12 @@ export default function Onboarding() {
     setIsLoading(true);
 
     try {
-      // Create the business
-      const business = await createBusiness.mutateAsync({
+      // Call atomic backend function - does all 3 operations in one transaction
+      await setupBusiness.mutateAsync({
         name: businessName,
         industry: industry || undefined,
         phone: businessPhone || undefined,
         email: businessEmail || user?.email || undefined,
-      });
-
-      // Link profile to business and mark as onboarded
-      await updateProfile.mutateAsync({
-        business_id: business.id,
-        is_onboarded: true,
-      });
-
-      // Add owner role
-      await supabase.from("user_roles").insert({
-        user_id: user!.id,
-        role: "owner",
       });
 
       toast({
