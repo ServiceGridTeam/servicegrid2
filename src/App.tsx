@@ -24,6 +24,8 @@ import InvoiceEdit from "./pages/InvoiceEdit";
 import CalendarPage from "./pages/Calendar";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import PublicQuote from "./pages/PublicQuote";
+import PublicInvoice from "./pages/PublicInvoice";
 
 const queryClient = new QueryClient();
 
@@ -35,9 +37,16 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Public routes (no auth required) */}
+            <Route path="/quote/:token" element={<PublicQuote />} />
+            <Route path="/invoice/:token" element={<PublicInvoice />} />
+            
+            {/* Auth routes */}
             <Route path="/auth" element={<Auth />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            
+            {/* Protected routes */}
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/customers" element={<Customers />} />
