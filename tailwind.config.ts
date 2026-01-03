@@ -20,7 +20,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
-        display: ["Cal Sans", "Inter", "system-ui", "sans-serif"],
+        display: ["Orbitron", "Inter", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -128,6 +128,10 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.7" },
         },
+        "pulse-glow": {
+          "0%, 100%": { boxShadow: "0 0 20px -5px hsl(var(--primary) / 0.4)" },
+          "50%": { boxShadow: "0 0 30px -5px hsl(var(--primary) / 0.6)" },
+        },
         shimmer: {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
@@ -143,12 +147,18 @@ export default {
         "slide-in-from-left": "slide-in-from-left 0.3s ease-out",
         "slide-in-from-right": "slide-in-from-right 0.3s ease-out",
         "pulse-subtle": "pulse-subtle 2s ease-in-out infinite",
+        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
         shimmer: "shimmer 2s linear infinite",
       },
       boxShadow: {
-        "glow-sm": "0 0 10px -3px hsl(var(--primary) / 0.3)",
-        "glow-md": "0 0 20px -5px hsl(var(--primary) / 0.3)",
-        "glow-lg": "0 0 30px -5px hsl(var(--primary) / 0.4)",
+        "glow-sm": "0 0 10px -3px hsl(var(--primary) / 0.4)",
+        "glow-md": "0 0 20px -5px hsl(var(--primary) / 0.5)",
+        "glow-lg": "0 0 30px -5px hsl(var(--primary) / 0.6)",
+        "glow-accent": "0 0 20px -5px hsl(var(--accent) / 0.5)",
+        "glow-cyan": "0 0 25px -5px hsl(180 100% 50% / 0.5)",
+        "glow-magenta": "0 0 25px -5px hsl(330 85% 60% / 0.5)",
+        "neon-border": "0 0 15px -3px hsl(var(--accent) / 0.4), inset 0 0 15px -3px hsl(var(--accent) / 0.1)",
+        "neon-border-primary": "0 0 15px -3px hsl(var(--primary) / 0.4), inset 0 0 15px -3px hsl(var(--primary) / 0.1)",
       },
     },
   },

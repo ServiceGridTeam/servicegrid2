@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Wrench } from "lucide-react";
+import { Loader2, Zap } from "lucide-react";
 import { z } from "zod";
 
 const emailSchema = z.string().email("Please enter a valid email address");
@@ -98,30 +98,46 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
-      <div className="w-full max-w-md space-y-6 animate-fade-in">
+    <div className="min-h-screen flex items-center justify-center gradient-bg p-4">
+      {/* Background glow effects */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+      </div>
+
+      <div className="w-full max-w-md space-y-6 animate-fade-in relative z-10">
         {/* Logo/Brand */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-primary text-primary-foreground mb-2">
-            <Wrench className="w-7 h-7" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-primary/20 text-primary mb-2 shadow-glow-lg animate-pulse-glow border border-primary/30">
+            <Zap className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">ServiceGrid</h1>
+          <h1 className="text-3xl font-bold tracking-tight font-display text-glow">ServiceGrid</h1>
           <p className="text-muted-foreground text-sm">
-            Field service management made simple
+            Field service management made <span className="text-accent">simple</span>
           </p>
         </div>
 
-        <Card className="border-border/50 shadow-lg">
+        <Card className="neon-border-primary">
           <CardHeader className="pb-4">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "signup")}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Log In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+                <TabsTrigger 
+                  value="login"
+                  className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-glow-sm"
+                >
+                  Log In
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="signup"
+                  className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-glow-sm"
+                >
+                  Sign Up
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="login" className="mt-4 space-y-4">
                 <div className="space-y-1">
-                  <CardTitle>Welcome back</CardTitle>
+                  <CardTitle className="font-display">Welcome back</CardTitle>
                   <CardDescription>
                     Enter your credentials to access your account
                   </CardDescription>
@@ -130,7 +146,7 @@ export default function Auth() {
 
               <TabsContent value="signup" className="mt-4 space-y-4">
                 <div className="space-y-1">
-                  <CardTitle>Create an account</CardTitle>
+                  <CardTitle className="font-display">Create an account</CardTitle>
                   <CardDescription>
                     Start managing your field service business today
                   </CardDescription>
@@ -150,7 +166,7 @@ export default function Auth() {
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className={errors.email ? "border-destructive" : ""}
+                    className={`bg-background/50 border-border/50 focus:border-primary/50 focus:shadow-glow-sm ${errors.email ? "border-destructive" : ""}`}
                     disabled={isLoading}
                   />
                   {errors.email && (
@@ -166,7 +182,7 @@ export default function Auth() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className={errors.password ? "border-destructive" : ""}
+                    className={`bg-background/50 border-border/50 focus:border-primary/50 focus:shadow-glow-sm ${errors.password ? "border-destructive" : ""}`}
                     disabled={isLoading}
                   />
                   {errors.password && (
@@ -190,6 +206,7 @@ export default function Auth() {
                       placeholder="John"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
+                      className="bg-background/50 border-border/50 focus:border-primary/50 focus:shadow-glow-sm"
                       disabled={isLoading}
                     />
                   </div>
@@ -201,6 +218,7 @@ export default function Auth() {
                       placeholder="Doe"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
+                      className="bg-background/50 border-border/50 focus:border-primary/50 focus:shadow-glow-sm"
                       disabled={isLoading}
                     />
                   </div>
@@ -214,7 +232,7 @@ export default function Auth() {
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className={errors.email ? "border-destructive" : ""}
+                    className={`bg-background/50 border-border/50 focus:border-primary/50 focus:shadow-glow-sm ${errors.email ? "border-destructive" : ""}`}
                     disabled={isLoading}
                   />
                   {errors.email && (
@@ -230,7 +248,7 @@ export default function Auth() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className={errors.password ? "border-destructive" : ""}
+                    className={`bg-background/50 border-border/50 focus:border-primary/50 focus:shadow-glow-sm ${errors.password ? "border-destructive" : ""}`}
                     disabled={isLoading}
                   />
                   {errors.password && (
@@ -249,11 +267,11 @@ export default function Auth() {
 
         <p className="text-center text-sm text-muted-foreground">
           By continuing, you agree to our{" "}
-          <Link to="/terms" className="underline underline-offset-4 hover:text-foreground">
+          <Link to="/terms" className="text-primary hover:text-primary/80 underline-offset-4 hover:underline">
             Terms of Service
           </Link>{" "}
           and{" "}
-          <Link to="/privacy" className="underline underline-offset-4 hover:text-foreground">
+          <Link to="/privacy" className="text-primary hover:text-primary/80 underline-offset-4 hover:underline">
             Privacy Policy
           </Link>
         </p>
