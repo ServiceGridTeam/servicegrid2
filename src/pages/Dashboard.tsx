@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
-// Stats card component with neon glow
+// Stats card component
 function StatCard({
   title,
   value,
@@ -39,15 +39,15 @@ function StatCard({
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:shadow-glow-sm transition-all">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground group-hover:bg-foreground group-hover:text-background transition-all">
           <Icon className="h-4 w-4" />
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold font-display text-glow">{value}</div>
+        <div className="text-2xl font-bold">{value}</div>
         <div className="flex items-center gap-1 text-xs mt-1">
           {trend && (
-            <span className={trendUp ? "text-success" : "text-destructive"}>
+            <span className={trendUp ? "text-foreground" : "text-muted-foreground"}>
               {trend}
             </span>
           )}
@@ -58,7 +58,7 @@ function StatCard({
   );
 }
 
-// Quick action button component with hover glow
+// Quick action button component
 function QuickAction({
   title,
   description,
@@ -72,16 +72,16 @@ function QuickAction({
 }) {
   return (
     <Link to={href}>
-      <Card className="group cursor-pointer hover:border-accent/50">
+      <Card className="group cursor-pointer hover:border-foreground/20">
         <CardContent className="flex items-center gap-4 p-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent group-hover:bg-accent group-hover:text-accent-foreground group-hover:shadow-glow-accent transition-all duration-300">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground group-hover:bg-foreground group-hover:text-background transition-all duration-200">
             <Icon className="h-5 w-5" />
           </div>
           <div className="flex-1">
-            <div className="font-medium font-display">{title}</div>
+            <div className="font-medium">{title}</div>
             <div className="text-sm text-muted-foreground">{description}</div>
           </div>
-          <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-accent group-hover:translate-x-1 transition-all" />
+          <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-1 transition-all" />
         </CardContent>
       </Card>
     </Link>
@@ -101,8 +101,8 @@ function ActivityItem({
   icon: React.ElementType;
 }) {
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-border/50 last:border-0">
-      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted/50 border border-border/50">
+    <div className="flex items-start gap-3 py-3 border-b border-border last:border-0">
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted border border-border">
         <Icon className="h-4 w-4 text-muted-foreground" />
       </div>
       <div className="flex-1 min-w-0">
@@ -146,12 +146,12 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight font-display text-glow">
+          <h1 className="text-2xl font-bold tracking-tight">
             {greeting()}, {profile?.first_name || "there"}!
           </h1>
           <p className="text-muted-foreground">
             Here's what's happening with{" "}
-            <span className="text-accent">{business?.name || "your business"}</span> today.
+            <span className="text-foreground font-medium">{business?.name || "your business"}</span> today.
           </p>
         </div>
         <div className="flex gap-2">
@@ -204,7 +204,7 @@ export default function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-accent" />
+              <Zap className="h-5 w-5 text-muted-foreground" />
               Quick Actions
             </CardTitle>
             <CardDescription>Common tasks to get things done</CardDescription>
@@ -245,10 +245,10 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col items-center justify-center py-8 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/30 border border-border/50 mb-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted border border-border mb-3">
                 <Clock className="h-6 w-6 text-muted-foreground" />
               </div>
-              <p className="font-medium font-display">No activity yet</p>
+              <p className="font-medium">No activity yet</p>
               <p className="text-sm text-muted-foreground">
                 Your recent activity will appear here
               </p>
@@ -276,10 +276,10 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10 border border-success/30 mb-3 shadow-[0_0_15px_-5px_hsl(var(--success)/0.4)]">
-              <CheckCircle className="h-6 w-6 text-success" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted border border-border mb-3">
+              <CheckCircle className="h-6 w-6 text-muted-foreground" />
             </div>
-            <p className="font-medium font-display">No jobs scheduled today</p>
+            <p className="font-medium">No jobs scheduled today</p>
             <p className="text-sm text-muted-foreground mb-4">
               Schedule your first job to see it here
             </p>
