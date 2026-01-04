@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.process-overdue-reminders]
 verify_jwt = false
+
+[functions.send-team-invite-email]
+verify_jwt = true

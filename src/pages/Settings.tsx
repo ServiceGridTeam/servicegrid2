@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Building2, Bell, CreditCard, CheckCircle, AlertCircle, ExternalLink } from "lucide-react";
+import { Loader2, User, Building2, Bell, CreditCard, CheckCircle, AlertCircle, ExternalLink, Users } from "lucide-react";
+import { TeamManagement } from "@/components/settings/TeamManagement";
 
 export default function Settings() {
   const { data: profile, isLoading: profileLoading } = useProfile();
@@ -119,6 +120,10 @@ export default function Settings() {
             <User className="h-4 w-4" />
             Profile
           </TabsTrigger>
+          <TabsTrigger value="team" className="gap-2">
+            <Users className="h-4 w-4" />
+            Team
+          </TabsTrigger>
           <TabsTrigger value="business" className="gap-2">
             <Building2 className="h-4 w-4" />
             Business
@@ -210,6 +215,10 @@ export default function Settings() {
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="team">
+          <TeamManagement />
         </TabsContent>
 
         <TabsContent value="business" className="space-y-6">
