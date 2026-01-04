@@ -90,6 +90,7 @@ export function useUpdateBusiness() {
       zip?: string;
       timezone?: string;
       logo_url?: string;
+      settings?: Json;
     }) => {
       if (!profile?.business_id) throw new Error("No business associated");
 

@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -13,6 +12,9 @@ import {
 } from "@/components/ui/select";
 import { useTimeEntriesForDateRange, TimeEntryWithDetails } from "@/hooks/useTimeEntries";
 import { useTeamMembers } from "@/hooks/useTeamManagement";
+import { useOvertimeSettings } from "@/hooks/useOvertimeSettings";
+import { calculateWeeklyOvertime, formatMinutesToHoursDecimal } from "@/hooks/useOvertimeCalculations";
+import { OvertimeBadge } from "./OvertimeBadge";
 import { ChevronLeft, ChevronRight, Download, Clock } from "lucide-react";
 import {
   format,
@@ -23,15 +25,12 @@ import {
   eachDayOfInterval,
   isSameDay,
 } from "date-fns";
+import { cn } from "@/lib/utils";
 
 function getInitials(firstName: string | null, lastName: string | null): string {
   const first = firstName?.[0] || "";
   const last = lastName?.[0] || "";
   return (first + last).toUpperCase() || "?";
-}
-
-function formatMinutesToDecimal(minutes: number): string {
-  return (minutes / 60).toFixed(1);
 }
 
 export function TimesheetView() {
@@ -47,8 +46,9 @@ export function TimesheetView() {
     selectedMemberId === "all" ? undefined : selectedMemberId
   );
   const { data: members, isLoading: membersLoading } = useTeamMembers();
+  const { settings: overtimeSettings } = useOvertimeSettings();
 
-  // Group entries by user and day
+  // Group entries by user and day with overtime calculations
   const timesheetData = useMemo(() => {
     if (!entries || !members) return [];
     
@@ -71,19 +71,28 @@ export function TimesheetView() {
       
       const totalMinutes = dailyMinutes.reduce((sum, m) => sum + m, 0);
       
+      // Calculate overtime
+      const overtimeResult = calculateWeeklyOvertime(
+        totalMinutes,
+        overtimeSettings.weekly_threshold_hours,
+        overtimeSettings.alert_threshold_percent
+      );
+      
       return {
         member,
         dailyMinutes,
         totalMinutes,
+        overtimeResult,
         entries: memberEntries,
       };
     }).filter(Boolean) as {
       member: { id: string; first_name: string | null; last_name: string | null; email: string; avatar_url: string | null; role: string };
       dailyMinutes: number[];
       totalMinutes: number;
+      overtimeResult: ReturnType<typeof calculateWeeklyOvertime>;
       entries: TimeEntryWithDetails[];
     }[];
-  }, [entries, members, selectedMemberId, weekDays]);
+  }, [entries, members, selectedMemberId, weekDays, overtimeSettings]);
 
   const navigateWeek = (direction: "prev" | "next") => {
     setWeekStart((current) => 
@@ -94,12 +103,14 @@ export function TimesheetView() {
   const exportCSV = () => {
     if (!timesheetData.length) return;
     
-    const headers = ["Name", "Email", ...weekDays.map((d) => format(d, "EEE MM/dd")), "Total"];
+    const headers = ["Name", "Email", ...weekDays.map((d) => format(d, "EEE MM/dd")), "Regular", "Overtime", "Total"];
     const rows = timesheetData.map((row) => [
       `${row.member.first_name} ${row.member.last_name}`,
       row.member.email,
-      ...row.dailyMinutes.map((m) => formatMinutesToDecimal(m)),
-      formatMinutesToDecimal(row.totalMinutes),
+      ...row.dailyMinutes.map((m) => formatMinutesToHoursDecimal(m)),
+      formatMinutesToHoursDecimal(row.overtimeResult.regularMinutes),
+      formatMinutesToHoursDecimal(row.overtimeResult.overtimeMinutes),
+      formatMinutesToHoursDecimal(row.totalMinutes),
     ]);
     
     const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
@@ -113,6 +124,9 @@ export function TimesheetView() {
   };
 
   const isLoading = entriesLoading || membersLoading;
+
+  // Calculate totals for footer
+  const totalOvertimeMinutes = timesheetData.reduce((sum, row) => sum + row.overtimeResult.overtimeMinutes, 0);
 
   return (
     <div className="space-y-6">
@@ -163,6 +177,11 @@ export function TimesheetView() {
           </CardTitle>
           <CardDescription>
             Hours worked by team members this week
+            {overtimeSettings.enabled && totalOvertimeMinutes > 0 && (
+              <span className="text-destructive ml-2">
+                ({formatMinutesToHoursDecimal(totalOvertimeMinutes)}h total overtime)
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -189,47 +208,83 @@ export function TimesheetView() {
                         <div className="text-xs">{format(day, "M/d")}</div>
                       </th>
                     ))}
+                    {overtimeSettings.enabled && (
+                      <>
+                        <th className="text-center py-3 px-2 font-medium text-muted-foreground min-w-[70px]">
+                          Regular
+                        </th>
+                        <th className="text-center py-3 px-2 font-medium text-muted-foreground min-w-[70px]">
+                          OT
+                        </th>
+                      </>
+                    )}
                     <th className="text-center py-3 px-4 font-medium">Total</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {timesheetData.map((row) => (
-                    <tr key={row.member.id} className="border-b hover:bg-muted/50">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={row.member.avatar_url || undefined} />
-                            <AvatarFallback className="text-xs">
-                              {getInitials(row.member.first_name, row.member.last_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium text-sm">
-                              {row.member.first_name} {row.member.last_name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {row.member.role}
-                            </p>
+                  {timesheetData.map((row) => {
+                    const rowClass = cn(
+                      "border-b transition-colors",
+                      overtimeSettings.enabled && row.overtimeResult.isOvertime && "bg-destructive/5",
+                      overtimeSettings.enabled && row.overtimeResult.isApproaching && !row.overtimeResult.isOvertime && "bg-yellow-500/5"
+                    );
+                    
+                    return (
+                      <tr key={row.member.id} className={rowClass}>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={row.member.avatar_url || undefined} />
+                              <AvatarFallback className="text-xs">
+                                {getInitials(row.member.first_name, row.member.last_name)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium text-sm">
+                                {row.member.first_name} {row.member.last_name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {row.member.role}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      {row.dailyMinutes.map((minutes, i) => (
-                        <td
-                          key={i}
-                          className={`text-center py-3 px-2 ${
-                            minutes > 0 ? "font-medium" : "text-muted-foreground"
-                          }`}
-                        >
-                          {minutes > 0 ? formatMinutesToDecimal(minutes) : "-"}
                         </td>
-                      ))}
-                      <td className="text-center py-3 px-4">
-                        <Badge variant="secondary" className="font-mono">
-                          {formatMinutesToDecimal(row.totalMinutes)} hrs
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
+                        {row.dailyMinutes.map((minutes, i) => (
+                          <td
+                            key={i}
+                            className={`text-center py-3 px-2 ${
+                              minutes > 0 ? "font-medium" : "text-muted-foreground"
+                            }`}
+                          >
+                            {minutes > 0 ? formatMinutesToHoursDecimal(minutes) : "-"}
+                          </td>
+                        ))}
+                        {overtimeSettings.enabled && (
+                          <>
+                            <td className="text-center py-3 px-2 font-medium">
+                              {formatMinutesToHoursDecimal(row.overtimeResult.regularMinutes)}
+                            </td>
+                            <td className="text-center py-3 px-2">
+                              {row.overtimeResult.overtimeMinutes > 0 ? (
+                                <span className="font-medium text-destructive">
+                                  {formatMinutesToHoursDecimal(row.overtimeResult.overtimeMinutes)}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </td>
+                          </>
+                        )}
+                        <td className="text-center py-3 px-4">
+                          <OvertimeBadge
+                            result={row.overtimeResult}
+                            thresholdHours={overtimeSettings.weekly_threshold_hours}
+                            showDetails
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
                 <tfoot>
                   <tr className="bg-muted/50">
@@ -241,16 +296,28 @@ export function TimesheetView() {
                       );
                       return (
                         <td key={i} className="text-center py-3 px-2 font-medium">
-                          {total > 0 ? formatMinutesToDecimal(total) : "-"}
+                          {total > 0 ? formatMinutesToHoursDecimal(total) : "-"}
                         </td>
                       );
                     })}
-                    <td className="text-center py-3 px-4">
-                      <Badge className="font-mono">
-                        {formatMinutesToDecimal(
-                          timesheetData.reduce((sum, row) => sum + row.totalMinutes, 0)
-                        )} hrs
-                      </Badge>
+                    {overtimeSettings.enabled && (
+                      <>
+                        <td className="text-center py-3 px-2 font-medium">
+                          {formatMinutesToHoursDecimal(
+                            timesheetData.reduce((sum, row) => sum + row.overtimeResult.regularMinutes, 0)
+                          )}
+                        </td>
+                        <td className="text-center py-3 px-2 font-medium text-destructive">
+                          {totalOvertimeMinutes > 0
+                            ? formatMinutesToHoursDecimal(totalOvertimeMinutes)
+                            : "-"}
+                        </td>
+                      </>
+                    )}
+                    <td className="text-center py-3 px-4 font-bold">
+                      {formatMinutesToHoursDecimal(
+                        timesheetData.reduce((sum, row) => sum + row.totalMinutes, 0)
+                      )} hrs
                     </td>
                   </tr>
                 </tfoot>
