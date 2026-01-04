@@ -1,5 +1,7 @@
 import { useProfile } from "@/hooks/useProfile";
 import { useBusiness } from "@/hooks/useBusiness";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useRecentActivity } from "@/hooks/useRecentActivity";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,8 +16,14 @@ import {
   Plus,
   ArrowRight,
   Zap,
+  TrendingUp,
+  TrendingDown,
+  Send,
+  UserPlus,
+  CreditCard,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { format } from "date-fns";
 
 // Stats card component
 function StatCard({
@@ -47,7 +55,9 @@ function StatCard({
         <div className="text-2xl font-bold">{value}</div>
         <div className="flex items-center gap-1 text-xs mt-1">
           {trend && (
-            <span className={trendUp ? "text-foreground" : "text-muted-foreground"}>
+            <span className={`flex items-center gap-0.5 ${trendUp ? "text-green-600 dark:text-green-400" : trendUp === false ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>
+              {trendUp === true && <TrendingUp className="h-3 w-3" />}
+              {trendUp === false && <TrendingDown className="h-3 w-3" />}
               {trend}
             </span>
           )}
@@ -88,6 +98,26 @@ function QuickAction({
   );
 }
 
+// Activity icon mapping
+function getActivityIcon(type: string) {
+  switch (type) {
+    case "job_created":
+    case "job_completed":
+      return Briefcase;
+    case "quote_sent":
+    case "quote_approved":
+      return FileText;
+    case "invoice_paid":
+      return Receipt;
+    case "customer_added":
+      return UserPlus;
+    case "payment_received":
+      return CreditCard;
+    default:
+      return Clock;
+  }
+}
+
 // Recent activity item
 function ActivityItem({
   title,
@@ -114,9 +144,52 @@ function ActivityItem({
   );
 }
 
+// Today's job item
+function TodayJobItem({
+  job,
+}: {
+  job: {
+    id: string;
+    title: string;
+    scheduled_start: string | null;
+    status: string | null;
+    customer: { first_name: string; last_name: string } | null;
+    assignee: { first_name: string | null; last_name: string | null } | null;
+  };
+}) {
+  const startTime = job.scheduled_start ? format(new Date(job.scheduled_start), "h:mm a") : "TBD";
+  const customerName = job.customer ? `${job.customer.first_name} ${job.customer.last_name}` : "No customer";
+  const assigneeName = job.assignee?.first_name ? `${job.assignee.first_name} ${job.assignee.last_name || ""}`.trim() : "Unassigned";
+  const isCompleted = job.status === "completed";
+
+  return (
+    <Link to={`/jobs`} className="block">
+      <div className={`flex items-center gap-4 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors ${isCompleted ? "opacity-60" : ""}`}>
+        <div className="flex flex-col items-center justify-center min-w-[60px] text-center">
+          <span className="text-sm font-medium">{startTime}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-medium truncate">{job.title}</span>
+            {isCompleted && (
+              <span className="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded">Done</span>
+            )}
+          </div>
+          <div className="text-sm text-muted-foreground truncate">
+            {customerName} • {assigneeName}
+          </div>
+        </div>
+        <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+      </div>
+    </Link>
+  );
+}
+
 export default function Dashboard() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: business, isLoading: businessLoading } = useBusiness();
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: activities, isLoading: activitiesLoading } = useRecentActivity(8);
 
   const greeting = () => {
     const hour = new Date().getHours();
@@ -125,7 +198,9 @@ export default function Dashboard() {
     return "Good evening";
   };
 
-  if (profileLoading || businessLoading) {
+  const isLoading = profileLoading || businessLoading;
+
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="space-y-1">
@@ -140,6 +215,28 @@ export default function Dashboard() {
       </div>
     );
   }
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  // Stats values
+  const totalCustomers = stats?.totalCustomers ?? 0;
+  const newCustomersThisMonth = stats?.newCustomersThisMonth ?? 0;
+  const todaysJobs = stats?.todaysJobs ?? [];
+  const todaysJobsCompleted = stats?.todaysJobsCompleted ?? 0;
+  const pendingQuotes = stats?.pendingQuotes ?? 0;
+  const pendingQuotesValue = stats?.pendingQuotesValue ?? 0;
+  const outstandingInvoices = stats?.outstandingInvoices ?? 0;
+  const outstandingAmount = stats?.outstandingAmount ?? 0;
+  const revenueThisMonth = stats?.revenueThisMonth ?? 0;
+  const revenueTrend = stats?.revenueTrend ?? 0;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -171,31 +268,45 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Customers"
-          value="0"
-          description="Start adding customers"
-          icon={Users}
-        />
-        <StatCard
-          title="Active Jobs"
-          value="0"
-          description="No jobs scheduled"
-          icon={Briefcase}
-        />
-        <StatCard
-          title="Pending Quotes"
-          value="0"
-          description="Send quotes to get started"
-          icon={FileText}
-        />
-        <StatCard
-          title="Revenue This Month"
-          value="$0"
-          description="Track your earnings"
-          icon={DollarSign}
-        />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        {statsLoading ? (
+          [...Array(5)].map((_, i) => <Skeleton key={i} className="h-32" />)
+        ) : (
+          <>
+            <StatCard
+              title="Total Customers"
+              value={totalCustomers.toString()}
+              description={newCustomersThisMonth > 0 ? `${newCustomersThisMonth} new this month` : "Start adding customers"}
+              icon={Users}
+            />
+            <StatCard
+              title="Today's Jobs"
+              value={todaysJobs.length.toString()}
+              description={todaysJobs.length > 0 ? `${todaysJobsCompleted} completed, ${todaysJobs.length - todaysJobsCompleted} remaining` : "No jobs scheduled"}
+              icon={Briefcase}
+            />
+            <StatCard
+              title="Pending Quotes"
+              value={pendingQuotes.toString()}
+              description={pendingQuotes > 0 ? `${formatCurrency(pendingQuotesValue)} total value` : "Send quotes to get started"}
+              icon={FileText}
+            />
+            <StatCard
+              title="Outstanding Invoices"
+              value={outstandingInvoices.toString()}
+              description={outstandingInvoices > 0 ? `${formatCurrency(outstandingAmount)} balance due` : "All invoices paid"}
+              icon={Receipt}
+            />
+            <StatCard
+              title="Revenue This Month"
+              value={formatCurrency(revenueThisMonth)}
+              description="vs last month"
+              trend={revenueTrend !== 0 ? `${revenueTrend > 0 ? "+" : ""}${revenueTrend}%` : undefined}
+              trendUp={revenueTrend > 0 ? true : revenueTrend < 0 ? false : undefined}
+              icon={DollarSign}
+            />
+          </>
+        )}
       </div>
 
       {/* Two Column Layout */}
@@ -244,15 +355,35 @@ export default function Dashboard() {
             <CardDescription>What's been happening lately</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted border border-border mb-3">
-                <Clock className="h-6 w-6 text-muted-foreground" />
+            {activitiesLoading ? (
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => (
+                  <Skeleton key={i} className="h-14" />
+                ))}
               </div>
-              <p className="font-medium">No activity yet</p>
-              <p className="text-sm text-muted-foreground">
-                Your recent activity will appear here
-              </p>
-            </div>
+            ) : activities && activities.length > 0 ? (
+              <div>
+                {activities.map((activity) => (
+                  <ActivityItem
+                    key={activity.id}
+                    title={activity.title}
+                    description={activity.description}
+                    time={activity.relativeTime}
+                    icon={getActivityIcon(activity.type)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted border border-border mb-3">
+                  <Clock className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <p className="font-medium">No activity yet</p>
+                <p className="text-sm text-muted-foreground">
+                  Your recent activity will appear here
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -275,21 +406,35 @@ export default function Dashboard() {
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted border border-border mb-3">
-              <CheckCircle className="h-6 w-6 text-muted-foreground" />
+          {statsLoading ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-16" />
+              ))}
             </div>
-            <p className="font-medium">No jobs scheduled today</p>
-            <p className="text-sm text-muted-foreground mb-4">
-              Schedule your first job to see it here
-            </p>
-            <Button variant="outline" asChild>
-              <Link to="/jobs/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Schedule a Job
-              </Link>
-            </Button>
-          </div>
+          ) : todaysJobs.length > 0 ? (
+            <div className="space-y-2">
+              {todaysJobs.map((job) => (
+                <TodayJobItem key={job.id} job={job} />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted border border-border mb-3">
+                <CheckCircle className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <p className="font-medium">No jobs scheduled today</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Schedule your first job to see it here
+              </p>
+              <Button variant="outline" asChild>
+                <Link to="/jobs/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Schedule a Job
+                </Link>
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
