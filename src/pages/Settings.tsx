@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { useBusiness, useUpdateBusiness } from "@/hooks/useBusiness";
+import { useStripeConnectStatus, useStripeConnectOnboard } from "@/hooks/useStripeConnect";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,14 +9,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Building2, Bell, Shield } from "lucide-react";
+import { Loader2, User, Building2, Bell, CreditCard, CheckCircle, AlertCircle, ExternalLink } from "lucide-react";
 
 export default function Settings() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: business, isLoading: businessLoading } = useBusiness();
+  const { data: stripeStatus, isLoading: stripeLoading, refetch: refetchStripe } = useStripeConnectStatus();
   const updateProfile = useUpdateProfile();
   const updateBusiness = useUpdateBusiness();
+  const stripeOnboard = useStripeConnectOnboard();
   const { signOut } = useAuth();
   const { toast } = useToast();
 
@@ -86,6 +90,19 @@ export default function Settings() {
       });
     }
   };
+  const handleStripeConnect = async () => {
+    try {
+      const return_url = `${window.location.origin}/stripe/return`;
+      const result = await stripeOnboard.mutateAsync({ return_url });
+      window.location.href = result.url;
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to start Stripe setup",
+        description: error.message,
+      });
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -105,6 +122,10 @@ export default function Settings() {
           <TabsTrigger value="business" className="gap-2">
             <Building2 className="h-4 w-4" />
             Business
+          </TabsTrigger>
+          <TabsTrigger value="payments" className="gap-2">
+            <CreditCard className="h-4 w-4" />
+            Payments
           </TabsTrigger>
           <TabsTrigger value="notifications" className="gap-2">
             <Bell className="h-4 w-4" />
@@ -301,6 +322,106 @@ export default function Settings() {
                 )}
                 Save Changes
               </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="payments" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Payment Processing</CardTitle>
+              <CardDescription>
+                Connect with Stripe to accept online payments on invoices
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {stripeLoading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-muted-foreground">Loading payment status...</span>
+                </div>
+              ) : stripeStatus?.onboarding_complete ? (
+                <div className="space-y-4">
+                  <Alert className="border-green-500/50 bg-green-50 dark:bg-green-950/20">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-700 dark:text-green-400">
+                      Stripe is connected and ready to accept payments!
+                    </AlertDescription>
+                  </Alert>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Payment Status</p>
+                      <p className="text-sm text-muted-foreground">
+                        {stripeStatus.charges_enabled ? "Accepting payments" : "Payments restricted"}
+                      </p>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Payout Status</p>
+                      <p className="text-sm text-muted-foreground">
+                        {stripeStatus.payouts_enabled ? "Payouts enabled" : "Payouts pending"}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={handleStripeConnect}
+                    disabled={stripeOnboard.isPending}
+                  >
+                    {stripeOnboard.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Open Stripe Dashboard
+                  </Button>
+                </div>
+              ) : stripeStatus?.status === "restricted" || stripeStatus?.status === "pending" ? (
+                <div className="space-y-4">
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Your Stripe account setup is incomplete. Please finish the verification process.
+                    </AlertDescription>
+                  </Alert>
+                  <Button
+                    onClick={handleStripeConnect}
+                    disabled={stripeOnboard.isPending}
+                  >
+                    {stripeOnboard.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Complete Stripe Setup
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Connect your Stripe account to start accepting credit card payments directly on your invoices.
+                    Customers will be able to pay securely with Stripe Checkout.
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Accept all major credit cards
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Secure payment processing
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Automatic invoice status updates
+                    </li>
+                  </ul>
+                  <Button
+                    onClick={handleStripeConnect}
+                    disabled={stripeOnboard.isPending}
+                    className="gap-2"
+                  >
+                    {stripeOnboard.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CreditCard className="h-4 w-4" />
+                    )}
+                    Connect with Stripe
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
