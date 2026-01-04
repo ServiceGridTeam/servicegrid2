@@ -12,16 +12,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, Building2, Calendar, FileText, CreditCard, Check, AlertTriangle } from "lucide-react";
+import { Download, Building2, Calendar, FileText, CreditCard, Check, AlertTriangle, Loader2 } from "lucide-react";
 import { useInvoiceByToken } from "@/hooks/usePublicInvoice";
 import { InvoicePDF } from "@/components/invoices/InvoicePDF";
+import { supabase } from "@/integrations/supabase/client";
 import { format, isPast } from "date-fns";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function PublicInvoice() {
   const { token } = useParams<{ token: string }>();
   const { data: invoice, isLoading, error } = useInvoiceByToken(token);
   const [pdfOpen, setPdfOpen] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const { toast } = useToast();
 
   if (isLoading) {
     return (
@@ -55,6 +59,39 @@ export default function PublicInvoice() {
   const customer = invoice.customer;
   const isPaid = invoice.status === "paid";
   const isOverdue = invoice.due_date && isPast(new Date(invoice.due_date)) && !isPaid;
+  const canAcceptPayment = business?.stripe_account_id && business?.stripe_onboarding_complete;
+
+  const handlePayNow = async () => {
+    if (!token || !canAcceptPayment) return;
+    
+    setIsProcessingPayment(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-create-checkout", {
+        body: {
+          invoice_token: token,
+          success_url: `${window.location.origin}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${window.location.origin}/invoice/${token}`,
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("Failed to create checkout session");
+      }
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Payment Error",
+        description: err.message || "Failed to initiate payment",
+      });
+      setIsProcessingPayment(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-muted/30 py-8 px-4">
@@ -257,17 +294,40 @@ export default function PublicInvoice() {
           </Card>
         )}
 
-        {/* Pay Now Button (placeholder for Stripe) */}
+        {/* Pay Now Button */}
         {!isPaid && Number(invoice.balance_due) > 0 && (
           <Card>
             <CardContent className="pt-6">
-              <Button className="w-full" size="lg" disabled>
-                <CreditCard className="mr-2 h-5 w-5" />
-                Pay ${Number(invoice.balance_due).toFixed(2)} Now
-              </Button>
-              <p className="text-xs text-center text-muted-foreground mt-3">
-                Online payment coming soon. Please contact us for payment options.
-              </p>
+              {canAcceptPayment ? (
+                <Button 
+                  className="w-full" 
+                  size="lg" 
+                  onClick={handlePayNow}
+                  disabled={isProcessingPayment}
+                >
+                  {isProcessingPayment ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Redirecting to Payment...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="mr-2 h-5 w-5" />
+                      Pay ${Number(invoice.balance_due).toFixed(2)} Now
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <>
+                  <Button className="w-full" size="lg" disabled>
+                    <CreditCard className="mr-2 h-5 w-5" />
+                    Pay ${Number(invoice.balance_due).toFixed(2)} Now
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground mt-3">
+                    Online payment is not available. Please contact us for payment options.
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
         )}

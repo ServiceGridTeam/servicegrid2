@@ -4,7 +4,7 @@ import type { Tables } from "@/integrations/supabase/types";
 
 export type PublicInvoiceData = Tables<"invoices"> & {
   customer: Pick<Tables<"customers">, "first_name" | "last_name" | "email" | "phone"> | null;
-  business: Pick<Tables<"businesses">, "id" | "name" | "phone" | "email" | "logo_url" | "address_line1" | "city" | "state" | "zip"> | null;
+  business: Pick<Tables<"businesses">, "id" | "name" | "phone" | "email" | "logo_url" | "address_line1" | "city" | "state" | "zip" | "stripe_account_id" | "stripe_onboarding_complete"> | null;
   invoice_items: Tables<"invoice_items">[];
 };
 
@@ -20,7 +20,7 @@ export function useInvoiceByToken(token: string | undefined) {
         .select(`
           *,
           customer:customers(first_name, last_name, email, phone),
-          business:businesses(id, name, phone, email, logo_url, address_line1, city, state, zip)
+          business:businesses(id, name, phone, email, logo_url, address_line1, city, state, zip, stripe_account_id, stripe_onboarding_complete)
         `)
         .eq("public_token", token)
         .maybeSingle();
