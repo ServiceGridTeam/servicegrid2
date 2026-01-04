@@ -11,7 +11,10 @@ import { Separator } from "@/components/ui/separator";
 import { JobStatusBadge } from "./JobStatusBadge";
 import { JobPriorityBadge } from "./JobPriorityBadge";
 import { DeleteJobDialog } from "./DeleteJobDialog";
+import { ClockInOutButton } from "./ClockInOutButton";
+import { TimeEntriesTable } from "@/components/team/TimeEntriesTable";
 import { useUpdateJob, type JobWithCustomer } from "@/hooks/useJobs";
+import { useBusiness } from "@/hooks/useBusiness";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import {
@@ -27,6 +30,7 @@ import {
   Trash2,
   FileText,
   Receipt,
+  Timer,
 } from "lucide-react";
 
 interface JobDetailSheetProps {
@@ -40,7 +44,9 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
   const { toast } = useToast();
   const navigate = useNavigate();
   const updateJob = useUpdateJob();
+  const { data: business } = useBusiness();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [showTimeEntries, setShowTimeEntries] = useState(false);
 
   if (!job) return null;
 
@@ -202,34 +208,58 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
             )}
 
             {/* Time Tracking */}
-            {(job.actual_start || job.actual_end) && (
-              <>
-                <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-3">
-                    Time Tracking
-                  </h3>
-                  <div className="space-y-2 text-sm">
-                    {job.actual_start && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Started</span>
-                        <span>
-                          {format(new Date(job.actual_start), "MMM d, h:mm a")}
-                        </span>
-                      </div>
-                    )}
-                    {job.actual_end && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Ended</span>
-                        <span>
-                          {format(new Date(job.actual_end), "MMM d, h:mm a")}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                  <Timer className="h-4 w-4" />
+                  Time Tracking
+                </h3>
+                {business && (job.status === "scheduled" || job.status === "in_progress") && (
+                  <ClockInOutButton
+                    jobId={job.id}
+                    businessId={business.id}
+                    variant="compact"
+                  />
+                )}
+              </div>
+              
+              {(job.actual_start || job.actual_end) && (
+                <div className="space-y-2 text-sm mb-4">
+                  {job.actual_start && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Job Started</span>
+                      <span>
+                        {format(new Date(job.actual_start), "MMM d, h:mm a")}
+                      </span>
+                    </div>
+                  )}
+                  {job.actual_end && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Job Ended</span>
+                      <span>
+                        {format(new Date(job.actual_end), "MMM d, h:mm a")}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <Separator />
-              </>
-            )}
+              )}
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-muted-foreground"
+                onClick={() => setShowTimeEntries(!showTimeEntries)}
+              >
+                {showTimeEntries ? "Hide" : "Show"} Time Entries
+              </Button>
+              
+              {showTimeEntries && (
+                <div className="mt-4">
+                  <TimeEntriesTable jobId={job.id} />
+                </div>
+              )}
+            </div>
+            <Separator />
 
             {/* Notes */}
             {(job.notes || job.internal_notes) && (
