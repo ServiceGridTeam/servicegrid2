@@ -205,20 +205,34 @@ export function useDeleteQuote() {
   });
 }
 
+export interface SendQuoteResult {
+  success: boolean;
+  email_sent: boolean;
+  reason?: string;
+  email_id?: string;
+}
+
 export function useSendQuote() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { data, error } = await supabase
-        .from("quotes")
-        .update({ status: "sent", sent_at: new Date().toISOString() })
-        .eq("id", id)
-        .select()
-        .single();
+    mutationFn: async (id: string): Promise<SendQuoteResult> => {
+      const { data, error } = await supabase.functions.invoke('send-quote-email', {
+        body: { quote_id: id },
+      });
 
-      if (error) throw error;
-      return data;
+      if (error) {
+        // Fallback: just update the status locally if edge function fails
+        console.error('Email send failed, marking as sent:', error);
+        await supabase
+          .from("quotes")
+          .update({ status: "sent", sent_at: new Date().toISOString() })
+          .eq("id", id);
+        
+        return { success: true, email_sent: false, reason: error.message };
+      }
+
+      return data as SendQuoteResult;
     },
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ["quotes"] });

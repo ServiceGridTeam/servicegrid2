@@ -2,3 +2,12 @@ project_id = "wzglfwcftigofbuojeci"
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.send-quote-email]
+verify_jwt = true
+
+[functions.send-invoice-email]
+verify_jwt = true
+
+[functions.send-reminder-email]
+verify_jwt = true

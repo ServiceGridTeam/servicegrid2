@@ -20,7 +20,7 @@ import {
   RecordPaymentDialog,
   InvoicePDF,
 } from "@/components/invoices";
-import { useInvoice, useUpdateInvoice } from "@/hooks/useInvoices";
+import { useInvoice, useUpdateInvoice, useSendReminder } from "@/hooks/useInvoices";
 import { useBusiness } from "@/hooks/useBusiness";
 import { useToast } from "@/hooks/use-toast";
 import { format, isBefore, startOfDay } from "date-fns";
@@ -33,6 +33,7 @@ export default function InvoiceDetail() {
   const { data: invoice, isLoading } = useInvoice(id);
   const { data: business } = useBusiness();
   const updateInvoice = useUpdateInvoice();
+  const sendReminder = useSendReminder();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
@@ -77,14 +78,20 @@ export default function InvoiceDetail() {
 
   const handleSendReminder = async () => {
     try {
-      await updateInvoice.mutateAsync({
-        id: invoice.id,
-        sent_at: new Date().toISOString(),
-      });
-      toast({
-        title: "Reminder sent",
-        description: `Payment reminder has been sent to ${customerName}.`,
-      });
+      const result = await sendReminder.mutateAsync(invoice.id);
+      
+      if (result.email_sent) {
+        toast({
+          title: "Reminder sent",
+          description: `Payment reminder has been emailed to ${invoice.customer?.email}.`,
+        });
+      } else {
+        toast({
+          title: "Reminder not sent",
+          description: result.reason || "Could not send reminder email.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -129,9 +136,9 @@ export default function InvoiceDetail() {
             </Button>
           )}
           {isOverdue && (
-            <Button variant="outline" onClick={handleSendReminder} disabled={updateInvoice.isPending}>
+            <Button variant="outline" onClick={handleSendReminder} disabled={sendReminder.isPending}>
               <AlertTriangle className="mr-2 h-4 w-4" />
-              Send Reminder
+              {sendReminder.isPending ? "Sending..." : "Send Reminder"}
             </Button>
           )}
           {canRecordPayment && (
