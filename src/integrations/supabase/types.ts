@@ -326,6 +326,7 @@ export type Database = {
           internal_notes: string | null
           invoice_number: string
           job_id: string | null
+          last_reminder_sent_at: string | null
           notes: string | null
           paid_at: string | null
           public_token: string | null
@@ -350,6 +351,7 @@ export type Database = {
           internal_notes?: string | null
           invoice_number: string
           job_id?: string | null
+          last_reminder_sent_at?: string | null
           notes?: string | null
           paid_at?: string | null
           public_token?: string | null
@@ -374,6 +376,7 @@ export type Database = {
           internal_notes?: string | null
           invoice_number?: string
           job_id?: string | null
+          last_reminder_sent_at?: string | null
           notes?: string | null
           paid_at?: string | null
           public_token?: string | null
