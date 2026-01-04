@@ -30,6 +30,7 @@ import PublicInvoice from "./pages/PublicInvoice";
 import StripeReturn from "./pages/StripeReturn";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
+import AcceptInvite from "./pages/AcceptInvite";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
             {/* Public routes (no auth required) */}
             <Route path="/quote/:token" element={<PublicQuote />} />
             <Route path="/invoice/:token" element={<PublicInvoice />} />
+            <Route path="/invite/:token" element={<AcceptInvite />} />
             <Route path="/stripe/return" element={<StripeReturn />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
             <Route path="/payment/canceled" element={<PaymentCanceled />} />
