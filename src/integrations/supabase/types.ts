@@ -950,36 +950,51 @@ export type Database = {
         Row: {
           business_id: string
           clock_in: string
+          clock_in_latitude: number | null
+          clock_in_longitude: number | null
           clock_out: string | null
+          clock_out_latitude: number | null
+          clock_out_longitude: number | null
           created_at: string
           duration_minutes: number | null
           entry_type: string | null
           id: string
           job_id: string
+          location_accuracy: number | null
           notes: string | null
           user_id: string
         }
         Insert: {
           business_id: string
           clock_in?: string
+          clock_in_latitude?: number | null
+          clock_in_longitude?: number | null
           clock_out?: string | null
+          clock_out_latitude?: number | null
+          clock_out_longitude?: number | null
           created_at?: string
           duration_minutes?: number | null
           entry_type?: string | null
           id?: string
           job_id: string
+          location_accuracy?: number | null
           notes?: string | null
           user_id: string
         }
         Update: {
           business_id?: string
           clock_in?: string
+          clock_in_latitude?: number | null
+          clock_in_longitude?: number | null
           clock_out?: string | null
+          clock_out_latitude?: number | null
+          clock_out_longitude?: number | null
           created_at?: string
           duration_minutes?: number | null
           entry_type?: string | null
           id?: string
           job_id?: string
+          location_accuracy?: number | null
           notes?: string | null
           user_id?: string
         }
