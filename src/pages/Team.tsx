@@ -7,6 +7,7 @@ import { TeamDashboard } from "@/components/team/TeamDashboard";
 import { TimesheetView } from "@/components/team/TimesheetView";
 import { TeamManagement } from "@/components/settings/TeamManagement";
 import { InviteMemberDialog } from "@/components/settings/InviteMemberDialog";
+import { OvertimeSettingsCard } from "@/components/team/OvertimeSettingsCard";
 
 export default function Team() {
   const { data: canManage } = useCanManageTeam();
@@ -36,6 +37,7 @@ export default function Team() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="timesheets">Timesheets</TabsTrigger>
           <TabsTrigger value="members">Members</TabsTrigger>
+          {canManage && <TabsTrigger value="settings">Settings</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -49,6 +51,12 @@ export default function Team() {
         <TabsContent value="members" className="space-y-6">
           <TeamManagement />
         </TabsContent>
+
+        {canManage && (
+          <TabsContent value="settings" className="space-y-6">
+            <OvertimeSettingsCard />
+          </TabsContent>
+        )}
       </Tabs>
 
       <InviteMemberDialog
