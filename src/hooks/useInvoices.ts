@@ -237,20 +237,63 @@ export function useDeleteInvoice() {
   });
 }
 
+export interface SendInvoiceResult {
+  success: boolean;
+  email_sent: boolean;
+  reason?: string;
+  email_id?: string;
+}
+
 export function useSendInvoice() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { data, error } = await supabase
-        .from("invoices")
-        .update({ status: "sent", sent_at: new Date().toISOString() })
-        .eq("id", id)
-        .select()
-        .single();
+    mutationFn: async (id: string): Promise<SendInvoiceResult> => {
+      const { data, error } = await supabase.functions.invoke('send-invoice-email', {
+        body: { invoice_id: id },
+      });
 
-      if (error) throw error;
-      return data;
+      if (error) {
+        // Fallback: just update the status locally if edge function fails
+        console.error('Email send failed, marking as sent:', error);
+        await supabase
+          .from("invoices")
+          .update({ status: "sent", sent_at: new Date().toISOString() })
+          .eq("id", id);
+        
+        return { success: true, email_sent: false, reason: error.message };
+      }
+
+      return data as SendInvoiceResult;
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["invoices", id] });
+    },
+  });
+}
+
+export interface SendReminderResult {
+  success: boolean;
+  email_sent: boolean;
+  reason?: string;
+  days_overdue?: number;
+}
+
+export function useSendReminder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string): Promise<SendReminderResult> => {
+      const { data, error } = await supabase.functions.invoke('send-reminder-email', {
+        body: { invoice_id: id },
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to send reminder');
+      }
+
+      return data as SendReminderResult;
     },
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
