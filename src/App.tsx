@@ -22,6 +22,7 @@ import InvoiceNew from "./pages/InvoiceNew";
 import InvoiceDetail from "./pages/InvoiceDetail";
 import InvoiceEdit from "./pages/InvoiceEdit";
 import CalendarPage from "./pages/Calendar";
+import Payments from "./pages/Payments";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import PublicQuote from "./pages/PublicQuote";
@@ -69,6 +70,7 @@ const App = () => (
               <Route path="/invoices/:id" element={<InvoiceDetail />} />
               <Route path="/invoices/:id/edit" element={<InvoiceEdit />} />
               <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/payments" element={<Payments />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
             <Route path="*" element={<NotFound />} />

@@ -20,6 +20,7 @@ import {
   Briefcase,
   Receipt,
   Calendar,
+  CreditCard,
   Settings,
   Zap,
   ChevronRight,
@@ -38,6 +39,7 @@ const mainMenuItems = [
   { title: "Jobs", url: "/jobs", icon: Briefcase },
   { title: "Invoices", url: "/invoices", icon: Receipt },
   { title: "Calendar", url: "/calendar", icon: Calendar },
+  { title: "Payments", url: "/payments", icon: CreditCard },
 ];
 
 const settingsMenuItems = [
