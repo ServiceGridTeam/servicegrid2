@@ -5,3 +5,6 @@ export { JobDetailSheet } from "./JobDetailSheet";
 export { JobFormDialog } from "./JobFormDialog";
 export { DeleteJobDialog } from "./DeleteJobDialog";
 export { AssigneeSelector } from "./AssigneeSelector";
+export { MultiAssigneeSelector } from "./MultiAssigneeSelector";
+export { AssigneeAvatarGroup } from "./AssigneeAvatarGroup";
+export { ClockInOutButton } from "./ClockInOutButton";

@@ -3,9 +3,20 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
 export type Job = Tables<"jobs">;
+
+type ProfileInfo = Pick<Tables<"profiles">, "id" | "first_name" | "last_name" | "email" | "avatar_url">;
+
+export type JobAssignmentInfo = {
+  id: string;
+  user_id: string;
+  role: string | null;
+  user: ProfileInfo;
+};
+
 export type JobWithCustomer = Job & {
   customer: Pick<Tables<"customers">, "id" | "first_name" | "last_name" | "email" | "phone" | "address_line1" | "city" | "state" | "zip"> | null;
   assignee: Pick<Tables<"profiles">, "id" | "first_name" | "last_name" | "email"> | null;
+  assignments?: JobAssignmentInfo[];
 };
 
 interface UseJobsOptions {
@@ -24,7 +35,8 @@ export function useJobs(options?: UseJobsOptions) {
         .select(`
           *,
           customer:customers(id, first_name, last_name, email, phone, address_line1, city, state, zip),
-          assignee:profiles!jobs_assigned_to_fkey(id, first_name, last_name, email)
+          assignee:profiles!jobs_assigned_to_fkey(id, first_name, last_name, email),
+          assignments:job_assignments(id, user_id, role, user:profiles(id, first_name, last_name, email, avatar_url))
         `)
         .order("scheduled_start", { ascending: true, nullsFirst: false });
 
@@ -61,7 +73,8 @@ export function useJob(id: string | undefined) {
         .select(`
           *,
           customer:customers(id, first_name, last_name, email, phone, address_line1, address_line2, city, state, zip),
-          assignee:profiles!jobs_assigned_to_fkey(id, first_name, last_name, email)
+          assignee:profiles!jobs_assigned_to_fkey(id, first_name, last_name, email),
+          assignments:job_assignments(id, user_id, role, user:profiles(id, first_name, last_name, email, avatar_url))
         `)
         .eq("id", id)
         .maybeSingle();
