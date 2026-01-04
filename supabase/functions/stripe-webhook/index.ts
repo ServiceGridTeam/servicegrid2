@@ -53,6 +53,7 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Handle successful checkout
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       
@@ -130,6 +131,89 @@ Deno.serve(async (req) => {
         new_balance: newBalanceDue,
         status: isPaid ? "paid" : "sent",
       });
+    }
+
+    // Handle checkout session expired (customer abandoned)
+    if (event.type === "checkout.session.expired") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      
+      const invoiceId = session.metadata?.invoice_id;
+      const businessId = session.metadata?.business_id;
+
+      console.log("Checkout session expired:", {
+        session_id: session.id,
+        invoice_id: invoiceId,
+        business_id: businessId,
+      });
+
+      // Log the abandoned checkout but don't record as failed payment
+      // This is just for tracking/analytics purposes
+      if (invoiceId && businessId) {
+        console.log("Customer abandoned checkout for invoice:", invoiceId);
+      }
+    }
+
+    // Handle payment failure
+    if (event.type === "payment_intent.payment_failed") {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      
+      const invoiceId = paymentIntent.metadata?.invoice_id;
+      const businessId = paymentIntent.metadata?.business_id;
+      const failureMessage = paymentIntent.last_payment_error?.message || "Payment failed";
+      const failureCode = paymentIntent.last_payment_error?.code || "unknown";
+
+      console.log("Payment failed:", {
+        payment_intent_id: paymentIntent.id,
+        invoice_id: invoiceId,
+        business_id: businessId,
+        failure_message: failureMessage,
+        failure_code: failureCode,
+      });
+
+      if (invoiceId && businessId) {
+        // Record failed payment attempt
+        const { error: paymentError } = await supabase
+          .from("payments")
+          .insert({
+            invoice_id: invoiceId,
+            business_id: businessId,
+            amount: paymentIntent.amount / 100,
+            payment_method: "card",
+            stripe_payment_intent_id: paymentIntent.id,
+            status: "failed",
+            notes: `Failed: ${failureMessage} (${failureCode})`,
+          });
+
+        if (paymentError) {
+          console.error("Failed to record failed payment:", paymentError);
+        } else {
+          console.log("Failed payment recorded for invoice:", invoiceId);
+        }
+
+        // Send failure notification email
+        try {
+          const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-payment-failed-email`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify({
+              invoice_id: invoiceId,
+              failure_reason: failureMessage,
+            }),
+          });
+
+          if (!emailResponse.ok) {
+            const errorText = await emailResponse.text();
+            console.error("Failed to send payment failed email:", errorText);
+          } else {
+            console.log("Payment failed notification email sent for invoice:", invoiceId);
+          }
+        } catch (emailError) {
+          console.error("Error calling send-payment-failed-email:", emailError);
+        }
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {

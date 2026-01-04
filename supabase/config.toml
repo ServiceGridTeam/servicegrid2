@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.send-reminder-email]
 verify_jwt = true
+
+[functions.send-payment-failed-email]
+verify_jwt = true
