@@ -1,5 +1,6 @@
-import { format, isSameDay, isToday } from "date-fns";
+import { format } from "date-fns";
 import type { JobWithCustomer } from "@/hooks/useJobs";
+import { AssigneeAvatarGroup } from "@/components/jobs/AssigneeAvatarGroup";
 import { cn } from "@/lib/utils";
 
 interface JobCardProps {
@@ -23,6 +24,13 @@ export function JobCard({ job, variant = "month", onClick, className }: JobCardP
   const customerName = job.customer
     ? `${job.customer.first_name} ${job.customer.last_name}`
     : "";
+
+  // Get assignees from assignments array or fall back to single assignee
+  const assignees = job.assignments && job.assignments.length > 0
+    ? job.assignments.map(a => a.user)
+    : job.assignee
+      ? [job.assignee]
+      : [];
 
   if (variant === "month") {
     return (
@@ -56,7 +64,12 @@ export function JobCard({ job, variant = "month", onClick, className }: JobCardP
           onClick?.(job);
         }}
       >
-        <div className="font-medium truncate">{job.title || job.job_number}</div>
+        <div className="flex items-center justify-between gap-1">
+          <div className="font-medium truncate flex-1">{job.title || job.job_number}</div>
+          {assignees.length > 0 && (
+            <AssigneeAvatarGroup assignees={assignees} max={2} size="sm" />
+          )}
+        </div>
         <div className="opacity-75 truncate">{customerName}</div>
         <div className="opacity-60 text-[10px]">
           {startTime} - {endTime}
@@ -91,9 +104,10 @@ export function JobCard({ job, variant = "month", onClick, className }: JobCardP
           <div className="opacity-60">{endTime}</div>
         </div>
       </div>
-      {job.assignee && (
-        <div className="mt-2 text-xs opacity-75">
-          Assigned to: {job.assignee.first_name} {job.assignee.last_name}
+      {assignees.length > 0 && (
+        <div className="mt-2 flex items-center gap-2">
+          <span className="text-xs opacity-75">Assigned:</span>
+          <AssigneeAvatarGroup assignees={assignees} max={4} size="sm" />
         </div>
       )}
     </div>

@@ -12,6 +12,7 @@ import { JobStatusBadge } from "./JobStatusBadge";
 import { JobPriorityBadge } from "./JobPriorityBadge";
 import { DeleteJobDialog } from "./DeleteJobDialog";
 import { ClockInOutButton } from "./ClockInOutButton";
+import { AssigneeAvatarGroup } from "./AssigneeAvatarGroup";
 import { TimeEntriesTable } from "@/components/team/TimeEntriesTable";
 import { useUpdateJob, type JobWithCustomer } from "@/hooks/useJobs";
 import { useBusiness } from "@/hooks/useBusiness";
@@ -20,7 +21,7 @@ import { format } from "date-fns";
 import {
   Calendar,
   Clock,
-  User,
+  Users,
   MapPin,
   Phone,
   Mail,
@@ -32,6 +33,8 @@ import {
   Receipt,
   Timer,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 interface JobDetailSheetProps {
   job: JobWithCustomer | null;
@@ -132,16 +135,68 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
                     </span>
                   </div>
                 )}
-                {job.assigned_to && job.assignee && (
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span>
-                      {job.assignee.first_name} {job.assignee.last_name}
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
+
+            {/* Assigned Team */}
+            {(job.assignments && job.assignments.length > 0) || job.assignee ? (
+              <>
+                <Separator />
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Assigned Team
+                  </h3>
+                  <div className="space-y-2">
+                    {job.assignments && job.assignments.length > 0 ? (
+                      job.assignments.map((assignment, index) => (
+                        <div 
+                          key={assignment.id} 
+                          className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
+                        >
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={assignment.user.avatar_url || undefined} />
+                            <AvatarFallback className="text-xs">
+                              {assignment.user.first_name?.[0]}
+                              {assignment.user.last_name?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium truncate">
+                                {assignment.user.first_name} {assignment.user.last_name}
+                              </span>
+                              {index === 0 && (
+                                <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                                  Lead
+                                </Badge>
+                              )}
+                            </div>
+                            {assignment.user.email && (
+                              <span className="text-xs text-muted-foreground truncate">
+                                {assignment.user.email}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : job.assignee ? (
+                      <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="text-xs">
+                            {job.assignee.first_name?.[0]}
+                            {job.assignee.last_name?.[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">
+                          {job.assignee.first_name} {job.assignee.last_name}
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </>
+            ) : null}
 
             <Separator />
 

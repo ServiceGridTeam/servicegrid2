@@ -36,9 +36,11 @@ import { cn } from "@/lib/utils";
 import { format, setHours, setMinutes } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { CustomerSelector } from "@/components/quotes/CustomerSelector";
-import { AssigneeSelector } from "./AssigneeSelector";
+import { MultiAssigneeSelector } from "./MultiAssigneeSelector";
 import { useCreateJob, useUpdateJob, type JobWithCustomer } from "@/hooks/useJobs";
+import { useUpdateJobAssignments } from "@/hooks/useJobAssignments";
 import { useCustomer } from "@/hooks/useCustomers";
+import { useBusiness } from "@/hooks/useBusiness";
 import { useToast } from "@/hooks/use-toast";
 
 const jobFormSchema = z.object({
@@ -47,7 +49,7 @@ const jobFormSchema = z.object({
   scheduled_date: z.date().optional(),
   scheduled_time: z.string().optional(),
   duration: z.string().optional(),
-  assigned_to: z.string().optional(),
+  assigned_to: z.array(z.string()).default([]),
   priority: z.string().default("normal"),
   status: z.string().optional(),
   address_line1: z.string().optional(),
@@ -103,6 +105,8 @@ export function JobFormDialog({
   const { toast } = useToast();
   const createJob = useCreateJob();
   const updateJob = useUpdateJob();
+  const updateAssignments = useUpdateJobAssignments();
+  const { data: business } = useBusiness();
   const isEditing = !!job;
 
   const form = useForm<JobFormValues>({
@@ -151,13 +155,20 @@ export function JobFormDialog({
         duration = closestDuration.value;
       }
 
+      // Get assigned user IDs from assignments or fall back to assigned_to
+      const assignedUserIds = job.assignments && job.assignments.length > 0
+        ? job.assignments.map(a => a.user_id)
+        : job.assigned_to 
+          ? [job.assigned_to]
+          : [];
+
       form.reset({
         customer_id: job.customer_id,
         title: job.title || "",
         scheduled_date: scheduledDate,
         scheduled_time: scheduledTime,
         duration,
-        assigned_to: job.assigned_to || undefined,
+        assigned_to: assignedUserIds,
         priority: job.priority || "normal",
         status: job.status || "scheduled",
         address_line1: job.address_line1 || "",
@@ -175,6 +186,7 @@ export function JobFormDialog({
         scheduled_date: defaultDate,
         scheduled_time: "09:00",
         duration: "60",
+        assigned_to: [],
         priority: "normal",
         status: "scheduled",
         address_line1: "",
@@ -215,12 +227,15 @@ export function JobFormDialog({
         }
       }
 
+      // First user in list is the lead/primary assignee
+      const primaryAssignee = values.assigned_to.length > 0 ? values.assigned_to[0] : null;
+
       const jobData = {
         customer_id: values.customer_id,
         title: values.title || "",
         scheduled_start,
         scheduled_end,
-        assigned_to: values.assigned_to || null,
+        assigned_to: primaryAssignee,
         priority: values.priority,
         status: values.status,
         address_line1: values.address_line1 || null,
@@ -232,6 +247,36 @@ export function JobFormDialog({
         internal_notes: values.internal_notes || null,
         quote_id: quoteId || null,
       };
+
+      let jobId: string;
+
+      if (isEditing) {
+        await updateJob.mutateAsync({ id: job.id, ...jobData });
+        jobId = job.id;
+        toast({
+          title: "Job updated",
+          description: "The job has been updated successfully.",
+        });
+      } else {
+        const newJob = await createJob.mutateAsync(jobData);
+        jobId = newJob.id;
+        toast({
+          title: "Job created",
+          description: "The job has been scheduled successfully.",
+        });
+      }
+
+      // Update job assignments
+      if (business) {
+        await updateAssignments.mutateAsync({
+          jobId,
+          userIds: values.assigned_to,
+          businessId: business.id,
+        });
+      }
+
+      onOpenChange(false);
+      onSuccess?.();
 
       if (isEditing) {
         await updateJob.mutateAsync({ id: job.id, ...jobData });
@@ -395,10 +440,10 @@ export function JobFormDialog({
                 control={form.control}
                 name="assigned_to"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Assigned To</FormLabel>
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Assign Team Members</FormLabel>
                     <FormControl>
-                      <AssigneeSelector
+                      <MultiAssigneeSelector
                         value={field.value}
                         onValueChange={field.onChange}
                       />
