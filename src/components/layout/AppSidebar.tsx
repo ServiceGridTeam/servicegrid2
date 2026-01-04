@@ -40,6 +40,7 @@ const mainMenuItems = [
   { title: "Invoices", url: "/invoices", icon: Receipt },
   { title: "Calendar", url: "/calendar", icon: Calendar },
   { title: "Payments", url: "/payments", icon: CreditCard },
+  { title: "Team", url: "/team", icon: Users },
 ];
 
 const settingsMenuItems = [

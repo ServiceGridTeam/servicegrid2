@@ -904,6 +904,67 @@ export type Database = {
           },
         ]
       }
+      time_entries: {
+        Row: {
+          business_id: string
+          clock_in: string
+          clock_out: string | null
+          created_at: string
+          duration_minutes: number | null
+          entry_type: string | null
+          id: string
+          job_id: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          clock_in?: string
+          clock_out?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          entry_type?: string | null
+          id?: string
+          job_id: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          clock_in?: string
+          clock_out?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          entry_type?: string | null
+          id?: string
+          job_id?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entries_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
