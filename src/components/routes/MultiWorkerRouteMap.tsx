@@ -181,19 +181,7 @@ export function MultiWorkerRouteMap({
     return <Skeleton className="w-full" style={{ height }} />;
   }
 
-  if (workerRoutes.length === 0) {
-    return (
-      <Card style={{ height }}>
-        <CardContent className="flex items-center justify-center h-full">
-          <div className="text-center text-muted-foreground">
-            <RouteIcon className="mx-auto h-12 w-12 mb-3 opacity-50" />
-            <p>No route plans for this date</p>
-            <p className="text-sm mt-1">Optimize routes from the team calendar to see them here</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const hasRoutes = workerRoutes.length > 0;
 
   const formatDistance = (meters: number) => `${(meters / 1609.34).toFixed(1)} mi`;
   const formatDuration = (seconds: number) => {
@@ -224,7 +212,7 @@ export function MultiWorkerRouteMap({
         </div>
       </CardHeader>
 
-      <CardContent className="p-0 flex-1 min-h-0">
+      <CardContent className="p-0 flex-1 min-h-0 relative">
         <APIProvider apiKey={apiKey}>
           <GoogleMap
             style={{ width: "100%", height: "100%" }}
@@ -317,21 +305,38 @@ export function MultiWorkerRouteMap({
             )}
           </GoogleMap>
         </APIProvider>
+
+        {/* Empty state overlay */}
+        {!hasRoutes && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="bg-background/80 backdrop-blur-sm rounded-lg p-6 text-center shadow-lg">
+              <RouteIcon className="mx-auto h-10 w-10 mb-2 text-muted-foreground/50" />
+              <p className="text-muted-foreground font-medium">No routes for this date</p>
+              <p className="text-sm text-muted-foreground/70 mt-1">
+                Create jobs and optimize routes to see them here
+              </p>
+            </div>
+          </div>
+        )}
       </CardContent>
 
-      {/* Legend */}
-      <WorkerRouteLegend
-        workers={legendWorkers}
-        onToggleVisibility={handleToggleVisibility}
-        onToggleAll={handleToggleAll}
-      />
+      {/* Legend - only show if there are workers */}
+      {hasRoutes && (
+        <WorkerRouteLegend
+          workers={legendWorkers}
+          onToggleVisibility={handleToggleVisibility}
+          onToggleAll={handleToggleAll}
+        />
+      )}
 
-      {/* Summary bar */}
-      <div className="border-t bg-muted/50 px-4 py-2 text-sm text-muted-foreground shrink-0">
-        <span className="font-medium text-foreground">{summary.totalJobs}</span> jobs •{" "}
-        <span className="font-medium text-foreground">{formatDistance(summary.totalDistance)}</span> •{" "}
-        <span className="font-medium text-foreground">{formatDuration(summary.totalDuration)}</span> drive time
-      </div>
+      {/* Summary bar - only show if there are routes */}
+      {hasRoutes && (
+        <div className="border-t bg-muted/50 px-4 py-2 text-sm text-muted-foreground shrink-0">
+          <span className="font-medium text-foreground">{summary.totalJobs}</span> jobs •{" "}
+          <span className="font-medium text-foreground">{formatDistance(summary.totalDistance)}</span> •{" "}
+          <span className="font-medium text-foreground">{formatDuration(summary.totalDuration)}</span> drive time
+        </div>
+      )}
     </Card>
   );
 }
