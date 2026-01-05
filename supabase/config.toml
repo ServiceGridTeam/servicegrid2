@@ -26,3 +26,9 @@ verify_jwt = true
 
 [functions.auto-assign-job]
 verify_jwt = true
+
+[functions.optimize-job-route]
+verify_jwt = true
+
+[functions.geocode-address]
+verify_jwt = true

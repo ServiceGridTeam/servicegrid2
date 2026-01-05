@@ -1,14 +1,22 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTeamTimeStats } from "@/hooks/useTimeEntries";
 import { useTeamMembers } from "@/hooks/useTeamManagement";
 import { useOvertimeSettings } from "@/hooks/useOvertimeSettings";
 import { calculateWeeklyOvertime } from "@/hooks/useOvertimeCalculations";
+import { useDailyRoutePlan, useOptimizeRoute } from "@/hooks/useRouteOptimization";
+import { useJobs } from "@/hooks/useJobs";
 import { OvertimeBadge } from "./OvertimeBadge";
-import { Clock, Users, Briefcase, Timer, AlertTriangle } from "lucide-react";
+import { DailyRouteView, WorkerRouteMap } from "@/components/routes";
+import { Clock, Users, Briefcase, Timer, AlertTriangle, Navigation, Route, Loader2 } from "lucide-react";
 import { format, differenceInMinutes } from "date-fns";
+import { toast } from "sonner";
 
 function formatMinutesToHours(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -24,9 +32,31 @@ function getInitials(firstName: string | null, lastName: string | null): string 
 }
 
 export function TeamDashboard() {
+  const [routeSheetOpen, setRouteSheetOpen] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [selectedMemberName, setSelectedMemberName] = useState<string>("");
+
   const { data: stats, isLoading: statsLoading } = useTeamTimeStats();
   const { data: members, isLoading: membersLoading } = useTeamMembers();
   const { settings: overtimeSettings } = useOvertimeSettings();
+  const { data: jobs } = useJobs();
+
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const { data: routePlan, isLoading: routeLoading } = useDailyRoutePlan(
+    selectedMemberId || undefined,
+    selectedMemberId ? todayStr : undefined
+  );
+
+  const optimizeRoute = useOptimizeRoute();
+
+  // Get jobs for selected member today
+  const memberJobs = jobs?.filter((job) => {
+    if (!selectedMemberId) return false;
+    if (job.assigned_to !== selectedMemberId) return false;
+    if (!job.scheduled_start) return false;
+    const jobDate = format(new Date(job.scheduled_start), "yyyy-MM-dd");
+    return jobDate === todayStr;
+  }) || [];
 
   // Calculate overtime for each member
   const membersWithOvertime = members?.map((member) => {
@@ -42,6 +72,26 @@ export function TeamDashboard() {
   const membersInOvertime = membersWithOvertime?.filter((m) => m.overtimeResult.isOvertime) || [];
   const membersApproaching = membersWithOvertime?.filter((m) => m.overtimeResult.isApproaching && !m.overtimeResult.isOvertime) || [];
 
+  const handleViewRoute = (memberId: string, memberName: string) => {
+    setSelectedMemberId(memberId);
+    setSelectedMemberName(memberName);
+    setRouteSheetOpen(true);
+  };
+
+  const handleOptimizeRoute = async () => {
+    if (!selectedMemberId) return;
+
+    try {
+      await optimizeRoute.mutateAsync({
+        userId: selectedMemberId,
+        date: todayStr,
+      });
+      toast.success("Route optimized successfully");
+    } catch (error) {
+      console.error("Failed to optimize route:", error);
+      toast.error("Failed to optimize route");
+    }
+  };
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
@@ -269,6 +319,16 @@ export function TeamDashboard() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          handleViewRoute(member.id, `${member.first_name} ${member.last_name}`)
+                        }
+                      >
+                        <Route className="h-4 w-4 mr-1" />
+                        Route
+                      </Button>
                       <Badge variant={member.role === "owner" ? "default" : "secondary"}>
                         {member.role}
                       </Badge>
@@ -296,6 +356,72 @@ export function TeamDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Route View Sheet */}
+      <Sheet open={routeSheetOpen} onOpenChange={setRouteSheetOpen}>
+        <SheetContent className="sm:max-w-2xl w-full overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Navigation className="h-5 w-5" />
+              {selectedMemberName}'s Route - {format(new Date(), "MMM d, yyyy")}
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="mt-6 space-y-4">
+            {/* Optimize Button */}
+            <div className="flex justify-end">
+              <Button
+                onClick={handleOptimizeRoute}
+                disabled={optimizeRoute.isPending || memberJobs.length === 0}
+              >
+                {optimizeRoute.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Optimizing...
+                  </>
+                ) : (
+                  <>
+                    <Route className="h-4 w-4 mr-2" />
+                    Optimize Route
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {memberJobs.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  <Navigation className="mx-auto h-12 w-12 mb-3 opacity-50" />
+                  <p>No jobs scheduled for today</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Tabs defaultValue="timeline" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                  <TabsTrigger value="map">Map</TabsTrigger>
+                </TabsList>
+                <TabsContent value="timeline" className="mt-4">
+                  <DailyRouteView
+                    routePlan={routePlan ?? null}
+                    jobs={memberJobs}
+                    isLoading={routeLoading}
+                    workerName={selectedMemberName}
+                  />
+                </TabsContent>
+                <TabsContent value="map" className="mt-4">
+                  <WorkerRouteMap
+                    routePlan={routePlan ?? null}
+                    jobs={memberJobs}
+                    isLoading={routeLoading}
+                    height="500px"
+                  />
+                </TabsContent>
+              </Tabs>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
