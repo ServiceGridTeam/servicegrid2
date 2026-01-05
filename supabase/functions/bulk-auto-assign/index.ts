@@ -56,31 +56,38 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      console.error("[bulk-auto-assign] No authorization header");
+      return new Response(JSON.stringify({ error: "Missing authorization header" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const anonClient = createClient(
-      supabaseUrl,
+    // Use anon key with user's auth header for user context
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user }, error: authError } = await anonClient.auth.getUser();
+    // Service role client for privileged operations
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
+      console.error("[bulk-auto-assign] Auth error:", authError?.message);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { data: profile } = await supabase
+    console.log(`[bulk-auto-assign] Authenticated user: ${user.id}`);
+
+    const { data: profile } = await adminClient
       .from("profiles")
       .select("business_id")
       .eq("id", user.id)
@@ -107,7 +114,7 @@ serve(async (req) => {
     }
 
     // Fetch jobs with customer info
-    const { data: jobs, error: jobsError } = await supabase
+    const { data: jobs, error: jobsError } = await adminClient
       .from("jobs")
       .select(`
         *,
@@ -142,7 +149,7 @@ serve(async (req) => {
     console.log(`[bulk-auto-assign] Date range: ${startDate} to ${endDate} (${dates.length} days)`);
 
     // Fetch available workers
-    let workersQuery = supabase
+    let workersQuery = adminClient
       .from("profiles")
       .select(`
         id, first_name, last_name, 
@@ -183,7 +190,7 @@ serve(async (req) => {
     console.log(`[bulk-auto-assign] Found ${workers.length} workers`);
 
     // Fetch time off for workers in date range
-    const { data: timeOffRequests } = await supabase
+    const { data: timeOffRequests } = await adminClient
       .from("time_off_requests")
       .select("user_id, start_date, end_date")
       .eq("business_id", businessId)
@@ -192,14 +199,14 @@ serve(async (req) => {
       .gte("end_date", startDate);
 
     // Fetch team availability
-    const { data: availability } = await supabase
+    const { data: availability } = await adminClient
       .from("team_availability")
       .select("user_id, day_of_week, start_time, end_time, is_available")
       .eq("business_id", businessId)
       .in("user_id", workers.map(w => w.id));
 
     // Fetch existing job assignments to calculate current workload
-    const { data: existingJobs } = await supabase
+    const { data: existingJobs } = await adminClient
       .from("jobs")
       .select("id, assigned_to, scheduled_start, estimated_duration_minutes")
       .eq("business_id", businessId)
@@ -410,7 +417,7 @@ serve(async (req) => {
     // Apply assignments to database
     for (const assignment of assignments) {
       // Update job
-      await supabase
+      await adminClient
         .from("jobs")
         .update({
           assigned_to: assignment.userId,
@@ -424,7 +431,7 @@ serve(async (req) => {
         .eq("id", assignment.jobId);
 
       // Create/update job assignment record
-      await supabase
+      await adminClient
         .from("job_assignments")
         .upsert({
           job_id: assignment.jobId,
@@ -448,7 +455,7 @@ serve(async (req) => {
     for (const [key, assignedJobIds] of workerDatePairs) {
       const [userId, routeDate] = key.split("|");
       
-      const { data: routePlan } = await supabase
+      const { data: routePlan } = await adminClient
         .from("daily_route_plans")
         .upsert({
           business_id: businessId,

@@ -19,13 +19,21 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Navigation, Home, RotateCcw, Loader2 } from "lucide-react";
+import { Navigation, Home, Loader2, Route, Sparkles } from "lucide-react";
 import { SortableRouteJobItem } from "./SortableRouteJobItem";
+import { RouteOptimizationResultDialog } from "./RouteOptimizationResultDialog";
 import { parseRouteLegs, RouteLeg } from "@/hooks/useRouteOptimization";
+import { useOptimizeRoute } from "@/hooks/useRouteOptimization";
 import type { DailyRoutePlan } from "@/types/routePlanning";
 import type { Tables } from "@/integrations/supabase/types";
+import { toast } from "@/hooks/use-toast";
 
 type Job = Tables<"jobs">;
+
+interface RouteMetrics {
+  distanceMeters: number;
+  durationSeconds: number;
+}
 
 interface SortableRouteListProps {
   routePlan: DailyRoutePlan;
@@ -47,6 +55,12 @@ export function SortableRouteList({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [pendingOrder, setPendingOrder] = useState<string[] | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showResultDialog, setShowResultDialog] = useState(false);
+  const [beforeMetrics, setBeforeMetrics] = useState<RouteMetrics | null>(null);
+  const [afterMetrics, setAfterMetrics] = useState<RouteMetrics | null>(null);
+  const [isOptimizingLocal, setIsOptimizingLocal] = useState(false);
+
+  const optimizeRoute = useOptimizeRoute();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -119,7 +133,47 @@ export function SortableRouteList({
     setPendingOrder(null);
   }, []);
 
+  const handleOptimize = useCallback(async () => {
+    if (!routePlan.user_id) return;
+    
+    // Capture current metrics before optimization
+    const currentBefore: RouteMetrics = {
+      distanceMeters: routePlan.total_distance_meters || 0,
+      durationSeconds: routePlan.total_duration_seconds || 0,
+    };
+    setBeforeMetrics(currentBefore);
+    setIsOptimizingLocal(true);
+
+    try {
+      const result = await optimizeRoute.mutateAsync({
+        userId: routePlan.user_id,
+        date: routePlan.route_date,
+      });
+
+      setAfterMetrics({
+        distanceMeters: result.totalDistanceMeters || 0,
+        durationSeconds: result.totalDurationSeconds || 0,
+      });
+      setShowResultDialog(true);
+      
+      toast({
+        title: "Route optimized",
+        description: "Job order has been updated for the most efficient route.",
+      });
+    } catch (error) {
+      console.error("Route optimization failed:", error);
+      toast({
+        title: "Optimization failed",
+        description: error instanceof Error ? error.message : "Could not optimize route",
+        variant: "destructive",
+      });
+    } finally {
+      setIsOptimizingLocal(false);
+    }
+  }, [routePlan, optimizeRoute]);
+
   const hasChanges = pendingOrder !== null;
+  const isAnyOptimizing = isOptimizing || isOptimizingLocal;
 
   if (orderedJobs.length === 0) {
     return (
@@ -133,26 +187,41 @@ export function SortableRouteList({
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Navigation className="h-4 w-4" />
-            {workerName ? `${workerName}'s Route` : "Route Order"}
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            {(isSaving || isOptimizing) && (
-              <Badge variant="secondary" className="text-xs">
-                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                {isOptimizing ? "Optimizing..." : "Saving..."}
+    <>
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Navigation className="h-4 w-4" />
+              {workerName ? `${workerName}'s Route` : "Route Order"}
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleOptimize}
+                disabled={isAnyOptimizing || orderedJobs.length < 2}
+                className="gap-1.5"
+              >
+                {isOptimizingLocal ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5" />
+                )}
+                Optimize
+              </Button>
+              {(isSaving || isAnyOptimizing) && (
+                <Badge variant="secondary" className="text-xs">
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  {isAnyOptimizing ? "Optimizing..." : "Saving..."}
+                </Badge>
+              )}
+              <Badge variant="outline" className="text-xs">
+                Drag to reorder
               </Badge>
-            )}
-            <Badge variant="outline" className="text-xs">
-              Drag to reorder
-            </Badge>
+            </div>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
       <CardContent className="pt-0">
         <DndContext
           sensors={sensors}
@@ -226,5 +295,13 @@ export function SortableRouteList({
         </DndContext>
       </CardContent>
     </Card>
+
+      <RouteOptimizationResultDialog
+        open={showResultDialog}
+        onOpenChange={setShowResultDialog}
+        before={beforeMetrics}
+        after={afterMetrics}
+      />
+    </>
   );
 }
