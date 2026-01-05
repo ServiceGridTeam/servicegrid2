@@ -32,6 +32,8 @@ import StripeReturn from "./pages/StripeReturn";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
 import AcceptInvite from "./pages/AcceptInvite";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +52,8 @@ const App = () => (
             <Route path="/stripe/return" element={<StripeReturn />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
             <Route path="/payment/canceled" element={<PaymentCanceled />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
             
             {/* Auth routes */}
             <Route path="/auth" element={<Auth />} />
