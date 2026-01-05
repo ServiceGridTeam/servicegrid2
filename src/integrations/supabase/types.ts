@@ -768,6 +768,7 @@ export type Database = {
           state: string | null
           status: string | null
           title: string
+          tracking_token: string | null
           updated_at: string
           zip: string | null
         }
@@ -816,6 +817,7 @@ export type Database = {
           state?: string | null
           status?: string | null
           title: string
+          tracking_token?: string | null
           updated_at?: string
           zip?: string | null
         }
@@ -864,6 +866,7 @@ export type Database = {
           state?: string | null
           status?: string | null
           title?: string
+          tracking_token?: string | null
           updated_at?: string
           zip?: string | null
         }

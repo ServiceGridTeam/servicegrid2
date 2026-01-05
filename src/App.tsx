@@ -29,6 +29,7 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import PublicQuote from "./pages/PublicQuote";
 import PublicInvoice from "./pages/PublicInvoice";
+import PublicJobTracking from "./pages/PublicJobTracking";
 import StripeReturn from "./pages/StripeReturn";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
@@ -49,6 +50,7 @@ const App = () => (
             {/* Public routes (no auth required) */}
             <Route path="/quote/:token" element={<PublicQuote />} />
             <Route path="/invoice/:token" element={<PublicInvoice />} />
+            <Route path="/track/:token" element={<PublicJobTracking />} />
             <Route path="/invite/:token" element={<AcceptInvite />} />
             <Route path="/stripe/return" element={<StripeReturn />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
