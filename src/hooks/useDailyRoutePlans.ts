@@ -1,7 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { DailyRoutePlan } from "@/types/routePlanning";
-import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import type { TablesInsert, TablesUpdate, Tables } from "@/integrations/supabase/types";
+
+type Profile = Tables<"profiles">;
+
+export interface RoutePlanWithWorker extends DailyRoutePlan {
+  user: Pick<Profile, "id" | "first_name" | "last_name" | "avatar_url"> | null;
+}
 
 interface UseRoutePlansOptions {
   userId?: string;
@@ -77,6 +83,30 @@ export function useRoutePlanForUserDate(userId: string | undefined, date: Date |
       return data as DailyRoutePlan | null;
     },
     enabled: !!userId && !!date,
+  });
+}
+
+export function useDailyRoutePlansForDate(date: Date | undefined) {
+  const dateStr = date?.toISOString().split("T")[0];
+
+  return useQuery({
+    queryKey: ["daily-route-plans", "all-workers", dateStr],
+    queryFn: async () => {
+      if (!dateStr) return [];
+
+      const { data, error } = await supabase
+        .from("daily_route_plans")
+        .select(`
+          *,
+          user:profiles!user_id(id, first_name, last_name, avatar_url)
+        `)
+        .eq("route_date", dateStr)
+        .order("user_id");
+
+      if (error) throw error;
+      return data as RoutePlanWithWorker[];
+    },
+    enabled: !!date,
   });
 }
 

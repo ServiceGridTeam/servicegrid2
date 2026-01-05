@@ -1,14 +1,17 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ChevronLeft, ChevronRight, Plus, Map } from "lucide-react";
 import { useJobs, useUpdateJob, type JobWithCustomer } from "@/hooks/useJobs";
 import { JobDetailSheet, JobFormDialog } from "@/components/jobs";
 import { WeekCalendar, DayCalendar, JobCard, UnscheduledSidebar } from "@/components/calendar";
 import { TeamMemberFilter } from "@/components/calendar/TeamMemberFilter";
 import { CalendarExport } from "@/components/calendar/CalendarExport";
+import { MultiWorkerRouteMap, type WorkerRoute } from "@/components/routes";
+import { useDailyRoutePlansForDate } from "@/hooks/useDailyRoutePlans";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfWeek, endOfWeek, setHours, setMinutes, addHours } from "date-fns";
 
@@ -25,6 +28,7 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTeamMembers, setSelectedTeamMembers] = useState<string[]>([]);
   const [draggingJob, setDraggingJob] = useState<JobWithCustomer | null>(null);
+  const [showAllRoutes, setShowAllRoutes] = useState(false);
   
   const { toast } = useToast();
   const updateJob = useUpdateJob();
@@ -52,6 +56,7 @@ export default function CalendarPage() {
 
   const { from, to } = getDateRange();
   const { data: allJobs = [] } = useJobs();
+  const { data: routePlansForDate = [], isLoading: routePlansLoading } = useDailyRoutePlansForDate(currentDate);
 
   // Filter jobs by date range and team member selection
   const jobs = allJobs.filter((job) => {
@@ -64,6 +69,24 @@ export default function CalendarPage() {
     }
     return true;
   });
+
+  // Build worker routes for the multi-worker map
+  const workerRoutes: WorkerRoute[] = useMemo(() => {
+    return routePlansForDate
+      .filter((rp) => rp.user)
+      .map((rp) => {
+        const workerJobs = rp.job_ids
+          ? rp.job_ids.map((id) => allJobs.find((j) => j.id === id)).filter(Boolean) as JobWithCustomer[]
+          : [];
+        return {
+          userId: rp.user_id,
+          userName: [rp.user?.first_name, rp.user?.last_name].filter(Boolean).join(" ") || "Unknown",
+          avatarUrl: rp.user?.avatar_url,
+          routePlan: rp,
+          jobs: workerJobs,
+        };
+      });
+  }, [routePlansForDate, allJobs]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -354,6 +377,10 @@ export default function CalendarPage() {
                 onChange={setSelectedTeamMembers}
               />
               <CalendarExport jobs={jobs} currentDate={currentDate} view={view} />
+              <Button variant="outline" onClick={() => setShowAllRoutes(true)}>
+                <Map className="h-4 w-4 mr-2" />
+                View Routes
+              </Button>
               <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as ViewType)}>
                 <ToggleGroupItem value="day" size="sm">Day</ToggleGroupItem>
                 <ToggleGroupItem value="week" size="sm">Week</ToggleGroupItem>
@@ -417,6 +444,32 @@ export default function CalendarPage() {
 
         <JobDetailSheet job={selectedJob} open={detailSheetOpen} onOpenChange={setDetailSheetOpen} onEdit={handleEditJob} />
         <JobFormDialog open={formDialogOpen} onOpenChange={setFormDialogOpen} job={selectedJob && !detailSheetOpen ? selectedJob : undefined} defaultDate={selectedDate} onSuccess={() => setSelectedJob(null)} />
+
+        {/* All Routes Sheet */}
+        <Sheet open={showAllRoutes} onOpenChange={setShowAllRoutes}>
+          <SheetContent className="sm:max-w-4xl w-full p-0" side="right">
+            <SheetHeader className="px-6 py-4 border-b">
+              <SheetTitle className="flex items-center gap-2">
+                <Map className="h-5 w-5" />
+                All Team Routes - {format(currentDate, "MMM d, yyyy")}
+              </SheetTitle>
+            </SheetHeader>
+            <div className="h-[calc(100vh-5rem)]">
+              <MultiWorkerRouteMap
+                workerRoutes={workerRoutes}
+                isLoading={routePlansLoading}
+                onJobClick={(jobId) => {
+                  const job = allJobs.find((j) => j.id === jobId);
+                  if (job) {
+                    setShowAllRoutes(false);
+                    handleJobClick(job);
+                  }
+                }}
+                height="100%"
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
 
       {/* Drag Overlay */}
