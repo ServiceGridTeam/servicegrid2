@@ -9,3 +9,4 @@ export { TeamAvailabilityGrid } from "./TeamAvailabilityGrid";
 export { TimeOffRequestForm } from "./TimeOffRequestForm";
 export { TimeOffRequestList } from "./TimeOffRequestList";
 export { PendingApprovalsCard } from "./PendingApprovalsCard";
+export { GeofenceAlertBanner } from "./GeofenceAlertBanner";

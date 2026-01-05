@@ -44,3 +44,9 @@ verify_jwt = false
 
 [functions.stripe-connect-onboard]
 verify_jwt = false
+
+[functions.validate-clock-in]
+verify_jwt = true
+
+[functions.clock-in-with-override]
+verify_jwt = true

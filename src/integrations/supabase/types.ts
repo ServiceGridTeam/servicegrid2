@@ -71,7 +71,12 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string
+          default_geofence_radius_meters: number | null
           email: string | null
+          geofence_allow_override: boolean | null
+          geofence_enforcement_mode: string | null
+          geofence_override_requires_photo: boolean | null
+          geofence_override_requires_reason: boolean | null
           id: string
           industry: string | null
           logo_url: string | null
@@ -93,7 +98,12 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          default_geofence_radius_meters?: number | null
           email?: string | null
+          geofence_allow_override?: boolean | null
+          geofence_enforcement_mode?: string | null
+          geofence_override_requires_photo?: boolean | null
+          geofence_override_requires_reason?: boolean | null
           id?: string
           industry?: string | null
           logo_url?: string | null
@@ -115,7 +125,12 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          default_geofence_radius_meters?: number | null
           email?: string | null
+          geofence_allow_override?: boolean | null
+          geofence_enforcement_mode?: string | null
+          geofence_override_requires_photo?: boolean | null
+          geofence_override_requires_reason?: boolean | null
           id?: string
           industry?: string | null
           logo_url?: string | null
@@ -130,6 +145,72 @@ export type Database = {
           updated_at?: string
           website?: string | null
           zip?: string | null
+        }
+        Relationships: []
+      }
+      clock_events: {
+        Row: {
+          accuracy_meters: number | null
+          business_id: string
+          created_at: string | null
+          distance_from_job_meters: number | null
+          event_type: string
+          geofence_radius_meters: number | null
+          id: string
+          job_id: string
+          job_latitude: number | null
+          job_longitude: number | null
+          latitude: number | null
+          location_source: string | null
+          longitude: number | null
+          override_photo_url: string | null
+          override_reason: string | null
+          recorded_at: string | null
+          status: string
+          user_id: string
+          within_geofence: boolean
+        }
+        Insert: {
+          accuracy_meters?: number | null
+          business_id: string
+          created_at?: string | null
+          distance_from_job_meters?: number | null
+          event_type: string
+          geofence_radius_meters?: number | null
+          id?: string
+          job_id: string
+          job_latitude?: number | null
+          job_longitude?: number | null
+          latitude?: number | null
+          location_source?: string | null
+          longitude?: number | null
+          override_photo_url?: string | null
+          override_reason?: string | null
+          recorded_at?: string | null
+          status: string
+          user_id: string
+          within_geofence: boolean
+        }
+        Update: {
+          accuracy_meters?: number | null
+          business_id?: string
+          created_at?: string | null
+          distance_from_job_meters?: number | null
+          event_type?: string
+          geofence_radius_meters?: number | null
+          id?: string
+          job_id?: string
+          job_latitude?: number | null
+          job_longitude?: number | null
+          latitude?: number | null
+          location_source?: string | null
+          longitude?: number | null
+          override_photo_url?: string | null
+          override_reason?: string | null
+          recorded_at?: string | null
+          status?: string
+          user_id?: string
+          within_geofence?: boolean
         }
         Relationships: []
       }
@@ -395,6 +476,62 @@ export type Database = {
         }
         Relationships: []
       }
+      geofence_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          business_id: string
+          clock_event_id: string
+          created_at: string | null
+          distance_meters: number
+          id: string
+          job_id: string
+          resolution_notes: string | null
+          severity: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          business_id: string
+          clock_event_id: string
+          created_at?: string | null
+          distance_meters: number
+          id?: string
+          job_id: string
+          resolution_notes?: string | null
+          severity?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          business_id?: string
+          clock_event_id?: string
+          created_at?: string | null
+          distance_meters?: number
+          id?: string
+          job_id?: string
+          resolution_notes?: string | null
+          severity?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "geofence_alerts_clock_event_id_fkey"
+            columns: ["clock_event_id"]
+            isOneToOne: false
+            referencedRelation: "clock_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_items: {
         Row: {
           created_at: string
@@ -597,14 +734,27 @@ export type Database = {
           auto_assigned: boolean | null
           business_id: string
           city: string | null
+          clock_in_distance_meters: number | null
+          clock_in_location_lat: number | null
+          clock_in_location_lng: number | null
+          clock_in_override: boolean | null
+          clock_in_time: string | null
+          clock_out_distance_meters: number | null
+          clock_out_location_lat: number | null
+          clock_out_location_lng: number | null
+          clock_out_override: boolean | null
+          clock_out_time: string | null
           created_at: string
           customer_id: string
           description: string | null
           drive_time_from_previous: number | null
           estimated_arrival: string | null
           estimated_duration_minutes: number | null
+          geofence_enforcement: string | null
+          geofence_radius_meters: number | null
           id: string
           internal_notes: string | null
+          is_clocked_in: boolean | null
           job_number: string
           latitude: number | null
           longitude: number | null
@@ -632,14 +782,27 @@ export type Database = {
           auto_assigned?: boolean | null
           business_id: string
           city?: string | null
+          clock_in_distance_meters?: number | null
+          clock_in_location_lat?: number | null
+          clock_in_location_lng?: number | null
+          clock_in_override?: boolean | null
+          clock_in_time?: string | null
+          clock_out_distance_meters?: number | null
+          clock_out_location_lat?: number | null
+          clock_out_location_lng?: number | null
+          clock_out_override?: boolean | null
+          clock_out_time?: string | null
           created_at?: string
           customer_id: string
           description?: string | null
           drive_time_from_previous?: number | null
           estimated_arrival?: string | null
           estimated_duration_minutes?: number | null
+          geofence_enforcement?: string | null
+          geofence_radius_meters?: number | null
           id?: string
           internal_notes?: string | null
+          is_clocked_in?: boolean | null
           job_number: string
           latitude?: number | null
           longitude?: number | null
@@ -667,14 +830,27 @@ export type Database = {
           auto_assigned?: boolean | null
           business_id?: string
           city?: string | null
+          clock_in_distance_meters?: number | null
+          clock_in_location_lat?: number | null
+          clock_in_location_lng?: number | null
+          clock_in_override?: boolean | null
+          clock_in_time?: string | null
+          clock_out_distance_meters?: number | null
+          clock_out_location_lat?: number | null
+          clock_out_location_lng?: number | null
+          clock_out_override?: boolean | null
+          clock_out_time?: string | null
           created_at?: string
           customer_id?: string
           description?: string | null
           drive_time_from_previous?: number | null
           estimated_arrival?: string | null
           estimated_duration_minutes?: number | null
+          geofence_enforcement?: string | null
+          geofence_radius_meters?: number | null
           id?: string
           internal_notes?: string | null
+          is_clocked_in?: boolean | null
           job_number?: string
           latitude?: number | null
           longitude?: number | null
@@ -1435,12 +1611,58 @@ export type Database = {
         }
         Relationships: []
       }
+      worker_statuses: {
+        Row: {
+          business_id: string
+          clocked_in_at: string | null
+          current_job_id: string | null
+          current_location_lat: number | null
+          current_location_lng: number | null
+          current_status: string
+          id: string
+          last_location_at: string | null
+          status_since: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          clocked_in_at?: string | null
+          current_job_id?: string | null
+          current_location_lat?: number | null
+          current_location_lng?: number | null
+          current_status?: string
+          id?: string
+          last_location_at?: string | null
+          status_since?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          clocked_in_at?: string | null
+          current_job_id?: string | null
+          current_location_lat?: number | null
+          current_location_lng?: number | null
+          current_status?: string
+          id?: string
+          last_location_at?: string | null
+          status_since?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       accept_team_invite: { Args: { _token: string }; Returns: Json }
+      calculate_distance_meters: {
+        Args: { lat1: number; lat2: number; lng1: number; lng2: number }
+        Returns: number
+      }
       get_user_business_id: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -1461,6 +1683,10 @@ export type Database = {
       user_belongs_to_business: {
         Args: { _business_id: string }
         Returns: boolean
+      }
+      validate_geofence: {
+        Args: { p_job_id: string; p_worker_lat: number; p_worker_lng: number }
+        Returns: Json
       }
     }
     Enums: {
