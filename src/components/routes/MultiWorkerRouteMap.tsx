@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { MapPin, Layers, Route as RouteIcon } from "lucide-react";
 import { ColoredRoutePolyline } from "./ColoredRoutePolyline";
 import { WorkerRouteLegend } from "./WorkerRouteLegend";
+import { GOOGLE_MAPS_API_KEY } from "@/config/google-maps";
 import type { DailyRoutePlan } from "@/types/routePlanning";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -53,7 +54,8 @@ export function MultiWorkerRouteMap({
     new Set(workerRoutes.map((w) => w.userId))
   );
 
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  const apiKey = GOOGLE_MAPS_API_KEY;
+  const isPlaceholder = !apiKey || apiKey === "YOUR_API_KEY_HERE";
 
   // Assign colors to workers
   const workersWithColors = useMemo(() => {
@@ -163,14 +165,14 @@ export function MultiWorkerRouteMap({
     []
   );
 
-  if (!apiKey) {
+  if (isPlaceholder) {
     return (
       <Card style={{ height }}>
         <CardContent className="flex items-center justify-center h-full">
           <p className="text-muted-foreground text-center">
             Google Maps API key not configured.
             <br />
-            <span className="text-sm">Add VITE_GOOGLE_MAPS_API_KEY to enable maps.</span>
+            <span className="text-sm">Update src/config/google-maps.ts with your API key.</span>
           </p>
         </CardContent>
       </Card>
