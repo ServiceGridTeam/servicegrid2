@@ -13,18 +13,21 @@ import {
   Sparkles,
   Route as RouteIcon,
   MapPin,
-  Clock
+  Clock,
+  X
 } from "lucide-react";
 import { RoutePlanningMap } from "@/components/routes/RoutePlanningMap";
 import { WorkerRouteSidebar } from "@/components/routes/WorkerRouteSidebar";
 import { UnassignedJobsPanel } from "@/components/routes/UnassignedJobsPanel";
 import { RouteSummaryBar } from "@/components/routes/RouteSummaryBar";
 import { SmartAssignDialog } from "@/components/routes/SmartAssignDialog";
+import { SortableRouteList } from "@/components/routes/SortableRouteList";
 import { useDailyRoutePlansForDate } from "@/hooks/useDailyRoutePlans";
 import { useJobs } from "@/hooks/useJobs";
 import { useTeamMembers } from "@/hooks/useTeamManagement";
 import { useBulkAutoAssign } from "@/hooks/useBulkAutoAssign";
 import { useRoutePlanningDnd } from "@/hooks/useRoutePlanningDnd";
+import { useRouteReorder } from "@/hooks/useRouteReorder";
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -89,7 +92,19 @@ export default function Routes() {
     });
   }, [routePlans, teamMembers, jobsForDate]);
 
-  // DnD setup
+  // Get selected worker's route for reordering
+  const selectedWorkerRoute = useMemo(() => {
+    if (!selectedWorkerId) return null;
+    return workerRoutes.find((wr) => wr.userId === selectedWorkerId) || null;
+  }, [workerRoutes, selectedWorkerId]);
+
+  // Route reorder hook (only active when a worker is selected)
+  const routeReorder = useRouteReorder({
+    routePlanId: selectedWorkerRoute?.routePlan.id || "",
+    triggerOptimization: true,
+  });
+
+  // DnD setup for assigning jobs to workers
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -231,18 +246,45 @@ export default function Routes() {
             selectedDate={selectedDate}
           />
 
-          {/* Center - Map */}
-          <div className="flex-1 min-w-0">
-            {isLoading ? (
-              <Skeleton className="w-full h-full" />
-            ) : (
-              <RoutePlanningMap
-                workerRoutes={workerRoutes}
-                unassignedJobs={unassignedJobs}
-                selectedWorkerId={selectedWorkerId}
-                onSelectWorker={setSelectedWorkerId}
-                onAssignJob={handleSmartAssignJob}
-              />
+          {/* Center - Map or Route List */}
+          <div className="flex-1 min-w-0 flex">
+            {/* Map (shrinks when route list is shown) */}
+            <div className={`${selectedWorkerRoute ? "w-1/2" : "w-full"} transition-all duration-300`}>
+              {isLoading ? (
+                <Skeleton className="w-full h-full" />
+              ) : (
+                <RoutePlanningMap
+                  workerRoutes={workerRoutes}
+                  unassignedJobs={unassignedJobs}
+                  selectedWorkerId={selectedWorkerId}
+                  onSelectWorker={setSelectedWorkerId}
+                  onAssignJob={handleSmartAssignJob}
+                />
+              )}
+            </div>
+
+            {/* Sortable Route List (shown when worker selected) */}
+            {selectedWorkerRoute && (
+              <div className="w-1/2 border-l overflow-y-auto p-4 bg-muted/30">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold text-sm">Route Order</h2>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => setSelectedWorkerId(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <SortableRouteList
+                  routePlan={selectedWorkerRoute.routePlan}
+                  jobs={selectedWorkerRoute.jobs}
+                  workerName={selectedWorkerRoute.userName}
+                  onReorder={routeReorder.reorderJobs}
+                  isOptimizing={routeReorder.isOptimizing}
+                />
+              </div>
             )}
           </div>
 
