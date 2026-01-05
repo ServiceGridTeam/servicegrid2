@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.send-team-invite-email]
 verify_jwt = true
+
+[functions.daily-route-plan-crud]
+verify_jwt = true
