@@ -121,11 +121,17 @@ Deno.serve(async (req) => {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("Stripe Connect onboard error:", error);
+    
+    // Return 401 for auth-related errors
+    const isAuthError = errorMessage.includes("authorization") || 
+                        errorMessage.includes("Unauthorized") ||
+                        errorMessage.includes("No authorization");
+    
     return new Response(
       JSON.stringify({ error: errorMessage }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
+        status: isAuthError ? 401 : 400,
       }
     );
   }
