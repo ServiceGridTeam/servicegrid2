@@ -208,22 +208,6 @@ export function GoogleMapsVerificationCard() {
         {/* Map Preview - shows when both are working */}
         {shouldShowPreview && frontendConfigured && <MapPreview />}
 
-        {/* Error Details */}
-        {(backendError || frontendError) && !isLoading && (
-          <Alert variant="destructive" className="mt-4">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription className="text-sm">
-              <p className="font-medium mb-1">Troubleshooting:</p>
-              <ul className="list-disc list-inside space-y-1 text-xs">
-                <li>Ensure the API key is valid and not restricted</li>
-                <li>Enable "Maps JavaScript API" for frontend maps</li>
-                <li>Enable "Geocoding API" for address lookup</li>
-                <li>Enable "Directions API" for route optimization</li>
-                <li>Check billing is enabled on your Google Cloud project</li>
-              </ul>
-            </AlertDescription>
-          </Alert>
-        )}
 
         {/* Not Configured Warning */}
         {(!frontendConfigured || !backendConfigured) && !isLoading && (
