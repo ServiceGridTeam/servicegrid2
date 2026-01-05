@@ -37,7 +37,10 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.verify-google-maps]
-verify_jwt = true
+verify_jwt = false
 
 [functions.stripe-connect-status]
-verify_jwt = true
+verify_jwt = false
+
+[functions.stripe-connect-onboard]
+verify_jwt = false

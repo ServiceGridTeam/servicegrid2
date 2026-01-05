@@ -161,18 +161,7 @@ export function WorkerRouteMap({
     return <Skeleton className="w-full" style={{ height }} />;
   }
 
-  if (orderedJobs.length === 0) {
-    return (
-      <Card style={{ height }}>
-        <CardContent className="flex items-center justify-center h-full">
-          <div className="text-center text-muted-foreground">
-            <MapPin className="mx-auto h-12 w-12 mb-3 opacity-50" />
-            <p>No jobs with coordinates to display</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const hasNoJobs = orderedJobs.length === 0;
 
   return (
     <Card className="overflow-hidden">
@@ -195,7 +184,17 @@ export function WorkerRouteMap({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-0">
+      <CardContent className="p-0 relative">
+        {/* Show overlay if no jobs */}
+        {hasNoJobs && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+            <div className="text-center text-muted-foreground p-4">
+              <MapPin className="mx-auto h-12 w-12 mb-3 opacity-50" />
+              <p className="font-medium">No jobs with coordinates yet</p>
+              <p className="text-sm mt-1">Add addresses to jobs and geocode them to see them on the map</p>
+            </div>
+          </div>
+        )}
         <APIProvider apiKey={apiKey}>
           <GoogleMap
             style={{ width: "100%", height }}
