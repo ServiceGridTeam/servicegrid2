@@ -28,8 +28,26 @@ export function useGeocodeAddress(address: string | undefined) {
         } as AddressWithCoordinates;
       }
 
-      // If not cached, we'll need to call a geocoding edge function
-      // For now, return null - the edge function will be implemented in Phase 2
+      // If not cached, call the geocode-address edge function
+      const { data, error } = await supabase.functions.invoke("geocode-address", {
+        body: { address: normalizedAddress },
+      });
+
+      if (error) {
+        console.error("Geocoding error:", error);
+        return null;
+      }
+
+      if (data && data.latitude && data.longitude) {
+        return {
+          address: normalizedAddress,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          formattedAddress: data.formattedAddress,
+          placeId: data.placeId,
+        } as AddressWithCoordinates;
+      }
+
       return null;
     },
     enabled: !!address && address.trim().length >= 5,
@@ -70,8 +88,24 @@ export function useBatchGeocodeAddresses(addresses: string[]) {
         }
       }
 
-      // Uncached addresses will need edge function - to be implemented in Phase 2
-      // For now, just return what we have cached
+      // Geocode uncached addresses via edge function
+      if (uncached.length > 0) {
+        const { data, error } = await supabase.functions.invoke("geocode-address", {
+          body: { addresses: uncached },
+        });
+
+        if (!error && data?.results) {
+          for (const geocoded of data.results) {
+            results.push({
+              address: geocoded.address,
+              latitude: geocoded.latitude,
+              longitude: geocoded.longitude,
+              formattedAddress: geocoded.formattedAddress,
+              placeId: geocoded.placeId,
+            });
+          }
+        }
+      }
 
       return results;
     },
