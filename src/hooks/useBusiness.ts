@@ -22,6 +22,11 @@ export interface Business {
   settings: Json;
   stripe_account_id: string | null;
   stripe_onboarding_complete: boolean;
+  default_geofence_radius_meters: number | null;
+  geofence_enforcement_mode: string | null;
+  geofence_allow_override: boolean | null;
+  geofence_override_requires_reason: boolean | null;
+  geofence_override_requires_photo: boolean | null;
   created_at: string;
   updated_at: string;
 }
@@ -91,6 +96,11 @@ export function useUpdateBusiness() {
       timezone?: string;
       logo_url?: string;
       settings?: Json;
+      default_geofence_radius_meters?: number;
+      geofence_enforcement_mode?: string;
+      geofence_allow_override?: boolean;
+      geofence_override_requires_reason?: boolean;
+      geofence_override_requires_photo?: boolean;
     }) => {
       if (!profile?.business_id) throw new Error("No business associated");
 
