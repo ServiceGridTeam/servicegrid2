@@ -11,6 +11,7 @@ import { PendingApprovalsCard } from "@/components/team/PendingApprovalsCard";
 import { TeamManagement } from "@/components/settings/TeamManagement";
 import { InviteMemberDialog } from "@/components/settings/InviteMemberDialog";
 import { OvertimeSettingsCard } from "@/components/team/OvertimeSettingsCard";
+import { GeofenceAlertBanner } from "@/components/team/GeofenceAlertBanner";
 
 export default function Team() {
   const { data: canManage } = useCanManageTeam();
@@ -27,10 +28,13 @@ export default function Team() {
           </p>
         </div>
         {canManage && (
-          <Button onClick={() => setInviteDialogOpen(true)} className="gap-2">
-            <UserPlus className="h-4 w-4" />
-            Invite Member
-          </Button>
+          <div className="flex items-center gap-2">
+            <GeofenceAlertBanner />
+            <Button onClick={() => setInviteDialogOpen(true)} className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Invite Member
+            </Button>
+          </div>
         )}
       </div>
 
