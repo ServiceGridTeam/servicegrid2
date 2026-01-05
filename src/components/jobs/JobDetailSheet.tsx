@@ -14,6 +14,7 @@ import { DeleteJobDialog } from "./DeleteJobDialog";
 import { ClockInOutButton } from "./ClockInOutButton";
 import { AssigneeAvatarGroup } from "./AssigneeAvatarGroup";
 import { AutoAssignButton } from "./AutoAssignButton";
+import { ClockEventHistory } from "./ClockEventHistory";
 import { TimeEntriesTable } from "@/components/team/TimeEntriesTable";
 import { useUpdateJob, type JobWithCustomer } from "@/hooks/useJobs";
 import { useBusiness } from "@/hooks/useBusiness";
@@ -317,6 +318,10 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
                   <TimeEntriesTable jobId={job.id} />
                 </div>
               )}
+              
+              <div className="mt-4">
+                <ClockEventHistory jobId={job.id} />
+              </div>
             </div>
             <Separator />
 

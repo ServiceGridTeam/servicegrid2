@@ -12,6 +12,8 @@ import { TeamManagement } from "@/components/settings/TeamManagement";
 import { InviteMemberDialog } from "@/components/settings/InviteMemberDialog";
 import { OvertimeSettingsCard } from "@/components/team/OvertimeSettingsCard";
 import { GeofenceAlertBanner } from "@/components/team/GeofenceAlertBanner";
+import { WorkerStatusList } from "@/components/team/WorkerStatusList";
+import { WorkerStatusMap } from "@/components/team/WorkerStatusMap";
 
 export default function Team() {
   const { data: canManage } = useCanManageTeam();
@@ -50,6 +52,10 @@ export default function Team() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            <WorkerStatusList />
+            <WorkerStatusMap />
+          </div>
           <TeamDashboard />
         </TabsContent>
 

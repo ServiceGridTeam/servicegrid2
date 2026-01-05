@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, User, Building2, Bell, CreditCard, CheckCircle, AlertCircle, ExternalLink, Users, Puzzle } from "lucide-react";
 import { TeamManagement } from "@/components/settings/TeamManagement";
 import { GoogleMapsVerificationCard } from "@/components/settings/GoogleMapsVerificationCard";
+import { GeofenceSettingsCard } from "@/components/settings/GeofenceSettingsCard";
 export default function Settings() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: business, isLoading: businessLoading } = useBusiness();
@@ -447,6 +448,14 @@ export default function Settings() {
             </p>
           </div>
           <GoogleMapsVerificationCard />
+          
+          <div className="mt-6">
+            <h2 className="text-lg font-semibold mb-1">Field Operations</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Configure location-based features for your team
+            </p>
+          </div>
+          <GeofenceSettingsCard />
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">

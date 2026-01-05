@@ -50,3 +50,9 @@ verify_jwt = true
 
 [functions.clock-in-with-override]
 verify_jwt = true
+
+[functions.stripe-create-checkout]
+verify_jwt = false
+
+[functions.recalculate-etas]
+verify_jwt = true
