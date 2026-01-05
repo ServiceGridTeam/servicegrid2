@@ -32,3 +32,6 @@ verify_jwt = true
 
 [functions.geocode-address]
 verify_jwt = true
+
+[functions.bulk-auto-assign]
+verify_jwt = true

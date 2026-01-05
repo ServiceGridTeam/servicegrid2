@@ -17,20 +17,32 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { JobStatusBadge } from "./JobStatusBadge";
 import { JobPriorityBadge } from "./JobPriorityBadge";
 import { DeleteJobDialog } from "./DeleteJobDialog";
 import { useUpdateJob, type JobWithCustomer } from "@/hooks/useJobs";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface JobTableProps {
   jobs: JobWithCustomer[];
   onViewJob?: (job: JobWithCustomer) => void;
   onEditJob?: (job: JobWithCustomer) => void;
+  selectable?: boolean;
+  selectedJobIds?: string[];
+  onSelectionChange?: (selectedIds: string[]) => void;
 }
 
-export function JobTable({ jobs, onViewJob, onEditJob }: JobTableProps) {
+export function JobTable({ 
+  jobs, 
+  onViewJob, 
+  onEditJob,
+  selectable = false,
+  selectedJobIds = [],
+  onSelectionChange,
+}: JobTableProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const updateJob = useUpdateJob();
@@ -70,11 +82,44 @@ export function JobTable({ jobs, onViewJob, onEditJob }: JobTableProps) {
     return parts.join(", ") || "No address";
   };
 
+  const isAllSelected = jobs.length > 0 && jobs.every(job => selectedJobIds.includes(job.id));
+  const isSomeSelected = jobs.some(job => selectedJobIds.includes(job.id)) && !isAllSelected;
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      onSelectionChange?.(jobs.map(job => job.id));
+    } else {
+      onSelectionChange?.([]);
+    }
+  };
+
+  const handleSelectJob = (jobId: string, checked: boolean) => {
+    if (checked) {
+      onSelectionChange?.([...selectedJobIds, jobId]);
+    } else {
+      onSelectionChange?.(selectedJobIds.filter(id => id !== jobId));
+    }
+  };
+
   return (
     <>
       <Table>
         <TableHeader>
           <TableRow>
+            {selectable && (
+              <TableHead className="w-[50px]">
+                <Checkbox
+                  checked={isAllSelected}
+                  ref={(el) => {
+                    if (el) {
+                      (el as HTMLButtonElement & { indeterminate: boolean }).indeterminate = isSomeSelected;
+                    }
+                  }}
+                  onCheckedChange={handleSelectAll}
+                  aria-label="Select all"
+                />
+              </TableHead>
+            )}
             <TableHead>Job</TableHead>
             <TableHead>Customer</TableHead>
             <TableHead>Status</TableHead>
@@ -85,123 +130,138 @@ export function JobTable({ jobs, onViewJob, onEditJob }: JobTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {jobs.map((job) => (
-            <TableRow
-              key={job.id}
-              className="cursor-pointer"
-              onClick={() => onViewJob?.(job)}
-            >
-              <TableCell>
-                <div>
-                  <p className="font-medium">{job.job_number}</p>
-                  {job.title && (
-                    <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                      {job.title}
-                    </p>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div>
-                  <p className="font-medium">{getCustomerName(job)}</p>
-                  <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                    {getAddress(job)}
-                  </p>
-                </div>
-              </TableCell>
-              <TableCell>
-                <JobStatusBadge status={job.status || "scheduled"} />
-              </TableCell>
-              <TableCell>
-                <JobPriorityBadge priority={job.priority || "normal"} />
-              </TableCell>
-              <TableCell>
-                {job.scheduled_start ? (
+          {jobs.map((job) => {
+            const isSelected = selectedJobIds.includes(job.id);
+            return (
+              <TableRow
+                key={job.id}
+                className={cn(
+                  "cursor-pointer",
+                  isSelected && "bg-primary/5"
+                )}
+                onClick={() => onViewJob?.(job)}
+              >
+                {selectable && (
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={(checked) => handleSelectJob(job.id, !!checked)}
+                      aria-label={`Select job ${job.job_number}`}
+                    />
+                  </TableCell>
+                )}
+                <TableCell>
                   <div>
-                    <p>{format(new Date(job.scheduled_start), "MMM d, yyyy")}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {format(new Date(job.scheduled_start), "h:mm a")}
+                    <p className="font-medium">{job.job_number}</p>
+                    {job.title && (
+                      <p className="text-sm text-muted-foreground truncate max-w-[200px]">
+                        {job.title}
+                      </p>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div>
+                    <p className="font-medium">{getCustomerName(job)}</p>
+                    <p className="text-sm text-muted-foreground truncate max-w-[200px]">
+                      {getAddress(job)}
                     </p>
                   </div>
-                ) : (
-                  <span className="text-muted-foreground">Not scheduled</span>
-                )}
-              </TableCell>
-              <TableCell>
-                {job.assignee ? (
-                  <span>
-                    {job.assignee.first_name} {job.assignee.last_name}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">Unassigned</span>
-                )}
-              </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onViewJob?.(job);
-                      }}
-                    >
-                      <Eye className="mr-2 h-4 w-4" />
-                      View
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEditJob?.(job);
-                      }}
-                    >
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    {job.status !== "completed" && (
+                </TableCell>
+                <TableCell>
+                  <JobStatusBadge status={job.status || "scheduled"} />
+                </TableCell>
+                <TableCell>
+                  <JobPriorityBadge priority={job.priority || "normal"} />
+                </TableCell>
+                <TableCell>
+                  {job.scheduled_start ? (
+                    <div>
+                      <p>{format(new Date(job.scheduled_start), "MMM d, yyyy")}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(job.scheduled_start), "h:mm a")}
+                      </p>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">Not scheduled</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {job.assignee ? (
+                    <span>
+                      {job.assignee.first_name} {job.assignee.last_name}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">Unassigned</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleStatusChange(job, "completed");
+                          onViewJob?.(job);
                         }}
                       >
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Mark Complete
+                        <Eye className="mr-2 h-4 w-4" />
+                        View
                       </DropdownMenuItem>
-                    )}
-                    {job.status !== "cancelled" && (
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleStatusChange(job, "cancelled");
+                          onEditJob?.(job);
                         }}
                       >
-                        <XCircle className="mr-2 h-4 w-4" />
-                        Cancel Job
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit
                       </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedJob(job);
-                        setDeleteDialogOpen(true);
-                      }}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          ))}
+                      <DropdownMenuSeparator />
+                      {job.status !== "completed" && (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStatusChange(job, "completed");
+                          }}
+                        >
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          Mark Complete
+                        </DropdownMenuItem>
+                      )}
+                      {job.status !== "cancelled" && (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStatusChange(job, "cancelled");
+                          }}
+                        >
+                          <XCircle className="mr-2 h-4 w-4" />
+                          Cancel Job
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedJob(job);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
 

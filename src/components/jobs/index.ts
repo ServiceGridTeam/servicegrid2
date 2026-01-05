@@ -10,3 +10,4 @@ export { AssigneeAvatarGroup } from "./AssigneeAvatarGroup";
 export { ClockInOutButton } from "./ClockInOutButton";
 export { AutoAssignButton } from "./AutoAssignButton";
 export { AutoAssignDialog } from "./AutoAssignDialog";
+export { BulkAssignDialog } from "./BulkAssignDialog";
