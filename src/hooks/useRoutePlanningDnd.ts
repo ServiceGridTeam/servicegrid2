@@ -25,6 +25,11 @@ export function useRoutePlanningDnd({ selectedDate, teamMembers }: UseRoutePlann
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
+    console.log("useRoutePlanningDnd: Drag started", {
+      activeId: active.id,
+      type: active.data.current?.type,
+      job: active.data.current?.job?.title,
+    });
     if (active.data.current?.type === "job") {
       setActiveJob(active.data.current.job as Job);
     }
@@ -34,7 +39,17 @@ export function useRoutePlanningDnd({ selectedDate, teamMembers }: UseRoutePlann
     const { active, over } = event;
     setActiveJob(null);
 
-    if (!over) return;
+    console.log("useRoutePlanningDnd: Drag ended", {
+      activeId: active.id,
+      overId: over?.id,
+      overType: over?.data.current?.type,
+      overWorkerId: over?.data.current?.workerId,
+    });
+
+    if (!over) {
+      console.log("useRoutePlanningDnd: No drop target");
+      return;
+    }
 
     const job = active.data.current?.job as Job | undefined;
     const targetWorkerId = over.data.current?.workerId as string | undefined;

@@ -22,7 +22,7 @@ serve(async (req) => {
   console.log("verify-google-maps: Starting verification");
 
   try {
-    const apiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
+    const apiKey = Deno.env.get('VITE_GOOGLE_MAPS_API_KEY');
     
     if (!apiKey) {
       console.log("verify-google-maps: API key not configured");

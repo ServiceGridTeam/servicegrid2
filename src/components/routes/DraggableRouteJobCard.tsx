@@ -49,16 +49,14 @@ export function DraggableRouteJobCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors group ${
-        isDragging ? "shadow-lg ring-2 ring-primary/50 z-50" : ""
+      {...listeners}
+      {...attributes}
+      className={`p-3 rounded-lg border bg-card transition-colors group cursor-grab active:cursor-grabbing ${
+        isDragging ? "opacity-50 shadow-xl ring-2 ring-primary/50 z-50" : "hover:bg-muted/30"
       }`}
     >
       <div className="flex items-start gap-2">
-        <div
-          {...listeners}
-          {...attributes}
-          className="h-4 w-4 text-muted-foreground/50 mt-0.5 cursor-grab active:cursor-grabbing hover:text-muted-foreground transition-colors"
-        >
+        <div className="h-4 w-4 text-muted-foreground/50 mt-0.5 group-hover:text-muted-foreground transition-colors">
           <GripVertical className="h-4 w-4" />
         </div>
         <div className="flex-1 min-w-0">

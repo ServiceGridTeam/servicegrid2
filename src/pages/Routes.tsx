@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { format, addDays, subDays } from "date-fns";
-import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -26,9 +26,11 @@ import { useDailyRoutePlansForDate } from "@/hooks/useDailyRoutePlans";
 import { useJobs } from "@/hooks/useJobs";
 import { useTeamMembers } from "@/hooks/useTeamManagement";
 import { useBulkAutoAssign } from "@/hooks/useBulkAutoAssign";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRoutePlanningDnd } from "@/hooks/useRoutePlanningDnd";
 import { useRouteReorder } from "@/hooks/useRouteReorder";
 import { toast } from "@/hooks/use-toast";
+import { backfillJobCoordinates, countJobsWithoutCoordinates } from "@/utils/backfillJobCoordinates";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Job = Tables<"jobs">;
@@ -38,12 +40,20 @@ export default function Routes() {
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
   const [selectedJobForAssign, setSelectedJobForAssign] = useState<Job | null>(null);
   const [isSmartAssignOpen, setIsSmartAssignOpen] = useState(false);
+  const [jobsWithoutCoords, setJobsWithoutCoords] = useState<number>(0);
+  const [isBackfilling, setIsBackfilling] = useState(false);
 
   // Data fetching
   const { data: routePlans, isLoading: routesLoading } = useDailyRoutePlansForDate(selectedDate);
   const { data: allJobs, isLoading: jobsLoading } = useJobs();
   const { data: teamMembers, isLoading: teamLoading } = useTeamMembers();
   const bulkAutoAssign = useBulkAutoAssign();
+  const queryClient = useQueryClient();
+
+  // Check for jobs without coordinates on load
+  React.useEffect(() => {
+    countJobsWithoutCoordinates().then(setJobsWithoutCoords);
+  }, [allJobs]);
 
   // Filter jobs for selected date
   const dateStr = format(selectedDate, "yyyy-MM-dd");
@@ -108,7 +118,13 @@ export default function Routes() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 150,
+        tolerance: 5,
       },
     })
   );
@@ -150,6 +166,29 @@ export default function Routes() {
       });
     }
   }, [unassignedJobs, bulkAutoAssign, dateStr]);
+
+  const handleBackfillCoordinates = useCallback(async () => {
+    if (jobsWithoutCoords === 0) return;
+    
+    setIsBackfilling(true);
+    try {
+      const result = await backfillJobCoordinates();
+      toast({
+        title: "Geocoding complete",
+        description: `${result.processed} jobs geocoded${result.failed > 0 ? `, ${result.failed} failed` : ""}`,
+      });
+      setJobsWithoutCoords(0);
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+    } catch (error) {
+      toast({
+        title: "Geocoding failed",
+        description: error instanceof Error ? error.message : "Could not geocode jobs",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBackfilling(false);
+    }
+  }, [jobsWithoutCoords, queryClient]);
 
   const isLoading = routesLoading || jobsLoading || teamLoading;
 
@@ -209,6 +248,18 @@ export default function Routes() {
                   <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                   Assigning...
                 </Badge>
+              )}
+              {jobsWithoutCoords > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBackfillCoordinates}
+                  disabled={isBackfilling}
+                  className="gap-1.5"
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  {isBackfilling ? "Geocoding..." : `Geocode ${jobsWithoutCoords} jobs`}
+                </Button>
               )}
               <Button 
                 onClick={handleBulkAutoAssign}
