@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useFullVerification } from "@/hooks/useGoogleMapsVerification";
 import { APIProvider, Map } from "@vis.gl/react-google-maps";
+import { GOOGLE_MAPS_API_KEY } from "@/config/google-maps";
 import { useState } from "react";
 import { 
   CheckCircle, 
@@ -84,10 +85,11 @@ function StatusIndicator({
 }
 
 function MapPreview() {
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  const apiKey = GOOGLE_MAPS_API_KEY;
+  const isPlaceholder = !apiKey || apiKey === "YOUR_API_KEY_HERE";
   const [hasError, setHasError] = useState(false);
   
-  if (!apiKey || hasError) {
+  if (isPlaceholder || hasError) {
     return null;
   }
   
@@ -229,11 +231,11 @@ export function GoogleMapsVerificationCard() {
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="text-sm">
               {!frontendConfigured && !backendConfigured ? (
-                "Google Maps API keys are not configured. Maps and route features will not work."
+                "Google Maps API keys are not configured. Update src/config/google-maps.ts with your key."
               ) : !frontendConfigured ? (
-                "Frontend key (VITE_GOOGLE_MAPS_API_KEY) is not configured. Maps will not display."
+                "Frontend key not configured. Update src/config/google-maps.ts with your API key."
               ) : (
-                "Backend key (GOOGLE_MAPS_API_KEY) is not configured. Geocoding and routing will not work."
+                "Backend key (GOOGLE_MAPS_API_KEY secret) is not configured. Geocoding and routing will not work."
               )}
             </AlertDescription>
           </Alert>

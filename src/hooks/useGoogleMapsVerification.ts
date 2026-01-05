@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useCallback } from "react";
+import { GOOGLE_MAPS_API_KEY } from "@/config/google-maps";
 
 interface BackendVerificationResult {
   configured: boolean;
@@ -25,11 +26,12 @@ interface FullVerificationResult {
 }
 
 export function useVerifyFrontendKey(): FrontendVerificationResult {
-  const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  const key: string = GOOGLE_MAPS_API_KEY;
+  const isConfigured = Boolean(key && key !== "YOUR_API_KEY_HERE");
   
   return {
-    configured: !!key,
-    keyValue: key ? `${key.slice(0, 8)}...${key.slice(-4)}` : undefined,
+    configured: isConfigured,
+    keyValue: isConfigured ? `${key.slice(0, 8)}...${key.slice(-4)}` : undefined,
     tested: false,
   };
 }
@@ -66,9 +68,10 @@ export function useFrontendMapTest() {
   const [isTesting, setIsTesting] = useState(false);
 
   const testFrontendMap = useCallback(async (): Promise<boolean> => {
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    const apiKey = GOOGLE_MAPS_API_KEY;
+    const isPlaceholder = !apiKey || apiKey === "YOUR_API_KEY_HERE";
     
-    if (!apiKey) {
+    if (isPlaceholder) {
       setTestResult({ tested: true, working: false, error: "API key not configured" });
       return false;
     }

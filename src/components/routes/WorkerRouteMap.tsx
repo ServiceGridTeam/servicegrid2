@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { MapPin, ExternalLink, Layers } from "lucide-react";
+import { GOOGLE_MAPS_API_KEY } from "@/config/google-maps";
 import type { DailyRoutePlan } from "@/types/routePlanning";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -90,7 +91,8 @@ export function WorkerRouteMap({
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showTraffic, setShowTraffic] = useState(false);
 
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  const apiKey = GOOGLE_MAPS_API_KEY;
+  const isPlaceholder = !apiKey || apiKey === "YOUR_API_KEY_HERE";
 
   // Sort jobs by route sequence
   const orderedJobs = useMemo(() => {
@@ -143,14 +145,14 @@ export function WorkerRouteMap({
     setSelectedJob(job);
   }, []);
 
-  if (!apiKey) {
+  if (isPlaceholder) {
     return (
       <Card style={{ height }}>
         <CardContent className="flex items-center justify-center h-full">
           <p className="text-muted-foreground text-center">
             Google Maps API key not configured.
             <br />
-            <span className="text-sm">Add VITE_GOOGLE_MAPS_API_KEY to enable maps.</span>
+            <span className="text-sm">Update src/config/google-maps.ts with your API key.</span>
           </p>
         </CardContent>
       </Card>
