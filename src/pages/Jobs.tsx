@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Briefcase, Search } from "lucide-react";
+import { Plus, Briefcase, Search, Wand2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { JobTable, JobDetailSheet, JobFormDialog } from "@/components/jobs";
+import { JobTable, JobDetailSheet, JobFormDialog, BulkAssignDialog } from "@/components/jobs";
 import { useJobs, type JobWithCustomer } from "@/hooks/useJobs";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,6 +24,8 @@ export default function Jobs() {
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<JobWithCustomer | null>(null);
+  const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
@@ -46,6 +48,10 @@ export default function Jobs() {
   const handleNewJob = () => {
     setEditingJob(null);
     setFormDialogOpen(true);
+  };
+
+  const handleBulkAssignComplete = () => {
+    setSelectedJobIds([]);
   };
 
   const filteredJobs = statusFilter === "all"
@@ -88,6 +94,30 @@ export default function Jobs() {
         </Tabs>
       </div>
 
+      {/* Bulk Actions Toolbar */}
+      {selectedJobIds.length > 0 && (
+        <div className="flex items-center gap-4 p-3 rounded-lg bg-primary/10 border border-primary/20">
+          <span className="text-sm font-medium">
+            {selectedJobIds.length} job{selectedJobIds.length > 1 ? "s" : ""} selected
+          </span>
+          <Button
+            size="sm"
+            onClick={() => setBulkAssignOpen(true)}
+          >
+            <Wand2 className="mr-2 h-4 w-4" />
+            Bulk Auto-Assign
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedJobIds([])}
+          >
+            <X className="mr-2 h-4 w-4" />
+            Clear Selection
+          </Button>
+        </div>
+      )}
+
       {isLoading ? (
         <Card>
           <CardContent className="p-6">
@@ -127,6 +157,9 @@ export default function Jobs() {
               jobs={filteredJobs}
               onViewJob={handleViewJob}
               onEditJob={handleEditJob}
+              selectable
+              selectedJobIds={selectedJobIds}
+              onSelectionChange={setSelectedJobIds}
             />
           </CardContent>
         </Card>
@@ -143,6 +176,13 @@ export default function Jobs() {
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
         job={editingJob}
+      />
+
+      <BulkAssignDialog
+        open={bulkAssignOpen}
+        onOpenChange={setBulkAssignOpen}
+        selectedJobIds={selectedJobIds}
+        onComplete={handleBulkAssignComplete}
       />
     </div>
   );

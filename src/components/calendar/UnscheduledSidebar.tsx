@@ -3,12 +3,12 @@ import { useDroppable } from "@dnd-kit/core";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronRight, ChevronLeft, Calendar, Clock, Wand2 } from "lucide-react";
 import { DraggableUnscheduledCard } from "./DraggableUnscheduledCard";
-import { useAutoAssign } from "@/hooks/useAutoAssign";
+import { BulkAssignDialog } from "@/components/jobs/BulkAssignDialog";
 import type { JobWithCustomer } from "@/hooks/useJobs";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
 
 interface UnscheduledSidebarProps {
   jobs: JobWithCustomer[];
@@ -22,8 +22,8 @@ export function UnscheduledSidebar({
   onScheduleJob,
 }: UnscheduledSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const { toast } = useToast();
-  const autoAssign = useAutoAssign();
+  const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
 
   const unscheduledJobs = jobs.filter((job) => !job.scheduled_start);
 
@@ -32,30 +32,28 @@ export function UnscheduledSidebar({
     data: { type: "unscheduled-area" },
   });
 
-  const handleAutoAssignAll = async () => {
-    if (unscheduledJobs.length === 0) return;
-    
-    let successCount = 0;
-    let failCount = 0;
-    
-    for (const job of unscheduledJobs) {
-      try {
-        const result = await autoAssign.mutateAsync({ jobId: job.id });
-        if (result.success) {
-          successCount++;
-        } else {
-          failCount++;
-        }
-      } catch {
-        failCount++;
-      }
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedJobIds(unscheduledJobs.map(j => j.id));
+    } else {
+      setSelectedJobIds([]);
     }
-    
-    toast({
-      title: "Auto-Assign Complete",
-      description: `Assigned ${successCount} job(s)${failCount > 0 ? `, ${failCount} failed` : ""}`,
-    });
   };
+
+  const handleSelectJob = (jobId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedJobIds(prev => [...prev, jobId]);
+    } else {
+      setSelectedJobIds(prev => prev.filter(id => id !== jobId));
+    }
+  };
+
+  const handleBulkAssignComplete = () => {
+    setSelectedJobIds([]);
+  };
+
+  const isAllSelected = unscheduledJobs.length > 0 && 
+    unscheduledJobs.every(j => selectedJobIds.includes(j.id));
 
   if (collapsed) {
     return (
@@ -103,17 +101,32 @@ export function UnscheduledSidebar({
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
+        
         {unscheduledJobs.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full text-xs gap-1"
-            onClick={handleAutoAssignAll}
-            disabled={autoAssign.isPending}
-          >
-            <Wand2 className="h-3 w-3" />
-            {autoAssign.isPending ? "Assigning..." : "Auto-Assign All"}
-          </Button>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="select-all-unscheduled"
+                checked={isAllSelected}
+                onCheckedChange={handleSelectAll}
+              />
+              <label htmlFor="select-all-unscheduled" className="text-xs text-muted-foreground">
+                Select all
+              </label>
+            </div>
+            
+            {selectedJobIds.length > 0 && (
+              <Button
+                variant="default"
+                size="sm"
+                className="w-full text-xs gap-1"
+                onClick={() => setBulkAssignOpen(true)}
+              >
+                <Wand2 className="h-3 w-3" />
+                Bulk Assign ({selectedJobIds.length})
+              </Button>
+            )}
+          </div>
         )}
       </div>
 
@@ -126,16 +139,31 @@ export function UnscheduledSidebar({
             </div>
           ) : (
             unscheduledJobs.map((job) => (
-              <DraggableUnscheduledCard
-                key={job.id}
-                job={job}
-                onClick={() => onJobClick(job)}
-                onSchedule={() => onScheduleJob(job)}
-              />
+              <div key={job.id} className="flex items-start gap-2">
+                <Checkbox
+                  checked={selectedJobIds.includes(job.id)}
+                  onCheckedChange={(checked) => handleSelectJob(job.id, !!checked)}
+                  className="mt-3"
+                />
+                <div className="flex-1">
+                  <DraggableUnscheduledCard
+                    job={job}
+                    onClick={() => onJobClick(job)}
+                    onSchedule={() => onScheduleJob(job)}
+                  />
+                </div>
+              </div>
             ))
           )}
         </div>
       </ScrollArea>
+
+      <BulkAssignDialog
+        open={bulkAssignOpen}
+        onOpenChange={setBulkAssignOpen}
+        selectedJobIds={selectedJobIds}
+        onComplete={handleBulkAssignComplete}
+      />
     </div>
   );
 }
