@@ -156,6 +156,8 @@ export type Database = {
           preferred_days: Json | null
           preferred_schedule_days: string[] | null
           preferred_schedule_time: string | null
+          preferred_time_window: Json | null
+          scheduling_notes: string | null
           source: string | null
           state: string | null
           tags: string[] | null
@@ -184,6 +186,8 @@ export type Database = {
           preferred_days?: Json | null
           preferred_schedule_days?: string[] | null
           preferred_schedule_time?: string | null
+          preferred_time_window?: Json | null
+          scheduling_notes?: string | null
           source?: string | null
           state?: string | null
           tags?: string[] | null
@@ -212,6 +216,8 @@ export type Database = {
           preferred_days?: Json | null
           preferred_schedule_days?: string[] | null
           preferred_schedule_time?: string | null
+          preferred_time_window?: Json | null
+          scheduling_notes?: string | null
           source?: string | null
           state?: string | null
           tags?: string[] | null
@@ -1070,6 +1076,42 @@ export type Database = {
           },
         ]
       }
+      route_directions_cache: {
+        Row: {
+          cached_at: string | null
+          expires_at: string | null
+          id: string
+          legs: Json | null
+          overview_polyline: string | null
+          route_hash: string
+          total_distance_meters: number | null
+          total_duration_seconds: number | null
+          waypoints: Json
+        }
+        Insert: {
+          cached_at?: string | null
+          expires_at?: string | null
+          id?: string
+          legs?: Json | null
+          overview_polyline?: string | null
+          route_hash: string
+          total_distance_meters?: number | null
+          total_duration_seconds?: number | null
+          waypoints: Json
+        }
+        Update: {
+          cached_at?: string | null
+          expires_at?: string | null
+          id?: string
+          legs?: Json | null
+          overview_polyline?: string | null
+          route_hash?: string
+          total_distance_meters?: number | null
+          total_duration_seconds?: number | null
+          waypoints?: Json
+        }
+        Relationships: []
+      }
       team_availability: {
         Row: {
           business_id: string
@@ -1303,6 +1345,36 @@ export type Database = {
           },
         ]
       }
+      travel_time_cache: {
+        Row: {
+          cached_at: string | null
+          destination_hash: string
+          distance_meters: number | null
+          expires_at: string | null
+          id: string
+          origin_hash: string
+          travel_time_seconds: number
+        }
+        Insert: {
+          cached_at?: string | null
+          destination_hash: string
+          distance_meters?: number | null
+          expires_at?: string | null
+          id?: string
+          origin_hash: string
+          travel_time_seconds: number
+        }
+        Update: {
+          cached_at?: string | null
+          destination_hash?: string
+          distance_meters?: number | null
+          expires_at?: string | null
+          id?: string
+          origin_hash?: string
+          travel_time_seconds?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1320,6 +1392,45 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      worker_locations: {
+        Row: {
+          accuracy_meters: number | null
+          business_id: string
+          created_at: string | null
+          heading: number | null
+          id: string
+          latitude: number
+          longitude: number
+          recorded_at: string
+          speed_mps: number | null
+          user_id: string
+        }
+        Insert: {
+          accuracy_meters?: number | null
+          business_id: string
+          created_at?: string | null
+          heading?: number | null
+          id?: string
+          latitude: number
+          longitude: number
+          recorded_at?: string
+          speed_mps?: number | null
+          user_id: string
+        }
+        Update: {
+          accuracy_meters?: number | null
+          business_id?: string
+          created_at?: string | null
+          heading?: number | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          recorded_at?: string
+          speed_mps?: number | null
           user_id?: string
         }
         Relationships: []

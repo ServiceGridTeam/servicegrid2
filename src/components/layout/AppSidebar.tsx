@@ -25,6 +25,7 @@ import {
   Zap,
   ChevronRight,
   LogOut,
+  Route,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
@@ -39,6 +40,7 @@ const mainMenuItems = [
   { title: "Jobs", url: "/jobs", icon: Briefcase },
   { title: "Invoices", url: "/invoices", icon: Receipt },
   { title: "Calendar", url: "/calendar", icon: Calendar },
+  { title: "Routes", url: "/routes", icon: Route },
   { title: "Payments", url: "/payments", icon: CreditCard },
   { title: "Team", url: "/team", icon: Users },
 ];
