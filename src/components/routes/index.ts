@@ -1,4 +1,6 @@
 export { DailyRouteView } from "./DailyRouteView";
+export { SortableRouteList } from "./SortableRouteList";
+export { SortableRouteJobItem } from "./SortableRouteJobItem";
 export { WorkerRouteMap } from "./WorkerRouteMap";
 export { RouteMetricsCard } from "./RouteMetricsCard";
 export { MultiWorkerRouteMap } from "./MultiWorkerRouteMap";
