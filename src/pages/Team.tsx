@@ -5,6 +5,9 @@ import { UserPlus } from "lucide-react";
 import { useCanManageTeam } from "@/hooks/useTeamManagement";
 import { TeamDashboard } from "@/components/team/TeamDashboard";
 import { TimesheetView } from "@/components/team/TimesheetView";
+import { TeamAvailabilityGrid } from "@/components/team/TeamAvailabilityGrid";
+import { TimeOffRequestList } from "@/components/team/TimeOffRequestList";
+import { PendingApprovalsCard } from "@/components/team/PendingApprovalsCard";
 import { TeamManagement } from "@/components/settings/TeamManagement";
 import { InviteMemberDialog } from "@/components/settings/InviteMemberDialog";
 import { OvertimeSettingsCard } from "@/components/team/OvertimeSettingsCard";
@@ -36,6 +39,8 @@ export default function Team() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="timesheets">Timesheets</TabsTrigger>
+          <TabsTrigger value="availability">Availability</TabsTrigger>
+          <TabsTrigger value="time-off">Time Off</TabsTrigger>
           <TabsTrigger value="members">Members</TabsTrigger>
           {canManage && <TabsTrigger value="settings">Settings</TabsTrigger>}
         </TabsList>
@@ -46,6 +51,15 @@ export default function Team() {
 
         <TabsContent value="timesheets" className="space-y-6">
           <TimesheetView />
+        </TabsContent>
+
+        <TabsContent value="availability" className="space-y-6">
+          <TeamAvailabilityGrid />
+        </TabsContent>
+
+        <TabsContent value="time-off" className="space-y-6">
+          {canManage && <PendingApprovalsCard />}
+          <TimeOffRequestList />
         </TabsContent>
 
         <TabsContent value="members" className="space-y-6">
