@@ -88,7 +88,7 @@ export function useFrontendMapTest() {
 
       // Try to load the Maps JavaScript API
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
       script.async = true;
       
       const loadPromise = new Promise<boolean>((resolve) => {

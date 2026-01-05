@@ -250,14 +250,18 @@ export function MultiWorkerRouteMap({
                   fontWeight: "bold",
                   fontSize: "12px",
                 }}
-                icon={{
-                  path: google.maps.SymbolPath.CIRCLE,
-                  scale: 14,
-                  fillColor: color,
-                  fillOpacity: 1,
-                  strokeColor: "#ffffff",
-                  strokeWeight: 2,
-                }}
+                icon={
+                  typeof google !== "undefined" && google.maps?.SymbolPath
+                    ? {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 14,
+                        fillColor: color,
+                        fillOpacity: 1,
+                        strokeColor: "#ffffff",
+                        strokeWeight: 2,
+                      }
+                    : undefined
+                }
                 onClick={() => handleMarkerClick(job, workerName, color)}
               />
             ))}
