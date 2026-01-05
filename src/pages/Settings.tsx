@@ -11,9 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Building2, Bell, CreditCard, CheckCircle, AlertCircle, ExternalLink, Users } from "lucide-react";
+import { Loader2, User, Building2, Bell, CreditCard, CheckCircle, AlertCircle, ExternalLink, Users, Puzzle } from "lucide-react";
 import { TeamManagement } from "@/components/settings/TeamManagement";
-
+import { GoogleMapsVerificationCard } from "@/components/settings/GoogleMapsVerificationCard";
 export default function Settings() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: business, isLoading: businessLoading } = useBusiness();
@@ -131,6 +131,10 @@ export default function Settings() {
           <TabsTrigger value="payments" className="gap-2">
             <CreditCard className="h-4 w-4" />
             Payments
+          </TabsTrigger>
+          <TabsTrigger value="integrations" className="gap-2">
+            <Puzzle className="h-4 w-4" />
+            Integrations
           </TabsTrigger>
           <TabsTrigger value="notifications" className="gap-2">
             <Bell className="h-4 w-4" />
@@ -433,6 +437,16 @@ export default function Settings() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="integrations" className="space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold mb-1">External Integrations</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Verify and manage connections to third-party services
+            </p>
+          </div>
+          <GoogleMapsVerificationCard />
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">
