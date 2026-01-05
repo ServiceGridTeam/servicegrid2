@@ -55,7 +55,7 @@ export function MultiWorkerRouteMap({
   );
 
   const apiKey = GOOGLE_MAPS_API_KEY;
-  const isPlaceholder = !apiKey || apiKey === "YOUR_API_KEY_HERE";
+  const isPlaceholder = !apiKey || apiKey.includes("YOUR_API_KEY");
 
   // Assign colors to workers
   const workersWithColors = useMemo(() => {

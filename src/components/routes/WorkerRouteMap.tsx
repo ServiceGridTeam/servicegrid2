@@ -92,7 +92,7 @@ export function WorkerRouteMap({
   const [showTraffic, setShowTraffic] = useState(false);
 
   const apiKey = GOOGLE_MAPS_API_KEY;
-  const isPlaceholder = !apiKey || apiKey === "YOUR_API_KEY_HERE";
+  const isPlaceholder = !apiKey || apiKey.includes("YOUR_API_KEY");
 
   // Sort jobs by route sequence
   const orderedJobs = useMemo(() => {
