@@ -137,6 +137,7 @@ export type Database = {
         Row: {
           address_line1: string | null
           address_line2: string | null
+          avoid_days: Json | null
           business_id: string
           city: string | null
           company_name: string | null
@@ -145,11 +146,14 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
+          latitude: number | null
           lead_score: number | null
           lead_status: string | null
+          longitude: number | null
           notes: string | null
           phone: string | null
           preferred_contact_method: string | null
+          preferred_days: Json | null
           preferred_schedule_days: string[] | null
           preferred_schedule_time: string | null
           source: string | null
@@ -161,6 +165,7 @@ export type Database = {
         Insert: {
           address_line1?: string | null
           address_line2?: string | null
+          avoid_days?: Json | null
           business_id: string
           city?: string | null
           company_name?: string | null
@@ -169,11 +174,14 @@ export type Database = {
           first_name: string
           id?: string
           last_name: string
+          latitude?: number | null
           lead_score?: number | null
           lead_status?: string | null
+          longitude?: number | null
           notes?: string | null
           phone?: string | null
           preferred_contact_method?: string | null
+          preferred_days?: Json | null
           preferred_schedule_days?: string[] | null
           preferred_schedule_time?: string | null
           source?: string | null
@@ -185,6 +193,7 @@ export type Database = {
         Update: {
           address_line1?: string | null
           address_line2?: string | null
+          avoid_days?: Json | null
           business_id?: string
           city?: string | null
           company_name?: string | null
@@ -193,11 +202,14 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+          latitude?: number | null
           lead_score?: number | null
           lead_status?: string | null
+          longitude?: number | null
           notes?: string | null
           phone?: string | null
           preferred_contact_method?: string | null
+          preferred_days?: Json | null
           preferred_schedule_days?: string[] | null
           preferred_schedule_time?: string | null
           source?: string | null
@@ -212,6 +224,81 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_route_plans: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          end_location: Json | null
+          id: string
+          job_ids: string[]
+          legs: Json | null
+          optimization_reasoning: string | null
+          optimized_sequence: number[] | null
+          overview_polyline: string | null
+          route_date: string
+          start_location: Json | null
+          status: string
+          total_distance_meters: number | null
+          total_duration_seconds: number | null
+          total_job_time_minutes: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          end_location?: Json | null
+          id?: string
+          job_ids?: string[]
+          legs?: Json | null
+          optimization_reasoning?: string | null
+          optimized_sequence?: number[] | null
+          overview_polyline?: string | null
+          route_date: string
+          start_location?: Json | null
+          status?: string
+          total_distance_meters?: number | null
+          total_duration_seconds?: number | null
+          total_job_time_minutes?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          end_location?: Json | null
+          id?: string
+          job_ids?: string[]
+          legs?: Json | null
+          optimization_reasoning?: string | null
+          optimized_sequence?: number[] | null
+          overview_polyline?: string | null
+          route_date?: string
+          start_location?: Json | null
+          status?: string
+          total_distance_meters?: number | null
+          total_duration_seconds?: number | null
+          total_job_time_minutes?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_route_plans_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_route_plans_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -271,6 +358,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      geocode_cache: {
+        Row: {
+          address: string
+          cached_at: string | null
+          formatted_address: string | null
+          id: string
+          latitude: number
+          longitude: number
+          place_id: string | null
+        }
+        Insert: {
+          address: string
+          cached_at?: string | null
+          formatted_address?: string | null
+          id?: string
+          latitude: number
+          longitude: number
+          place_id?: string | null
+        }
+        Update: {
+          address?: string
+          cached_at?: string | null
+          formatted_address?: string | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          place_id?: string | null
+        }
+        Relationships: []
       }
       invoice_items: {
         Row: {
@@ -464,22 +581,32 @@ export type Database = {
       }
       jobs: {
         Row: {
+          actual_arrival: string | null
           actual_end: string | null
           actual_start: string | null
           address_line1: string | null
           address_line2: string | null
           assigned_to: string | null
+          assignment_reasoning: string | null
+          auto_assigned: boolean | null
           business_id: string
           city: string | null
           created_at: string
           customer_id: string
           description: string | null
+          drive_time_from_previous: number | null
+          estimated_arrival: string | null
+          estimated_duration_minutes: number | null
           id: string
           internal_notes: string | null
           job_number: string
+          latitude: number | null
+          longitude: number | null
           notes: string | null
           priority: string | null
           quote_id: string | null
+          route_plan_id: string | null
+          route_sequence: number | null
           scheduled_end: string | null
           scheduled_start: string | null
           state: string | null
@@ -489,22 +616,32 @@ export type Database = {
           zip: string | null
         }
         Insert: {
+          actual_arrival?: string | null
           actual_end?: string | null
           actual_start?: string | null
           address_line1?: string | null
           address_line2?: string | null
           assigned_to?: string | null
+          assignment_reasoning?: string | null
+          auto_assigned?: boolean | null
           business_id: string
           city?: string | null
           created_at?: string
           customer_id: string
           description?: string | null
+          drive_time_from_previous?: number | null
+          estimated_arrival?: string | null
+          estimated_duration_minutes?: number | null
           id?: string
           internal_notes?: string | null
           job_number: string
+          latitude?: number | null
+          longitude?: number | null
           notes?: string | null
           priority?: string | null
           quote_id?: string | null
+          route_plan_id?: string | null
+          route_sequence?: number | null
           scheduled_end?: string | null
           scheduled_start?: string | null
           state?: string | null
@@ -514,22 +651,32 @@ export type Database = {
           zip?: string | null
         }
         Update: {
+          actual_arrival?: string | null
           actual_end?: string | null
           actual_start?: string | null
           address_line1?: string | null
           address_line2?: string | null
           assigned_to?: string | null
+          assignment_reasoning?: string | null
+          auto_assigned?: boolean | null
           business_id?: string
           city?: string | null
           created_at?: string
           customer_id?: string
           description?: string | null
+          drive_time_from_previous?: number | null
+          estimated_arrival?: string | null
+          estimated_duration_minutes?: number | null
           id?: string
           internal_notes?: string | null
           job_number?: string
+          latitude?: number | null
+          longitude?: number | null
           notes?: string | null
           priority?: string | null
           quote_id?: string | null
+          route_plan_id?: string | null
+          route_sequence?: number | null
           scheduled_end?: string | null
           scheduled_start?: string | null
           state?: string | null
@@ -539,6 +686,13 @@ export type Database = {
           zip?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_jobs_route_plan"
+            columns: ["route_plan_id"]
+            isOneToOne: false
+            referencedRelation: "daily_route_plans"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "jobs_assigned_to_fkey"
             columns: ["assigned_to"]
@@ -724,11 +878,17 @@ export type Database = {
           created_at: string
           email: string | null
           first_name: string | null
+          home_address: string | null
+          home_latitude: number | null
+          home_longitude: number | null
           id: string
           is_onboarded: boolean | null
           job_title: string | null
           last_name: string | null
+          max_daily_hours: number | null
+          max_daily_jobs: number | null
           phone: string | null
+          skill_tags: string[] | null
           updated_at: string
         }
         Insert: {
@@ -737,11 +897,17 @@ export type Database = {
           created_at?: string
           email?: string | null
           first_name?: string | null
+          home_address?: string | null
+          home_latitude?: number | null
+          home_longitude?: number | null
           id: string
           is_onboarded?: boolean | null
           job_title?: string | null
           last_name?: string | null
+          max_daily_hours?: number | null
+          max_daily_jobs?: number | null
           phone?: string | null
+          skill_tags?: string[] | null
           updated_at?: string
         }
         Update: {
@@ -750,11 +916,17 @@ export type Database = {
           created_at?: string
           email?: string | null
           first_name?: string | null
+          home_address?: string | null
+          home_latitude?: number | null
+          home_longitude?: number | null
           id?: string
           is_onboarded?: boolean | null
           job_title?: string | null
           last_name?: string | null
+          max_daily_hours?: number | null
+          max_daily_jobs?: number | null
           phone?: string | null
+          skill_tags?: string[] | null
           updated_at?: string
         }
         Relationships: [
@@ -898,6 +1070,54 @@ export type Database = {
           },
         ]
       }
+      team_availability: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          day_of_week: number
+          end_time: string
+          id: string
+          is_available: boolean
+          start_time: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          day_of_week: number
+          end_time?: string
+          id?: string
+          is_available?: boolean
+          start_time?: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_available?: boolean
+          start_time?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_availability_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_availability_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_invites: {
         Row: {
           business_id: string
@@ -1015,6 +1235,67 @@ export type Database = {
           },
           {
             foreignKeyName: "time_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_off_requests: {
+        Row: {
+          approved_by: string | null
+          business_id: string
+          created_at: string | null
+          end_date: string
+          id: string
+          reason: string | null
+          start_date: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          approved_by?: string | null
+          business_id: string
+          created_at?: string | null
+          end_date: string
+          id?: string
+          reason?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          approved_by?: string | null
+          business_id?: string
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          reason?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_off_requests_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_off_requests_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_off_requests_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
