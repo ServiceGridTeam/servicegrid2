@@ -306,18 +306,6 @@ export function MultiWorkerRouteMap({
           </GoogleMap>
         </APIProvider>
 
-        {/* Empty state overlay */}
-        {!hasRoutes && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="bg-background/80 backdrop-blur-sm rounded-lg p-6 text-center shadow-lg">
-              <RouteIcon className="mx-auto h-10 w-10 mb-2 text-muted-foreground/50" />
-              <p className="text-muted-foreground font-medium">No routes for this date</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">
-                Create jobs and optimize routes to see them here
-              </p>
-            </div>
-          </div>
-        )}
       </CardContent>
 
       {/* Legend - only show if there are workers */}
