@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { geocodeJobAddress } from "@/utils/geocodeJob";
 
 export type Job = Tables<"jobs">;
 
@@ -152,6 +153,17 @@ export function useCreateJob() {
         .single();
 
       if (error) throw error;
+
+      // Auto-geocode the job address if address fields are provided
+      if (job.address_line1 || job.city) {
+        geocodeJobAddress(data.id, {
+          address_line1: job.address_line1,
+          city: job.city,
+          state: job.state,
+          zip: job.zip,
+        }).catch((err) => console.error("Failed to geocode new job:", err));
+      }
+
       return data;
     },
     onSuccess: () => {
@@ -173,6 +185,23 @@ export function useUpdateJob() {
         .single();
 
       if (error) throw error;
+
+      // Re-geocode if address fields were updated
+      const addressUpdated = 
+        "address_line1" in updates ||
+        "city" in updates ||
+        "state" in updates ||
+        "zip" in updates;
+
+      if (addressUpdated) {
+        geocodeJobAddress(id, {
+          address_line1: updates.address_line1 ?? data.address_line1,
+          city: updates.city ?? data.city,
+          state: updates.state ?? data.state,
+          zip: updates.zip ?? data.zip,
+        }).catch((err) => console.error("Failed to geocode updated job:", err));
+      }
+
       return data;
     },
     onSuccess: (data) => {

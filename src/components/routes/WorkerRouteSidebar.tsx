@@ -76,11 +76,21 @@ function DroppableWorkerRow({
     return `${miles.toFixed(1)} mi`;
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onSelect();
+    }
+  };
+
   return (
-    <button
+    <div
       ref={setNodeRef}
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
-      className={`w-full p-3 rounded-lg text-left transition-all ${
+      onKeyDown={handleKeyDown}
+      className={`w-full p-3 rounded-lg text-left transition-all cursor-pointer ${
         isOver
           ? "bg-primary/20 ring-2 ring-primary ring-dashed"
           : isSelected
@@ -144,7 +154,7 @@ function DroppableWorkerRow({
           )}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
