@@ -110,7 +110,7 @@ const PrivacyPolicy = () => {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">11. Contact Us</h2>
             <p className="text-muted-foreground leading-relaxed">
-              If you have any questions about this Privacy Policy, please contact us at support@servicegrid.app.
+              If you have any questions about this Privacy Policy, please contact us at team@servicegrid.app.
             </p>
           </section>
 
