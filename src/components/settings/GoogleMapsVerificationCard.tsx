@@ -2,6 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useFullVerification } from "@/hooks/useGoogleMapsVerification";
+import { APIProvider, Map } from "@vis.gl/react-google-maps";
+import { useState } from "react";
 import { 
   CheckCircle, 
   XCircle, 
@@ -18,12 +20,14 @@ function StatusIndicator({
   configured, 
   working, 
   loading,
-  error 
+  error,
+  tested = false,
 }: { 
   configured: boolean; 
   working?: boolean;
   loading?: boolean;
   error?: string;
+  tested?: boolean;
 }) {
   if (loading) {
     return (
@@ -74,24 +78,69 @@ function StatusIndicator({
   return (
     <div className="flex items-center gap-2 text-muted-foreground">
       <AlertTriangle className="h-4 w-4" />
-      <span>Configured (not tested)</span>
+      <span>{tested ? "Configured (test failed)" : "Configured (click Test to verify)"}</span>
+    </div>
+  );
+}
+
+function MapPreview() {
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  const [hasError, setHasError] = useState(false);
+  
+  if (!apiKey || hasError) {
+    return null;
+  }
+  
+  return (
+    <div className="mt-4 rounded-lg overflow-hidden border border-border">
+      <div className="h-[150px] w-full">
+        <APIProvider 
+          apiKey={apiKey}
+          onLoad={() => console.log("Google Maps API loaded in preview")}
+        >
+          <Map
+            defaultCenter={{ lat: 37.7749, lng: -122.4194 }}
+            defaultZoom={12}
+            gestureHandling="none"
+            disableDefaultUI={true}
+            mapId="verification-preview"
+          />
+        </APIProvider>
+      </div>
+      <div className="px-3 py-2 bg-muted/50 text-xs text-muted-foreground flex items-center gap-2">
+        <CheckCircle className="h-3 w-3 text-green-600" />
+        Map renders correctly
+      </div>
     </div>
   );
 }
 
 export function GoogleMapsVerificationCard() {
   const { result, isLoading, refetch } = useFullVerification();
+  const [showPreview, setShowPreview] = useState(false);
 
-  const handleTestConnection = () => {
-    refetch();
+  const handleTestConnection = async () => {
+    setShowPreview(false);
+    await refetch();
+    // Show preview after successful test
+    if (result.frontend.configured && result.backend?.working) {
+      setShowPreview(true);
+    }
   };
 
   const frontendConfigured = result.frontend.configured;
+  const frontendTested = result.frontend.tested;
+  const frontendWorking = result.frontend.working;
+  const frontendError = result.frontend.error;
+  
   const backendConfigured = result.backend?.configured ?? false;
   const backendWorking = result.backend?.working;
   const backendError = result.backend?.error || result.backendError;
 
-  const allWorking = frontendConfigured && backendWorking === true;
+  const allWorking = frontendConfigured && frontendWorking === true && backendWorking === true;
+
+  // Show preview if both are working
+  const shouldShowPreview = showPreview || allWorking;
 
   return (
     <Card>
@@ -121,7 +170,9 @@ export function GoogleMapsVerificationCard() {
           <div className="ml-6">
             <StatusIndicator 
               configured={frontendConfigured} 
-              working={frontendConfigured ? true : undefined}
+              working={frontendWorking}
+              tested={frontendTested}
+              error={frontendError}
             />
             {result.frontend.keyValue && (
               <p className="text-xs text-muted-foreground mt-1">
@@ -152,15 +203,19 @@ export function GoogleMapsVerificationCard() {
           </div>
         </div>
 
+        {/* Map Preview - shows when both are working */}
+        {shouldShowPreview && frontendConfigured && <MapPreview />}
+
         {/* Error Details */}
-        {backendError && !isLoading && (
+        {(backendError || frontendError) && !isLoading && (
           <Alert variant="destructive" className="mt-4">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="text-sm">
               <p className="font-medium mb-1">Troubleshooting:</p>
               <ul className="list-disc list-inside space-y-1 text-xs">
                 <li>Ensure the API key is valid and not restricted</li>
-                <li>Enable "Geocoding API" in Google Cloud Console</li>
+                <li>Enable "Maps JavaScript API" for frontend maps</li>
+                <li>Enable "Geocoding API" for address lookup</li>
                 <li>Enable "Directions API" for route optimization</li>
                 <li>Check billing is enabled on your Google Cloud project</li>
               </ul>

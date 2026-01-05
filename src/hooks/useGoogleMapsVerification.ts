@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useState, useCallback } from "react";
 
 interface BackendVerificationResult {
   configured: boolean;
@@ -11,7 +12,10 @@ interface BackendVerificationResult {
 
 interface FrontendVerificationResult {
   configured: boolean;
-  keyValue?: string; // Partial key for display
+  keyValue?: string;
+  tested: boolean;
+  working?: boolean;
+  error?: string;
 }
 
 interface FullVerificationResult {
@@ -26,6 +30,7 @@ export function useVerifyFrontendKey(): FrontendVerificationResult {
   return {
     configured: !!key,
     keyValue: key ? `${key.slice(0, 8)}...${key.slice(-4)}` : undefined,
+    tested: false,
   };
 }
 
@@ -46,14 +51,99 @@ export function useVerifyBackendKey(enabled: boolean = true) {
       return data as BackendVerificationResult;
     },
     enabled,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    retry: false, // Don't retry verification failures
+    staleTime: 5 * 60 * 1000,
+    retry: false,
   });
 }
 
+// Test if Google Maps JavaScript API actually loads and works
+export function useFrontendMapTest() {
+  const [testResult, setTestResult] = useState<{
+    tested: boolean;
+    working?: boolean;
+    error?: string;
+  }>({ tested: false });
+  const [isTesting, setIsTesting] = useState(false);
+
+  const testFrontendMap = useCallback(async (): Promise<boolean> => {
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    
+    if (!apiKey) {
+      setTestResult({ tested: true, working: false, error: "API key not configured" });
+      return false;
+    }
+
+    setIsTesting(true);
+    
+    try {
+      // Check if Google Maps is already loaded
+      if (window.google?.maps?.Map) {
+        setTestResult({ tested: true, working: true });
+        setIsTesting(false);
+        return true;
+      }
+
+      // Try to load the Maps JavaScript API
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+      script.async = true;
+      
+      const loadPromise = new Promise<boolean>((resolve) => {
+        script.onload = () => {
+          // Verify it actually loaded
+          if (window.google?.maps?.Map) {
+            setTestResult({ tested: true, working: true });
+            resolve(true);
+          } else {
+            setTestResult({ tested: true, working: false, error: "Maps API failed to initialize" });
+            resolve(false);
+          }
+        };
+        
+        script.onerror = () => {
+          setTestResult({ tested: true, working: false, error: "Failed to load Maps API script" });
+          resolve(false);
+        };
+
+        // Timeout after 10 seconds
+        setTimeout(() => {
+          if (!testResult.tested) {
+            setTestResult({ tested: true, working: false, error: "Map load timed out" });
+            resolve(false);
+          }
+        }, 10000);
+      });
+
+      document.head.appendChild(script);
+      const result = await loadPromise;
+      setIsTesting(false);
+      return result;
+    } catch (err) {
+      const error = err instanceof Error ? err.message : "Unknown error";
+      setTestResult({ tested: true, working: false, error });
+      setIsTesting(false);
+      return false;
+    }
+  }, []);
+
+  return {
+    testResult,
+    isTesting,
+    testFrontendMap,
+  };
+}
+
 export function useFullVerification() {
-  const frontend = useVerifyFrontendKey();
-  const { data: backend, isLoading, error, refetch } = useVerifyBackendKey();
+  const frontendBase = useVerifyFrontendKey();
+  const { data: backend, isLoading: isBackendLoading, error, refetch: refetchBackend } = useVerifyBackendKey();
+  const { testResult: frontendTestResult, isTesting: isFrontendTesting, testFrontendMap } = useFrontendMapTest();
+  
+  const frontend: FrontendVerificationResult = {
+    ...frontendBase,
+    tested: frontendTestResult.tested,
+    working: frontendTestResult.working,
+    error: frontendTestResult.error,
+  };
   
   const result: FullVerificationResult = {
     frontend,
@@ -61,9 +151,29 @@ export function useFullVerification() {
     backendError: error?.message,
   };
   
+  const refetch = useCallback(async () => {
+    // Test both frontend and backend
+    await Promise.all([
+      testFrontendMap(),
+      refetchBackend(),
+    ]);
+  }, [testFrontendMap, refetchBackend]);
+  
   return {
     result,
-    isLoading,
+    isLoading: isBackendLoading || isFrontendTesting,
     refetch,
+    testFrontendMap,
   };
+}
+
+// Extend window type for Google Maps
+declare global {
+  interface Window {
+    google?: {
+      maps?: {
+        Map?: unknown;
+      };
+    };
+  }
 }
