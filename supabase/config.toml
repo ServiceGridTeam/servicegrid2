@@ -23,3 +23,6 @@ verify_jwt = true
 
 [functions.daily-route-plan-crud]
 verify_jwt = true
+
+[functions.auto-assign-job]
+verify_jwt = true

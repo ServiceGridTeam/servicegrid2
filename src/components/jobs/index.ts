@@ -8,3 +8,5 @@ export { AssigneeSelector } from "./AssigneeSelector";
 export { MultiAssigneeSelector } from "./MultiAssigneeSelector";
 export { AssigneeAvatarGroup } from "./AssigneeAvatarGroup";
 export { ClockInOutButton } from "./ClockInOutButton";
+export { AutoAssignButton } from "./AutoAssignButton";
+export { AutoAssignDialog } from "./AutoAssignDialog";
