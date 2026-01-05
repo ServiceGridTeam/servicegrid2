@@ -3,10 +3,12 @@ import { useDroppable } from "@dnd-kit/core";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, ChevronLeft, Calendar, Clock } from "lucide-react";
+import { ChevronRight, ChevronLeft, Calendar, Clock, Wand2 } from "lucide-react";
 import { DraggableUnscheduledCard } from "./DraggableUnscheduledCard";
+import { useAutoAssign } from "@/hooks/useAutoAssign";
 import type { JobWithCustomer } from "@/hooks/useJobs";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface UnscheduledSidebarProps {
   jobs: JobWithCustomer[];
@@ -20,6 +22,8 @@ export function UnscheduledSidebar({
   onScheduleJob,
 }: UnscheduledSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const { toast } = useToast();
+  const autoAssign = useAutoAssign();
 
   const unscheduledJobs = jobs.filter((job) => !job.scheduled_start);
 
@@ -27,6 +31,31 @@ export function UnscheduledSidebar({
     id: "unscheduled-sidebar",
     data: { type: "unscheduled-area" },
   });
+
+  const handleAutoAssignAll = async () => {
+    if (unscheduledJobs.length === 0) return;
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const job of unscheduledJobs) {
+      try {
+        const result = await autoAssign.mutateAsync({ jobId: job.id });
+        if (result.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch {
+        failCount++;
+      }
+    }
+    
+    toast({
+      title: "Auto-Assign Complete",
+      description: `Assigned ${successCount} job(s)${failCount > 0 ? `, ${failCount} failed` : ""}`,
+    });
+  };
 
   if (collapsed) {
     return (
@@ -56,22 +85,36 @@ export function UnscheduledSidebar({
         isOver && "bg-primary/10"
       )}
     >
-      <div className="p-3 border-b flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <span className="font-medium text-sm">Unscheduled</span>
-          <Badge variant="secondary" className="rounded-full">
-            {unscheduledJobs.length}
-          </Badge>
+      <div className="p-3 border-b space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium text-sm">Unscheduled</span>
+            <Badge variant="secondary" className="rounded-full">
+              {unscheduledJobs.length}
+            </Badge>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCollapsed(true)}
+            className="h-6 w-6"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCollapsed(true)}
-          className="h-6 w-6"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+        {unscheduledJobs.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-xs gap-1"
+            onClick={handleAutoAssignAll}
+            disabled={autoAssign.isPending}
+          >
+            <Wand2 className="h-3 w-3" />
+            {autoAssign.isPending ? "Assigning..." : "Auto-Assign All"}
+          </Button>
+        )}
       </div>
 
       <ScrollArea className="flex-1">

@@ -13,6 +13,7 @@ import { JobPriorityBadge } from "./JobPriorityBadge";
 import { DeleteJobDialog } from "./DeleteJobDialog";
 import { ClockInOutButton } from "./ClockInOutButton";
 import { AssigneeAvatarGroup } from "./AssigneeAvatarGroup";
+import { AutoAssignButton } from "./AutoAssignButton";
 import { TimeEntriesTable } from "@/components/team/TimeEntriesTable";
 import { useUpdateJob, type JobWithCustomer } from "@/hooks/useJobs";
 import { useBusiness } from "@/hooks/useBusiness";
@@ -95,7 +96,7 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader className="pb-4">
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between gap-2">
               <div>
                 <SheetTitle className="text-xl">{job.job_number}</SheetTitle>
                 {job.title && (
@@ -103,6 +104,9 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
                 )}
               </div>
               <div className="flex items-center gap-2">
+                {!job.scheduled_start && (
+                  <AutoAssignButton job={job} variant="compact" />
+                )}
                 <JobStatusBadge status={job.status || "scheduled"} />
                 <JobPriorityBadge priority={job.priority || "normal"} />
               </div>
