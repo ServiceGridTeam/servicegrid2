@@ -9,4 +9,5 @@ export { WorkerRouteSidebar } from "./WorkerRouteSidebar";
 export { UnassignedJobsPanel } from "./UnassignedJobsPanel";
 export { RouteSummaryBar } from "./RouteSummaryBar";
 export { SmartAssignDialog } from "./SmartAssignDialog";
+export { DraggableRouteJobCard } from "./DraggableRouteJobCard";
 export type { WorkerRoute } from "./MultiWorkerRouteMap";

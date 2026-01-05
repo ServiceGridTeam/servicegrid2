@@ -1,21 +1,20 @@
 import { useState, useMemo, useCallback } from "react";
 import { format, addDays, subDays } from "date-fns";
+import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { 
   CalendarDays, 
   ChevronLeft, 
   ChevronRight, 
   Sparkles,
   Route as RouteIcon,
-  Users,
   MapPin,
   Clock
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { RoutePlanningMap } from "@/components/routes/RoutePlanningMap";
 import { WorkerRouteSidebar } from "@/components/routes/WorkerRouteSidebar";
 import { UnassignedJobsPanel } from "@/components/routes/UnassignedJobsPanel";
@@ -25,6 +24,7 @@ import { useDailyRoutePlansForDate } from "@/hooks/useDailyRoutePlans";
 import { useJobs } from "@/hooks/useJobs";
 import { useTeamMembers } from "@/hooks/useTeamManagement";
 import { useBulkAutoAssign } from "@/hooks/useBulkAutoAssign";
+import { useRoutePlanningDnd } from "@/hooks/useRoutePlanningDnd";
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -62,11 +62,8 @@ export default function Routes() {
 
   const unassignedJobs = useMemo(() => {
     if (!allJobs) return [];
-    // Jobs that are scheduled but not assigned, or unscheduled
     return allJobs.filter((job) => {
-      // Include unscheduled jobs
       if (!job.scheduled_start) return true;
-      // Include jobs scheduled for this date that aren't assigned
       const jobDate = format(new Date(job.scheduled_start), "yyyy-MM-dd");
       if (jobDate === dateStr && !job.assigned_to) return true;
       return false;
@@ -92,6 +89,20 @@ export default function Routes() {
     });
   }, [routePlans, teamMembers, jobsForDate]);
 
+  // DnD setup
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  const { activeJob, isProcessing, handleDragStart, handleDragEnd, handleDragCancel } = useRoutePlanningDnd({
+    selectedDate,
+    teamMembers: teamMembers || [],
+  });
+
   // Navigation
   const goToToday = () => setSelectedDate(new Date());
   const goToPrevDay = () => setSelectedDate((d) => subDays(d, 1));
@@ -111,7 +122,7 @@ export default function Routes() {
     
     try {
       await bulkAutoAssign.mutateAsync({
-        jobIds: unassignedJobs.slice(0, 20).map((j) => j.id), // Limit to 20 for performance
+        jobIds: unassignedJobs.slice(0, 20).map((j) => j.id),
         dateRange: { start: dateStr, end: dateStr },
         balanceWorkload: true,
       });
@@ -128,118 +139,160 @@ export default function Routes() {
   const isLoading = routesLoading || jobsLoading || teamLoading;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5rem)] -m-6">
-      {/* Header */}
-      <div className="shrink-0 border-b bg-background px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              <RouteIcon className="h-5 w-5 text-primary" />
-              <h1 className="text-xl font-semibold">Route Planning</h1>
-            </div>
-            
-            {/* Date navigation */}
-            <div className="flex items-center gap-2 ml-4">
-              <Button variant="outline" size="icon" onClick={goToPrevDay}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
+      <div className="flex flex-col h-[calc(100vh-5rem)] -m-6">
+        {/* Header */}
+        <div className="shrink-0 border-b bg-background px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1">
+                <RouteIcon className="h-5 w-5 text-primary" />
+                <h1 className="text-xl font-semibold">Route Planning</h1>
+              </div>
               
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="min-w-[180px] justify-start gap-2">
-                    <CalendarDays className="h-4 w-4" />
-                    {format(selectedDate, "EEE, MMM d, yyyy")}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={(date) => date && setSelectedDate(date)}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              {/* Date navigation */}
+              <div className="flex items-center gap-2 ml-4">
+                <Button variant="outline" size="icon" onClick={goToPrevDay}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="min-w-[180px] justify-start gap-2">
+                      <CalendarDays className="h-4 w-4" />
+                      {format(selectedDate, "EEE, MMM d, yyyy")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => date && setSelectedDate(date)}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
 
-              <Button variant="outline" size="icon" onClick={goToNextDay}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+                <Button variant="outline" size="icon" onClick={goToNextDay}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
 
-              <Button variant="ghost" size="sm" onClick={goToToday}>
-                Today
+                <Button variant="ghost" size="sm" onClick={goToToday}>
+                  Today
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {isProcessing && (
+                <Badge variant="secondary" className="gap-1">
+                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                  Assigning...
+                </Badge>
+              )}
+              <Button 
+                onClick={handleBulkAutoAssign}
+                disabled={bulkAutoAssign.isPending || unassignedJobs.length === 0}
+                className="gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                {bulkAutoAssign.isPending ? "Assigning..." : "Smart Assign All"}
               </Button>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button 
-              onClick={handleBulkAutoAssign}
-              disabled={bulkAutoAssign.isPending || unassignedJobs.length === 0}
-              className="gap-2"
-            >
-              <Sparkles className="h-4 w-4" />
-              {bulkAutoAssign.isPending ? "Assigning..." : "Smart Assign All"}
-            </Button>
           </div>
         </div>
-      </div>
 
-      {/* Summary bar */}
-      <RouteSummaryBar
-        totalJobs={jobsForDate.length}
-        assignedJobs={assignedJobs.length}
-        unassignedJobs={unassignedJobs.length}
-        totalWorkers={teamMembers?.length || 0}
-        activeWorkers={workerRoutes.length}
-        totalDistance={workerRoutes.reduce((sum, wr) => sum + (wr.routePlan.total_distance_meters || 0), 0)}
-        totalDuration={workerRoutes.reduce((sum, wr) => sum + (wr.routePlan.total_duration_seconds || 0), 0)}
-        isLoading={isLoading}
-      />
-
-      {/* Main content */}
-      <div className="flex-1 flex min-h-0">
-        {/* Left sidebar - Workers */}
-        <WorkerRouteSidebar
-          workerRoutes={workerRoutes}
-          teamMembers={teamMembers || []}
-          selectedWorkerId={selectedWorkerId}
-          onSelectWorker={setSelectedWorkerId}
+        {/* Summary bar */}
+        <RouteSummaryBar
+          totalJobs={jobsForDate.length}
+          assignedJobs={assignedJobs.length}
+          unassignedJobs={unassignedJobs.length}
+          totalWorkers={teamMembers?.length || 0}
+          activeWorkers={workerRoutes.length}
+          totalDistance={workerRoutes.reduce((sum, wr) => sum + (wr.routePlan.total_distance_meters || 0), 0)}
+          totalDuration={workerRoutes.reduce((sum, wr) => sum + (wr.routePlan.total_duration_seconds || 0), 0)}
           isLoading={isLoading}
+        />
+
+        {/* Main content */}
+        <div className="flex-1 flex min-h-0">
+          {/* Left sidebar - Workers */}
+          <WorkerRouteSidebar
+            workerRoutes={workerRoutes}
+            teamMembers={teamMembers || []}
+            selectedWorkerId={selectedWorkerId}
+            onSelectWorker={setSelectedWorkerId}
+            isLoading={isLoading}
+            selectedDate={selectedDate}
+          />
+
+          {/* Center - Map */}
+          <div className="flex-1 min-w-0">
+            {isLoading ? (
+              <Skeleton className="w-full h-full" />
+            ) : (
+              <RoutePlanningMap
+                workerRoutes={workerRoutes}
+                unassignedJobs={unassignedJobs}
+                selectedWorkerId={selectedWorkerId}
+                onSelectWorker={setSelectedWorkerId}
+                onAssignJob={handleSmartAssignJob}
+              />
+            )}
+          </div>
+
+          {/* Right sidebar - Unassigned jobs */}
+          <UnassignedJobsPanel
+            jobs={unassignedJobs}
+            onAssignJob={handleSmartAssignJob}
+            isLoading={isLoading}
+          />
+        </div>
+
+        {/* Smart assign dialog */}
+        <SmartAssignDialog
+          open={isSmartAssignOpen}
+          onOpenChange={setIsSmartAssignOpen}
+          job={selectedJobForAssign}
+          teamMembers={teamMembers || []}
+          workerRoutes={workerRoutes}
           selectedDate={selectedDate}
         />
-
-        {/* Center - Map */}
-        <div className="flex-1 min-w-0">
-          {isLoading ? (
-            <Skeleton className="w-full h-full" />
-          ) : (
-            <RoutePlanningMap
-              workerRoutes={workerRoutes}
-              unassignedJobs={unassignedJobs}
-              selectedWorkerId={selectedWorkerId}
-              onSelectWorker={setSelectedWorkerId}
-              onAssignJob={handleSmartAssignJob}
-            />
-          )}
-        </div>
-
-        {/* Right sidebar - Unassigned jobs */}
-        <UnassignedJobsPanel
-          jobs={unassignedJobs}
-          onAssignJob={handleSmartAssignJob}
-          isLoading={isLoading}
-        />
       </div>
 
-      {/* Smart assign dialog */}
-      <SmartAssignDialog
-        open={isSmartAssignOpen}
-        onOpenChange={setIsSmartAssignOpen}
-        job={selectedJobForAssign}
-        teamMembers={teamMembers || []}
-        workerRoutes={workerRoutes}
-        selectedDate={selectedDate}
-      />
-    </div>
+      {/* Drag overlay */}
+      <DragOverlay>
+        {activeJob ? (
+          <div className="p-3 rounded-lg border bg-card shadow-lg ring-2 ring-primary/50 w-72">
+            <div className="flex items-start gap-2">
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-sm leading-tight truncate">
+                  {activeJob.title}
+                </h4>
+                {(activeJob.address_line1 || activeJob.city) && (
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <MapPin className="h-3 w-3 shrink-0" />
+                    <span className="truncate">
+                      {[activeJob.address_line1, activeJob.city].filter(Boolean).join(", ")}
+                    </span>
+                  </p>
+                )}
+                {activeJob.estimated_duration_minutes && (
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {activeJob.estimated_duration_minutes}m
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
