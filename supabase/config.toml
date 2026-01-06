@@ -80,3 +80,12 @@ verify_jwt = false
 
 [functions.render-email-template]
 verify_jwt = true
+
+[functions.send-sequence-emails]
+verify_jwt = false
+
+[functions.trigger-sequence-enrollment]
+verify_jwt = false
+
+[functions.process-enrollment-queue]
+verify_jwt = false
