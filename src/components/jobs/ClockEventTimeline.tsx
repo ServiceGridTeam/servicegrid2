@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useClockEvents, type ClockEvent } from "@/hooks/useClockEvents";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +11,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { format, formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow, isBefore } from "date-fns";
 import {
   Clock,
   LogIn,
@@ -24,7 +26,16 @@ import {
   Download,
   History,
   XCircle,
+  List,
+  Map,
 } from "lucide-react";
+import {
+  APIProvider,
+  Map as GoogleMap,
+  AdvancedMarker,
+  useMap,
+} from "@vis.gl/react-google-maps";
+import { GOOGLE_MAPS_API_KEY } from "@/config/google-maps";
 
 interface ClockEventTimelineProps {
   jobId: string;
@@ -286,12 +297,196 @@ function exportToCsv(events: ClockEvent[], jobId: string) {
   document.body.removeChild(link);
 }
 
+// Geofence circle component
+function GeofenceCircle({ 
+  center, 
+  radius, 
+  isExpanded = false 
+}: { 
+  center: { lat: number; lng: number }; 
+  radius: number;
+  isExpanded?: boolean;
+}) {
+  const map = useMap();
+
+  useMemo(() => {
+    if (!map || !window.google?.maps) return;
+
+    const circle = new window.google.maps.Circle({
+      center,
+      radius,
+      fillColor: isExpanded ? "#f59e0b" : "#3b82f6",
+      fillOpacity: 0.1,
+      strokeColor: isExpanded ? "#f59e0b" : "#3b82f6",
+      strokeWeight: 2,
+      strokeOpacity: 0.6,
+      map,
+    });
+
+    return () => circle.setMap(null);
+  }, [map, center, radius, isExpanded]);
+
+  return null;
+}
+
+// Map component showing clock events
+function ClockEventMap({ 
+  events, 
+  job 
+}: { 
+  events: ClockEvent[];
+  job: { 
+    latitude: number | null; 
+    longitude: number | null; 
+    geofence_radius_meters: number | null;
+    geofence_expanded_radius_meters: number | null;
+    geofence_expanded_until: string | null;
+  } | null;
+}) {
+  const [selectedEvent, setSelectedEvent] = useState<ClockEvent | null>(null);
+
+  // Filter events with valid coordinates
+  const validEvents = events.filter(e => e.latitude && e.longitude);
+  
+  if (!job?.latitude || !job?.longitude) {
+    return (
+      <div className="h-[300px] border rounded-lg flex items-center justify-center bg-muted/50">
+        <p className="text-muted-foreground text-sm">Job location not available</p>
+      </div>
+    );
+  }
+
+  // Check if geofence is currently expanded
+  const isExpanded = job.geofence_expanded_until && 
+    job.geofence_expanded_radius_meters &&
+    isBefore(new Date(), new Date(job.geofence_expanded_until));
+
+  const effectiveRadius = isExpanded 
+    ? job.geofence_expanded_radius_meters! 
+    : (job.geofence_radius_meters || 100);
+
+  const jobCenter = { lat: job.latitude, lng: job.longitude };
+
+  return (
+    <div className="h-[300px] border rounded-lg overflow-hidden">
+      <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
+        <GoogleMap
+          defaultCenter={jobCenter}
+          defaultZoom={17}
+          mapId="clock-event-map"
+          gestureHandling="cooperative"
+          disableDefaultUI={false}
+          zoomControl={true}
+          streetViewControl={false}
+          mapTypeControl={false}
+          fullscreenControl={false}
+        >
+          {/* Geofence Circle */}
+          <GeofenceCircle 
+            center={jobCenter} 
+            radius={effectiveRadius} 
+            isExpanded={isExpanded ?? false}
+          />
+
+          {/* Job Site Marker */}
+          <AdvancedMarker position={jobCenter}>
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground shadow-lg border-2 border-background">
+              <MapPin className="h-4 w-4" />
+            </div>
+          </AdvancedMarker>
+
+          {/* Clock Event Markers */}
+          {validEvents.map((event) => {
+            const isClockIn = event.event_type === "clock_in";
+            const isViolation = !event.within_geofence;
+            const hasOverride = event.override_reason || event.override_photo_url;
+
+            return (
+              <AdvancedMarker
+                key={event.id}
+                position={{ lat: event.latitude!, lng: event.longitude! }}
+                onClick={() => setSelectedEvent(selectedEvent?.id === event.id ? null : event)}
+              >
+                <div 
+                  className={`
+                    flex items-center justify-center w-7 h-7 rounded-full shadow-md cursor-pointer
+                    transition-transform hover:scale-110
+                    ${isClockIn ? "bg-success" : "bg-info"}
+                    ${isViolation ? "ring-2 ring-destructive ring-offset-1" : ""}
+                    ${hasOverride ? "ring-2 ring-warning ring-offset-1" : ""}
+                  `}
+                >
+                  {isClockIn ? (
+                    <LogIn className="h-3.5 w-3.5 text-success-foreground" />
+                  ) : (
+                    <LogOut className="h-3.5 w-3.5 text-info-foreground" />
+                  )}
+                </div>
+              </AdvancedMarker>
+            );
+          })}
+        </GoogleMap>
+      </APIProvider>
+
+      {/* Selected Event Info Panel */}
+      {selectedEvent && (
+        <div className="absolute bottom-2 left-2 right-2 bg-card border rounded-lg p-3 shadow-lg">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <EventTypeBadge type={selectedEvent.event_type} status={selectedEvent.status} />
+              <span className="text-xs text-muted-foreground">
+                {selectedEvent.recorded_at
+                  ? format(new Date(selectedEvent.recorded_at), "MMM d, h:mm a")
+                  : "Unknown time"}
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={() => setSelectedEvent(null)}
+            >
+              <XCircle className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+            <GeofenceIndicator event={selectedEvent} />
+            {selectedEvent.distance_from_job_meters && (
+              <span>• {Math.round(selectedEvent.distance_from_job_meters)}m from job</span>
+            )}
+          </div>
+          {selectedEvent.override_reason && (
+            <div className="mt-1 text-xs text-warning truncate">
+              Override: {selectedEvent.override_reason}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ClockEventTimeline({
   jobId,
   defaultOpen = false,
 }: ClockEventTimelineProps) {
   const { data: events, isLoading, error } = useClockEvents(jobId);
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
+
+  // Fetch job data for geofence visualization
+  const { data: job } = useQuery({
+    queryKey: ["job-geofence", jobId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("jobs")
+        .select("latitude, longitude, geofence_radius_meters, geofence_expanded_radius_meters, geofence_expanded_until")
+        .eq("id", jobId)
+        .single();
+      return data;
+    },
+    enabled: isOpen && viewMode === "map",
+  });
 
   if (isLoading) {
     return (
@@ -320,6 +515,9 @@ export function ClockEventTimeline({
   const overrideCount =
     events?.filter((e) => e.override_reason || e.override_photo_url).length || 0;
   const violationCount = events?.filter((e) => !e.within_geofence).length || 0;
+
+  // Check if any events have coordinates for map view
+  const hasLocationData = events?.some(e => e.latitude && e.longitude);
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -357,8 +555,31 @@ export function ClockEventTimeline({
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Export Button */}
-            <div className="flex justify-end">
+            {/* Toolbar: View Toggle + Export */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+                <Button
+                  variant={viewMode === "list" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("list")}
+                  className="h-7 gap-1.5"
+                >
+                  <List className="h-3.5 w-3.5" />
+                  List
+                </Button>
+                <Button
+                  variant={viewMode === "map" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("map")}
+                  disabled={!hasLocationData}
+                  className="h-7 gap-1.5"
+                  title={!hasLocationData ? "No location data available" : undefined}
+                >
+                  <Map className="h-3.5 w-3.5" />
+                  Map
+                </Button>
+              </div>
+
               <Button
                 variant="outline"
                 size="sm"
@@ -370,16 +591,22 @@ export function ClockEventTimeline({
               </Button>
             </div>
 
-            {/* Timeline */}
-            <div className="border rounded-lg p-4 bg-card">
-              {events.map((event, index) => (
-                <TimelineEvent
-                  key={event.id}
-                  event={event}
-                  isLast={index === events.length - 1}
-                />
-              ))}
-            </div>
+            {/* Content: Map or List */}
+            {viewMode === "map" ? (
+              <div className="relative">
+                <ClockEventMap events={events} job={job ?? null} />
+              </div>
+            ) : (
+              <div className="border rounded-lg p-4 bg-card">
+                {events.map((event, index) => (
+                  <TimelineEvent
+                    key={event.id}
+                    event={event}
+                    isLast={index === events.length - 1}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </CollapsibleContent>
