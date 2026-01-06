@@ -58,7 +58,7 @@ function PreviewPortalContent() {
       <PortalNav />
       
       <main className="flex-1 container mx-auto px-4 py-6">
-        <PortalErrorBoundary>
+        <PortalErrorBoundary basePath={`/portal/preview${location.search}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeBusinessId}

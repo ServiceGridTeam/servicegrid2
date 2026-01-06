@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { FileText, Receipt, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { usePortalBasePath } from '@/hooks/usePortalBasePath';
 
 interface ActionItemsWidgetProps {
   pendingQuotes: number;
@@ -15,6 +16,7 @@ export function ActionItemsWidget({
   unpaidInvoices,
   isLoading 
 }: ActionItemsWidgetProps) {
+  const { buildPath } = usePortalBasePath();
   const hasItems = pendingQuotes > 0 || unpaidInvoices > 0;
 
   if (isLoading) {
@@ -61,7 +63,7 @@ export function ActionItemsWidget({
             transition={{ duration: 0.2 }}
           >
             <Link 
-              to="/portal/documents?tab=quotes"
+              to={buildPath('/documents?tab=quotes')}
               className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors group"
             >
               <div className="flex items-center gap-3">
@@ -90,7 +92,7 @@ export function ActionItemsWidget({
             transition={{ duration: 0.2, delay: 0.1 }}
           >
             <Link 
-              to="/portal/documents?tab=invoices"
+              to={buildPath('/documents?tab=invoices')}
               className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors group"
             >
               <div className="flex items-center gap-3">

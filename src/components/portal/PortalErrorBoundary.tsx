@@ -2,11 +2,11 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  basePath?: string;
 }
 
 interface State {
@@ -38,6 +38,8 @@ export class PortalErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
+      const homePath = this.props.basePath || '/portal';
+
       return (
         <div className="min-h-[400px] flex items-center justify-center p-4">
           <Card className="max-w-md w-full">
@@ -55,11 +57,9 @@ export class PortalErrorBoundary extends Component<Props, State> {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Try Again
               </Button>
-              <Button variant="outline" asChild className="w-full">
-                <Link to="/portal">
-                  <Home className="h-4 w-4 mr-2" />
-                  Back to Dashboard
-                </Link>
+              <Button variant="outline" className="w-full" onClick={() => window.location.href = homePath}>
+                <Home className="h-4 w-4 mr-2" />
+                Back to Dashboard
               </Button>
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <details className="mt-4 text-xs text-muted-foreground">
