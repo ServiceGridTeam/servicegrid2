@@ -1,10 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import type { AppRole } from "@/lib/permissions";
 
 export interface Profile {
   id: string;
   business_id: string | null;
+  active_business_id: string | null;
+  active_role: AppRole | null;
   first_name: string | null;
   last_name: string | null;
   email: string | null;

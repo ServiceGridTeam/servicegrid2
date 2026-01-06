@@ -161,6 +161,120 @@ export type Database = {
           },
         ]
       }
+      business_membership_audit: {
+        Row: {
+          action: string
+          business_id: string
+          created_at: string
+          id: string
+          membership_id: string
+          metadata: Json | null
+          new_role: Database["public"]["Enums"]["app_role"] | null
+          old_role: Database["public"]["Enums"]["app_role"] | null
+          performed_by: string | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          business_id: string
+          created_at?: string
+          id?: string
+          membership_id: string
+          metadata?: Json | null
+          new_role?: Database["public"]["Enums"]["app_role"] | null
+          old_role?: Database["public"]["Enums"]["app_role"] | null
+          performed_by?: string | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          business_id?: string
+          created_at?: string
+          id?: string
+          membership_id?: string
+          metadata?: Json | null
+          new_role?: Database["public"]["Enums"]["app_role"] | null
+          old_role?: Database["public"]["Enums"]["app_role"] | null
+          performed_by?: string | null
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_membership_audit_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_memberships: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          invited_at: string | null
+          invited_by: string | null
+          is_primary: boolean
+          joined_at: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          is_primary?: boolean
+          joined_at?: string
+          role: Database["public"]["Enums"]["app_role"]
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          is_primary?: boolean
+          joined_at?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_memberships_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_memberships_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_memberships_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
           address_line1: string | null
@@ -2147,6 +2261,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_business_id: string | null
+          active_role: Database["public"]["Enums"]["app_role"] | null
           avatar_url: string | null
           business_id: string | null
           can_approve_timesheets: boolean | null
@@ -2170,6 +2286,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_business_id?: string | null
+          active_role?: Database["public"]["Enums"]["app_role"] | null
           avatar_url?: string | null
           business_id?: string | null
           can_approve_timesheets?: boolean | null
@@ -2193,6 +2311,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_business_id?: string | null
+          active_role?: Database["public"]["Enums"]["app_role"] | null
           avatar_url?: string | null
           business_id?: string | null
           can_approve_timesheets?: boolean | null
@@ -2216,6 +2336,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_active_business_id_fkey"
+            columns: ["active_business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_business_id_fkey"
             columns: ["business_id"]
@@ -3189,6 +3316,11 @@ export type Database = {
         Returns: number
       }
       get_user_business_id: { Args: never; Returns: string }
+      get_user_business_ids: { Args: { p_user_id?: string }; Returns: string[] }
+      get_user_role_in_business: {
+        Args: { p_business_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -3205,6 +3337,7 @@ export type Database = {
         }
         Returns: string
       }
+      switch_active_business: { Args: { p_business_id: string }; Returns: Json }
       update_worker_status: {
         Args: {
           p_accuracy_meters?: number

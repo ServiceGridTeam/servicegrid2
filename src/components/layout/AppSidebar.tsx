@@ -13,55 +13,16 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import {
-  LayoutDashboard,
-  Users,
-  FileText,
-  Briefcase,
-  Receipt,
-  Calendar,
-  CreditCard,
-  Settings,
-  Zap,
-  ChevronRight,
-  LogOut,
-  Route,
-  Inbox,
-  Mail,
-  GitBranch,
-  Megaphone,
-} from "lucide-react";
+import { ChevronRight, LogOut, Zap } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
-import { useBusiness } from "@/hooks/useBusiness";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { usePendingRequestsCount } from "@/hooks/useJobRequests";
 import { usePendingModificationsCount } from "@/hooks/useJobModificationRequests";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-const mainMenuItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Customers", url: "/customers", icon: Users },
-  { title: "Quotes", url: "/quotes", icon: FileText },
-  { title: "Jobs", url: "/jobs", icon: Briefcase },
-  { title: "Requests", url: "/requests", icon: Inbox },
-  { title: "Invoices", url: "/invoices", icon: Receipt },
-  { title: "Calendar", url: "/calendar", icon: Calendar },
-  { title: "Routes", url: "/routes", icon: Route },
-  { title: "Payments", url: "/payments", icon: CreditCard },
-  { title: "Team", url: "/team", icon: Users },
-];
-
-const marketingMenuItems = [
-  { title: "Templates", url: "/marketing/templates", icon: Mail },
-  { title: "Sequences", url: "/marketing/sequences", icon: GitBranch },
-  { title: "Campaigns", url: "/marketing/campaigns", icon: Megaphone },
-];
-
-const settingsMenuItems = [
-  { title: "Settings", url: "/settings", icon: Settings },
-];
+import { ROLE_CONFIG } from "@/lib/permissions";
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -69,13 +30,19 @@ export function AppSidebar() {
   const location = useLocation();
   const { signOut } = useAuth();
   const { data: profile } = useProfile();
-  const { data: business } = useBusiness();
+  const { activeBusinessName, activeRole, navGroups, isLoading } = useBusinessContext();
   const { data: pendingRequestsCount } = usePendingRequestsCount();
   const { data: pendingModificationsCount } = usePendingModificationsCount();
 
   const totalPendingCount = (pendingRequestsCount || 0) + (pendingModificationsCount || 0);
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
+  const isActive = (path: string) => {
+    // Handle dashboard/root path specially
+    if (path === "/") {
+      return location.pathname === "/" || location.pathname === "/dashboard";
+    }
+    return location.pathname === path || location.pathname.startsWith(path + "/");
+  };
 
   const getInitials = () => {
     if (profile?.first_name && profile?.last_name) {
@@ -87,6 +54,8 @@ export function AppSidebar() {
     return "U";
   };
 
+  const roleConfig = activeRole ? ROLE_CONFIG[activeRole] : null;
+
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
       <SidebarHeader className="border-b border-sidebar-border p-4">
@@ -97,123 +66,60 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="flex flex-col overflow-hidden">
               <span className="font-semibold text-sidebar-foreground truncate tracking-tight">
-                {business?.name || "ServiceGrid"}
+                {activeBusinessName || "ServiceGrid"}
               </span>
-              <span className="text-xs text-muted-foreground truncate">
-                Field Service
-              </span>
+              {roleConfig && (
+                <span className="text-xs text-muted-foreground truncate">
+                  {roleConfig.label}
+                </span>
+              )}
             </div>
           )}
         </div>
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-muted-foreground text-xs tracking-wide uppercase">
-            {collapsed ? "" : "Main"}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainMenuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.url)}
-                    tooltip={item.title}
-                    className={isActive(item.url) 
-                      ? "bg-foreground/10 text-foreground border-l-2 border-foreground" 
-                      : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    }
-                  >
-                    <NavLink
-                      to={item.url}
-                      className="flex items-center gap-3"
-                      activeClassName=""
+        {navGroups.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel className="text-muted-foreground text-xs tracking-wide uppercase">
+              {collapsed ? "" : group.label}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.url)}
+                      tooltip={item.title}
+                      className={isActive(item.url)
+                        ? "bg-foreground/10 text-foreground border-l-2 border-foreground"
+                        : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      }
                     >
-                      <item.icon className={`h-4 w-4 shrink-0 ${isActive(item.url) ? "text-foreground" : ""}`} />
-                      {!collapsed && <span>{item.title}</span>}
-                      {!collapsed && item.url === "/requests" && totalPendingCount > 0 && (
-                        <Badge variant="destructive" className="ml-auto h-5 min-w-5 px-1 text-xs">
-                          {totalPendingCount > 99 ? "99+" : totalPendingCount}
-                        </Badge>
-                      )}
-                      {!collapsed && isActive(item.url) && item.url !== "/requests" && (
-                        <ChevronRight className="ml-auto h-4 w-4 text-foreground" />
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-muted-foreground text-xs tracking-wide uppercase">
-            {collapsed ? "" : "Marketing"}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {marketingMenuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.url)}
-                    tooltip={item.title}
-                    className={isActive(item.url) 
-                      ? "bg-foreground/10 text-foreground border-l-2 border-foreground" 
-                      : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    }
-                  >
-                    <NavLink
-                      to={item.url}
-                      className="flex items-center gap-3"
-                      activeClassName=""
-                    >
-                      <item.icon className={`h-4 w-4 shrink-0 ${isActive(item.url) ? "text-foreground" : ""}`} />
-                      {!collapsed && <span>{item.title}</span>}
-                      {!collapsed && isActive(item.url) && (
-                        <ChevronRight className="ml-auto h-4 w-4 text-foreground" />
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-muted-foreground text-xs tracking-wide uppercase">
-            {collapsed ? "" : "System"}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {settingsMenuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.url)}
-                    tooltip={item.title}
-                    className={isActive(item.url) 
-                      ? "bg-foreground/10 text-foreground border-l-2 border-foreground" 
-                      : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    }
-                  >
-                    <NavLink
-                      to={item.url}
-                      className="flex items-center gap-3"
-                      activeClassName=""
-                    >
-                      <item.icon className={`h-4 w-4 shrink-0 ${isActive(item.url) ? "text-foreground" : ""}`} />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                      <NavLink
+                        to={item.url === "/" ? "/dashboard" : item.url}
+                        className="flex items-center gap-3"
+                        activeClassName=""
+                      >
+                        <item.icon className={`h-4 w-4 shrink-0 ${isActive(item.url) ? "text-foreground" : ""}`} />
+                        {!collapsed && <span>{item.title}</span>}
+                        {!collapsed && item.url === "/requests" && totalPendingCount > 0 && (
+                          <Badge variant="destructive" className="ml-auto h-5 min-w-5 px-1 text-xs">
+                            {totalPendingCount > 99 ? "99+" : totalPendingCount}
+                          </Badge>
+                        )}
+                        {!collapsed && isActive(item.url) && item.url !== "/requests" && (
+                          <ChevronRight className="ml-auto h-4 w-4 text-foreground" />
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-3">
