@@ -42,7 +42,7 @@ serve(async (req: Request) => {
     // Get customer and verify they can receive emails
     const { data: customer, error: customerError } = await supabase
       .from("customers")
-      .select("id, email, email_status, marketing_consent")
+      .select("id, email, email_status")
       .eq("id", customer_id)
       .eq("business_id", business_id)
       .single();
