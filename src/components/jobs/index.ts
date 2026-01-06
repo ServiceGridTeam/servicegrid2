@@ -14,3 +14,4 @@ export { BulkAssignDialog } from "./BulkAssignDialog";
 export { ClockEventHistory } from "./ClockEventHistory";
 export { ClockEventTimeline } from "./ClockEventTimeline";
 export { ExpandGeofenceDialog } from "./ExpandGeofenceDialog";
+export { JobLaborCard } from "./JobLaborCard";

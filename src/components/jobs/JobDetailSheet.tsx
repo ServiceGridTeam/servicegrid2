@@ -16,6 +16,7 @@ import { AssigneeAvatarGroup } from "./AssigneeAvatarGroup";
 import { AutoAssignButton } from "./AutoAssignButton";
 import { ClockEventTimeline } from "./ClockEventTimeline";
 import { ExpandGeofenceDialog } from "./ExpandGeofenceDialog";
+import { JobLaborCard } from "./JobLaborCard";
 import { TimeEntriesTable } from "@/components/team/TimeEntriesTable";
 import { useUpdateJob, type JobWithCustomer } from "@/hooks/useJobs";
 import { useBusiness } from "@/hooks/useBusiness";
@@ -351,6 +352,14 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
               
               <div className="mt-4">
                 <ClockEventTimeline jobId={job.id} />
+              </div>
+              
+              {/* Labor Cost Summary */}
+              <div className="mt-4">
+                <JobLaborCard 
+                  jobId={job.id} 
+                  estimatedMinutes={job.estimated_duration_minutes} 
+                />
               </div>
             </div>
             <Separator />

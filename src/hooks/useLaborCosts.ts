@@ -66,17 +66,37 @@ export function useJobLaborCosts(jobId: string | undefined) {
           is_billable,
           clock_in,
           clock_out,
-          entry_type
+          entry_type,
+          user:profiles!time_entries_user_id_fkey(id, first_name, last_name, avatar_url)
         `)
         .eq("job_id", jobId);
       
       if (entriesError) throw entriesError;
       
-      // Group by user
-      const byUser: Record<string, { minutes: number; cost: number }> = {};
+      // Group by user with user info
+      const byUser: Record<string, { 
+        minutes: number; 
+        cost: number;
+        user: {
+          id: string;
+          first_name: string | null;
+          last_name: string | null;
+          avatar_url: string | null;
+        } | null;
+      }> = {};
+      
       entries?.forEach(entry => {
         if (!byUser[entry.user_id]) {
-          byUser[entry.user_id] = { minutes: 0, cost: 0 };
+          byUser[entry.user_id] = { 
+            minutes: 0, 
+            cost: 0,
+            user: entry.user as {
+              id: string;
+              first_name: string | null;
+              last_name: string | null;
+              avatar_url: string | null;
+            } | null
+          };
         }
         byUser[entry.user_id].minutes += entry.duration_minutes || 0;
         byUser[entry.user_id].cost += entry.labor_cost || 0;
@@ -85,12 +105,12 @@ export function useJobLaborCosts(jobId: string | undefined) {
       return {
         totalMinutes: job.total_labor_minutes || 0,
         totalCost: job.total_labor_cost || 0,
-        totalBillable: job.total_billable_amount || 0,
+        billableAmount: job.total_billable_amount || 0,
         estimatedMinutes: job.estimated_duration_minutes || 0,
         variance: job.estimated_duration_minutes 
           ? (job.total_labor_minutes || 0) - job.estimated_duration_minutes
           : null,
-        entriesByUser: byUser,
+        byUser,
         entryCount: entries?.length || 0,
       };
     },
