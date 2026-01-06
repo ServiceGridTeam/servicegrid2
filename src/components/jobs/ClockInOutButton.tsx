@@ -104,7 +104,7 @@ export function ClockInOutButton({
     if (validation.within_geofence) {
       // Within geofence - proceed with clock in
       setClockState("in_range");
-      await performClockIn(location);
+      await performClockIn(location, validation.clock_event_id);
     } else if (validation.enforcement_mode === "warn") {
       // Outside but allowed with warning
       setClockState("out_of_range_warn");
@@ -112,7 +112,7 @@ export function ClockInOutButton({
         title: "Location Warning",
         description: `You are ${validation.distance_feet} feet from the job site`,
       });
-      await performClockIn(location);
+      await performClockIn(location, validation.clock_event_id);
     } else if (validation.enforcement_mode === "strict") {
       // Outside and blocked - show override dialog if allowed
       setClockState("out_of_range_strict");
@@ -127,7 +127,7 @@ export function ClockInOutButton({
       }
     } else {
       // Enforcement is off - proceed
-      await performClockIn(location);
+      await performClockIn(location, validation.clock_event_id);
     }
   };
 
@@ -206,11 +206,18 @@ export function ClockInOutButton({
     setClockState("idle");
   };
 
-  const performClockIn = async (location: { lat: number; lng: number; accuracy?: number }) => {
+  const performClockIn = async (
+    location: { lat: number; lng: number; accuracy?: number },
+    clockEventId?: string
+  ) => {
     try {
       await clockIn.mutateAsync({ 
         jobId, 
         businessId,
+        clockInLatitude: location.lat,
+        clockInLongitude: location.lng,
+        locationAccuracy: location.accuracy,
+        clockInEventId: clockEventId,
       });
       toast({
         title: "Clocked in",
@@ -244,6 +251,8 @@ export function ClockInOutButton({
           }
         : null;
 
+      let clockEventId: string | undefined;
+
       // Validate clock out location (if we have it)
       if (location) {
         setClockState("validating");
@@ -253,6 +262,8 @@ export function ClockInOutButton({
           locationSource: "gps",
           eventType: "clock_out",
         });
+
+        clockEventId = validation.clock_event_id;
 
         if (!validation.within_geofence && validation.enforcement_mode === "strict") {
           setValidationResult(validation);
@@ -264,8 +275,14 @@ export function ClockInOutButton({
         }
       }
 
-      // Proceed with clock out
-      await clockOut.mutateAsync({ entryId: activeEntry.id });
+      // Proceed with clock out - include GPS and clock_event_id
+      await clockOut.mutateAsync({ 
+        entryId: activeEntry.id,
+        clockOutLatitude: location?.lat,
+        clockOutLongitude: location?.lng,
+        locationAccuracy: location?.accuracy,
+        clockOutEventId: clockEventId,
+      });
       toast({
         title: "Clocked out",
         description: "Time tracking stopped.",

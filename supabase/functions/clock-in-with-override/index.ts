@@ -172,6 +172,70 @@ Deno.serve(async (req) => {
       .select()
       .single();
 
+    // Create or update time_entry to link with clock_event
+    let timeEntryId: string | null = null;
+    
+    if (eventType === "clock_in") {
+      // Create a new time entry for clock in
+      const { data: timeEntry, error: timeEntryError } = await supabase
+        .from("time_entries")
+        .insert({
+          business_id: profile.business_id,
+          job_id: jobId,
+          user_id: user.id,
+          entry_type: "work",
+          clock_in: new Date().toISOString(),
+          clock_in_latitude: location.lat,
+          clock_in_longitude: location.lng,
+          location_accuracy: location.accuracy,
+          clock_in_event_id: clockEvent.id,
+        })
+        .select()
+        .single();
+
+      if (timeEntryError) {
+        console.error("Time entry creation error:", timeEntryError);
+      } else {
+        timeEntryId = timeEntry.id;
+      }
+    } else if (eventType === "clock_out") {
+      // Find active time entry and update it
+      const { data: activeEntry } = await supabase
+        .from("time_entries")
+        .select("id, clock_in")
+        .eq("job_id", jobId)
+        .eq("user_id", user.id)
+        .is("clock_out", null)
+        .order("clock_in", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (activeEntry) {
+        const clockIn = new Date(activeEntry.clock_in);
+        const clockOut = new Date();
+        const durationMinutes = Math.floor((clockOut.getTime() - clockIn.getTime()) / 60000);
+
+        const { error: updateError } = await supabase
+          .from("time_entries")
+          .update({
+            clock_out: clockOut.toISOString(),
+            duration_minutes: durationMinutes,
+            clock_out_latitude: location.lat,
+            clock_out_longitude: location.lng,
+            clock_out_event_id: clockEvent.id,
+          })
+          .eq("id", activeEntry.id);
+
+        if (updateError) {
+          console.error("Time entry update error:", updateError);
+        } else {
+          timeEntryId = activeEntry.id;
+        }
+      } else {
+        console.warn("No active time entry found for clock out override");
+      }
+    }
+
     // Update job clock fields
     const jobUpdate = eventType === "clock_in"
       ? {
@@ -215,6 +279,7 @@ Deno.serve(async (req) => {
         success: true,
         clockEventId: clockEvent.id,
         alertId: alert?.id,
+        timeEntryId,
         message: `${eventType === "clock_in" ? "Clock in" : "Clock out"} recorded with override`,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

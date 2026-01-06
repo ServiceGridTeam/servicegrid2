@@ -101,19 +101,47 @@ export function TimesheetView() {
   };
 
   const exportCSV = () => {
-    if (!timesheetData.length) return;
+    if (!timesheetData.length || !entries) return;
     
-    const headers = ["Name", "Email", ...weekDays.map((d) => format(d, "EEE MM/dd")), "Regular", "Overtime", "Total"];
-    const rows = timesheetData.map((row) => [
-      `${row.member.first_name} ${row.member.last_name}`,
-      row.member.email,
-      ...row.dailyMinutes.map((m) => formatMinutesToHoursDecimal(m)),
-      formatMinutesToHoursDecimal(row.overtimeResult.regularMinutes),
-      formatMinutesToHoursDecimal(row.overtimeResult.overtimeMinutes),
-      formatMinutesToHoursDecimal(row.totalMinutes),
-    ]);
+    // Detailed export with GPS data
+    const headers = [
+      "Name",
+      "Email", 
+      "Date",
+      "Clock In",
+      "Clock Out",
+      "Duration (hrs)",
+      "Clock In Lat",
+      "Clock In Lng",
+      "Clock Out Lat",
+      "Clock Out Lng",
+      "Accuracy (m)",
+    ];
     
-    const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
+    const rows: string[][] = [];
+    
+    for (const entry of entries) {
+      const userName = entry.user 
+        ? `${entry.user.first_name || ""} ${entry.user.last_name || ""}`.trim()
+        : "Unknown";
+      const userEmail = entry.user?.id || "";
+      
+      rows.push([
+        userName,
+        userEmail,
+        format(new Date(entry.clock_in), "yyyy-MM-dd"),
+        format(new Date(entry.clock_in), "HH:mm"),
+        entry.clock_out ? format(new Date(entry.clock_out), "HH:mm") : "",
+        entry.duration_minutes ? (entry.duration_minutes / 60).toFixed(2) : "",
+        entry.clock_in_latitude?.toString() || "",
+        entry.clock_in_longitude?.toString() || "",
+        entry.clock_out_latitude?.toString() || "",
+        entry.clock_out_longitude?.toString() || "",
+        entry.location_accuracy?.toString() || "",
+      ]);
+    }
+    
+    const csv = [headers, ...rows].map((row) => row.map(cell => `"${cell}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

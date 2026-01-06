@@ -1403,9 +1403,11 @@ export type Database = {
         Row: {
           business_id: string
           clock_in: string
+          clock_in_event_id: string | null
           clock_in_latitude: number | null
           clock_in_longitude: number | null
           clock_out: string | null
+          clock_out_event_id: string | null
           clock_out_latitude: number | null
           clock_out_longitude: number | null
           created_at: string
@@ -1420,9 +1422,11 @@ export type Database = {
         Insert: {
           business_id: string
           clock_in?: string
+          clock_in_event_id?: string | null
           clock_in_latitude?: number | null
           clock_in_longitude?: number | null
           clock_out?: string | null
+          clock_out_event_id?: string | null
           clock_out_latitude?: number | null
           clock_out_longitude?: number | null
           created_at?: string
@@ -1437,9 +1441,11 @@ export type Database = {
         Update: {
           business_id?: string
           clock_in?: string
+          clock_in_event_id?: string | null
           clock_in_latitude?: number | null
           clock_in_longitude?: number | null
           clock_out?: string | null
+          clock_out_event_id?: string | null
           clock_out_latitude?: number | null
           clock_out_longitude?: number | null
           created_at?: string
@@ -1457,6 +1463,20 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_clock_in_event_id_fkey"
+            columns: ["clock_in_event_id"]
+            isOneToOne: false
+            referencedRelation: "clock_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_clock_out_event_id_fkey"
+            columns: ["clock_out_event_id"]
+            isOneToOne: false
+            referencedRelation: "clock_events"
             referencedColumns: ["id"]
           },
           {
