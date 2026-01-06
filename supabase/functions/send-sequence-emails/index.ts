@@ -7,6 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const SITE_URL = Deno.env.get("SITE_URL") || "https://wzglfwcftigofbuojeci.lovableproject.com";
+
 interface SequenceEnrollment {
   id: string;
   sequence_id: string;
@@ -157,6 +159,43 @@ serve(async (req: Request) => {
           continue;
         }
 
+        // Check email_preferences for subscribed_sequences
+        const { data: prefs } = await supabase
+          .from("email_preferences")
+          .select("subscribed_sequences, preference_token")
+          .eq("customer_id", enrollment.customer_id)
+          .eq("business_id", enrollment.business_id)
+          .single();
+
+        if (prefs && prefs.subscribed_sequences === false) {
+          console.log(`Skipping: customer ${enrollment.customer_id} unsubscribed from sequences`);
+          await supabase
+            .from("sequence_enrollments")
+            .update({ status: "paused", paused_at: now, exit_reason: "unsubscribed_sequences" })
+            .eq("id", enrollment.id);
+          results.skipped++;
+          continue;
+        }
+
+        // Get or create preference_token for unsubscribe link
+        let preferenceToken = prefs?.preference_token;
+        if (!preferenceToken) {
+          // Create email_preferences record with a new token
+          preferenceToken = crypto.randomUUID();
+          await supabase.from("email_preferences").insert({
+            business_id: enrollment.business_id,
+            customer_id: enrollment.customer_id,
+            preference_token: preferenceToken,
+            subscribed_marketing: true,
+            subscribed_sequences: true,
+            subscribed_transactional: true,
+          });
+          console.log(`Created new preference token for customer ${enrollment.customer_id}`);
+        }
+
+        const preferencesLink = `${SITE_URL}/email-preferences/${preferenceToken}`;
+        const unsubscribeLink = preferencesLink;
+
         // Get all steps for this sequence
         const { data: steps, error: stepsError } = await supabase
           .from("sequence_steps")
@@ -213,7 +252,7 @@ serve(async (req: Request) => {
         const template = currentStepData.email_templates;
         const subject = currentStepData.subject_override || template.subject;
         
-        // Replace template variables
+        // Replace template variables including unsubscribe links
         const variables: Record<string, string> = {
           customer_first_name: customer.first_name || "",
           customer_last_name: customer.last_name || "",
@@ -222,6 +261,8 @@ serve(async (req: Request) => {
           customer_company: customer.company_name || "",
           business_name: business?.name || "",
           current_year: new Date().getFullYear().toString(),
+          unsubscribe_link: unsubscribeLink,
+          preferences_link: preferencesLink,
         };
 
         let renderedSubject = subject;
@@ -233,7 +274,7 @@ serve(async (req: Request) => {
           renderedBody = renderedBody.replace(regex, value);
         }
 
-        // Wrap body in HTML structure
+        // Wrap body in HTML structure with unsubscribe footer
         const htmlEmail = `
           <!DOCTYPE html>
           <html>
@@ -247,6 +288,11 @@ serve(async (req: Request) => {
             </div>
             <div style="max-width: 600px; margin: 20px auto; text-align: center; color: #666; font-size: 12px;">
               <p>${business?.name || "ServiceGrid"}</p>
+              <p style="margin-top: 16px;">
+                <a href="${unsubscribeLink}" style="color: #666; text-decoration: underline;">Unsubscribe</a>
+                &nbsp;|&nbsp;
+                <a href="${preferencesLink}" style="color: #666; text-decoration: underline;">Email Preferences</a>
+              </p>
             </div>
           </body>
           </html>
@@ -281,6 +327,18 @@ serve(async (req: Request) => {
           status: "sent",
           sent_at: now,
         });
+
+        // Increment total_sent on sequence step
+        const { data: stepData } = await supabase
+          .from("sequence_steps")
+          .select("total_sent")
+          .eq("id", currentStepData.id)
+          .single();
+        
+        await supabase
+          .from("sequence_steps")
+          .update({ total_sent: (stepData?.total_sent || 0) + 1 })
+          .eq("id", currentStepData.id);
 
         // Check if this was the last step
         const nextStepIndex = typedSteps.findIndex(s => s.step_order > enrollment.current_step);

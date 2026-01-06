@@ -6,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const SITE_URL = Deno.env.get("SITE_URL") || "https://wzglfwcftigofbuojeci.lovableproject.com";
+
 interface SendCampaignRequest {
   campaign_id: string;
 }
@@ -162,21 +164,28 @@ serve(async (req) => {
 
     console.log(`[send-campaign-emails] Found ${customers.length} customers to email`);
 
-    // Check email preferences for each customer
+    // Check email preferences for each customer and get/create preference tokens
     const { data: preferences } = await adminClient
       .from("email_preferences")
-      .select("customer_id, subscribed_marketing")
+      .select("customer_id, subscribed_marketing, preference_token")
       .eq("business_id", campaign.business_id)
       .in(
         "customer_id",
         customers.map((c) => c.id)
       );
 
-    const unsubscribedIds = new Set(
-      preferences?.filter((p) => p.subscribed_marketing === false).map((p) => p.customer_id) || []
-    );
+    const prefMap = new Map<string, { subscribed: boolean; token: string }>();
+    preferences?.forEach((p) => {
+      prefMap.set(p.customer_id, {
+        subscribed: p.subscribed_marketing !== false,
+        token: p.preference_token,
+      });
+    });
 
-    const eligibleCustomers = customers.filter((c) => !unsubscribedIds.has(c.id));
+    const eligibleCustomers = customers.filter((c) => {
+      const pref = prefMap.get(c.id);
+      return !pref || pref.subscribed;
+    });
 
     console.log(`[send-campaign-emails] ${eligibleCustomers.length} customers are eligible after preference check`);
 
@@ -190,19 +199,63 @@ serve(async (req) => {
 
       for (const customer of batch) {
         try {
+          // Get or create preference_token for unsubscribe link
+          let preferenceToken = prefMap.get(customer.id)?.token;
+          if (!preferenceToken) {
+            preferenceToken = crypto.randomUUID();
+            await adminClient.from("email_preferences").insert({
+              business_id: campaign.business_id,
+              customer_id: customer.id,
+              preference_token: preferenceToken,
+              subscribed_marketing: true,
+              subscribed_sequences: true,
+              subscribed_transactional: true,
+            });
+            console.log(`[send-campaign-emails] Created preference token for customer ${customer.id}`);
+          }
+
+          const preferencesLink = `${SITE_URL}/email-preferences/${preferenceToken}`;
+          const unsubscribeLink = preferencesLink;
+
           // Personalize email content
           let personalizedBody = campaign.body_html
             .replace(/\{\{first_name\}\}/gi, customer.first_name || "")
             .replace(/\{\{last_name\}\}/gi, customer.last_name || "")
             .replace(/\{\{email\}\}/gi, customer.email || "")
             .replace(/\{\{company_name\}\}/gi, customer.company_name || "")
-            .replace(/\{\{business_name\}\}/gi, fromName);
+            .replace(/\{\{business_name\}\}/gi, fromName)
+            .replace(/\{\{unsubscribe_link\}\}/gi, unsubscribeLink)
+            .replace(/\{\{preferences_link\}\}/gi, preferencesLink);
 
           let personalizedSubject = campaign.subject
             .replace(/\{\{first_name\}\}/gi, customer.first_name || "")
             .replace(/\{\{last_name\}\}/gi, customer.last_name || "")
             .replace(/\{\{company_name\}\}/gi, customer.company_name || "")
             .replace(/\{\{business_name\}\}/gi, fromName);
+
+          // Wrap in HTML with unsubscribe footer
+          const htmlEmail = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+              <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 32px; border-radius: 8px;">
+                ${personalizedBody}
+              </div>
+              <div style="max-width: 600px; margin: 20px auto; text-align: center; color: #666; font-size: 12px;">
+                <p>${fromName}</p>
+                <p style="margin-top: 16px;">
+                  <a href="${unsubscribeLink}" style="color: #666; text-decoration: underline;">Unsubscribe</a>
+                  &nbsp;|&nbsp;
+                  <a href="${preferencesLink}" style="color: #666; text-decoration: underline;">Email Preferences</a>
+                </p>
+              </div>
+            </body>
+            </html>
+          `;
 
           // Create email_sends record
           const { data: emailSend, error: sendRecordError } = await adminClient
@@ -239,7 +292,7 @@ serve(async (req) => {
                 from: `${fromName} <${fromEmail}>`,
                 to: customer.email,
                 subject: personalizedSubject,
-                html: personalizedBody,
+                html: htmlEmail,
               }),
             });
 

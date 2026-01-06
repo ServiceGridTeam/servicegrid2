@@ -256,9 +256,15 @@ async function updateCampaignStats(supabase: any, campaignId: string, eventType:
 
 // deno-lint-ignore no-explicit-any
 async function updateSequenceStepStats(supabase: any, stepId: string, eventType: string) {
-  if (eventType !== "email.opened" && eventType !== "email.clicked") return;
+  // Handle delivered, opened, and clicked events
+  const statFields: Record<string, string> = {
+    "email.delivered": "total_sent",
+    "email.opened": "total_opened",
+    "email.clicked": "total_clicked",
+  };
 
-  const field = eventType === "email.opened" ? "total_opened" : "total_clicked";
+  const field = statFields[eventType];
+  if (!field) return;
 
   const { data: step } = await supabase
     .from("sequence_steps")

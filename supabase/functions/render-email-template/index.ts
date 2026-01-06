@@ -6,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const SITE_URL = Deno.env.get("SITE_URL") || "https://wzglfwcftigofbuojeci.lovableproject.com";
+
 interface RenderRequest {
   template_id: string;
   customer_id?: string;
@@ -86,6 +88,11 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("id", profile.business_id)
       .single();
 
+    // Sample unsubscribe/preferences links for preview
+    const samplePreferenceToken = "sample-preview-token";
+    const samplePreferencesLink = `${SITE_URL}/email-preferences/${samplePreferenceToken}`;
+    const sampleUnsubscribeLink = samplePreferencesLink;
+
     // Build variable values
     let variables: Record<string, string> = {
       business_name: business?.name || "Your Business",
@@ -93,6 +100,8 @@ const handler = async (req: Request): Promise<Response> => {
       business_phone: business?.phone || "",
       current_date: new Date().toLocaleDateString(),
       current_year: new Date().getFullYear().toString(),
+      unsubscribe_link: sampleUnsubscribeLink,
+      preferences_link: samplePreferencesLink,
       ...sample_data,
     };
 
@@ -106,13 +115,27 @@ const handler = async (req: Request): Promise<Response> => {
         .single();
 
       if (customer) {
+        // Check if customer has a preference token
+        const { data: prefs } = await supabase
+          .from("email_preferences")
+          .select("preference_token")
+          .eq("customer_id", customer_id)
+          .single();
+
+        const realPreferencesLink = prefs?.preference_token 
+          ? `${SITE_URL}/email-preferences/${prefs.preference_token}`
+          : samplePreferencesLink;
+
         variables = {
           ...variables,
-          customer_name: customer.name || "",
-          customer_first_name: customer.name?.split(" ")[0] || "",
+          customer_name: `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || "",
+          customer_first_name: customer.first_name || "",
+          customer_last_name: customer.last_name || "",
           customer_email: customer.email || "",
           customer_phone: customer.phone || "",
-          customer_address: customer.address || "",
+          customer_company: customer.company_name || "",
+          unsubscribe_link: realPreferencesLink,
+          preferences_link: realPreferencesLink,
         };
       }
     } else {
@@ -121,23 +144,24 @@ const handler = async (req: Request): Promise<Response> => {
         ...variables,
         customer_name: sample_data?.customer_name || "John Smith",
         customer_first_name: sample_data?.customer_first_name || "John",
+        customer_last_name: sample_data?.customer_last_name || "Smith",
         customer_email: sample_data?.customer_email || "john@example.com",
         customer_phone: sample_data?.customer_phone || "(555) 123-4567",
-        customer_address: sample_data?.customer_address || "123 Main St, Anytown, USA",
+        customer_company: sample_data?.customer_company || "Example Corp",
       };
     }
 
     // Replace variables in subject and body
     let renderedSubject = template.subject || "";
-    let renderedBody = template.body || "";
+    let renderedBody = template.body_html || "";
 
     for (const [key, value] of Object.entries(variables)) {
-      const regex = new RegExp(`{{${key}}}`, "g");
+      const regex = new RegExp(`{{\\s*${key}\\s*}}`, "gi");
       renderedSubject = renderedSubject.replace(regex, value);
       renderedBody = renderedBody.replace(regex, value);
     }
 
-    // Wrap in email container HTML
+    // Wrap in email container HTML with unsubscribe footer
     const fullHtml = `
 <!DOCTYPE html>
 <html>
@@ -171,6 +195,17 @@ const handler = async (req: Request): Promise<Response> => {
       color: #666;
       text-align: center;
     }
+    .unsubscribe-footer {
+      margin-top: 20px;
+      padding: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: #666;
+    }
+    .unsubscribe-footer a {
+      color: #666;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -181,6 +216,11 @@ const handler = async (req: Request): Promise<Response> => {
       ${business?.email ? `<p>${business.email}</p>` : ""}
       ${business?.phone ? `<p>${business.phone}</p>` : ""}
     </div>
+  </div>
+  <div class="unsubscribe-footer">
+    <a href="${variables.unsubscribe_link}">Unsubscribe</a>
+    &nbsp;|&nbsp;
+    <a href="${variables.preferences_link}">Email Preferences</a>
   </div>
 </body>
 </html>`;
@@ -199,10 +239,11 @@ const handler = async (req: Request): Promise<Response> => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
-  } catch (error: any) {
-    console.error("Error rendering template:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error rendering template:", errorMessage);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
