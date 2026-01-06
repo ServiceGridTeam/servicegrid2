@@ -2311,6 +2311,9 @@ export type Database = {
           step_order: number
           subject_override: string | null
           template_id: string | null
+          total_clicked: number | null
+          total_opened: number | null
+          total_sent: number | null
           updated_at: string
         }
         Insert: {
@@ -2326,6 +2329,9 @@ export type Database = {
           step_order: number
           subject_override?: string | null
           template_id?: string | null
+          total_clicked?: number | null
+          total_opened?: number | null
+          total_sent?: number | null
           updated_at?: string
         }
         Update: {
@@ -2341,6 +2347,9 @@ export type Database = {
           step_order?: number
           subject_override?: string | null
           template_id?: string | null
+          total_clicked?: number | null
+          total_opened?: number | null
+          total_sent?: number | null
           updated_at?: string
         }
         Relationships: [
