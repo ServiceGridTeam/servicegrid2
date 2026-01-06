@@ -136,7 +136,44 @@ function calculatePriorityScore(urgency: string): number {
   }
 }
 
+// Log API request to database
+async function logRequest(
+  supabase: any,
+  integrationId: string,
+  businessId: string,
+  endpoint: string,
+  method: string,
+  statusCode: number,
+  responseCode: string,
+  durationMs: number,
+  metadata?: Record<string, any>
+) {
+  try {
+    await supabase.from("phone_integration_logs").insert({
+      integration_id: integrationId,
+      business_id: businessId,
+      endpoint,
+      method,
+      status_code: statusCode,
+      response_code: responseCode,
+      duration_ms: durationMs,
+      request_metadata: metadata || {},
+    });
+  } catch (err) {
+    // Log failure shouldn't break the request
+    console.error("[phone-integration-api] Failed to log request:", err);
+  }
+}
+
+// Normalize endpoint path for logging (remove UUIDs)
+function normalizeEndpoint(path: string): string {
+  // Replace UUIDs with :id placeholder
+  return path.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, ":id");
+}
+
 Deno.serve(async (req) => {
+  const startTime = Date.now();
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -149,6 +186,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/phone-integration-api/, "");
   const method = req.method;
+  const normalizedEndpoint = normalizeEndpoint(path);
 
   console.log(`[phone-integration-api] ${method} ${path}`);
 
@@ -157,7 +195,9 @@ Deno.serve(async (req) => {
   const authResult = await verifyApiKey(supabase, authHeader);
 
   if (!authResult.valid) {
+    const durationMs = Date.now() - startTime;
     console.log(`[phone-integration-api] Auth failed: ${authResult.error?.code}`);
+    // Can't log without valid integration, but we tried
     return errorResponse(
       authResult.error!.code,
       authResult.error!.message,
@@ -165,7 +205,51 @@ Deno.serve(async (req) => {
     );
   }
 
-  const { businessId, permissions } = authResult;
+  const { integration, businessId, permissions } = authResult;
+  const integrationId = integration.id;
+
+  // Helper to create response and log it
+  const createResponse = async (
+    data: any,
+    statusCode: number,
+    responseCode: string,
+    metadata?: Record<string, any>
+  ) => {
+    const durationMs = Date.now() - startTime;
+    await logRequest(
+      supabase,
+      integrationId,
+      businessId!,
+      normalizedEndpoint,
+      method,
+      statusCode,
+      responseCode,
+      durationMs,
+      metadata
+    );
+    return jsonResponse(data, statusCode);
+  };
+
+  const createErrorResponse = async (
+    code: string,
+    message: string,
+    status: number,
+    metadata?: Record<string, any>
+  ) => {
+    const durationMs = Date.now() - startTime;
+    await logRequest(
+      supabase,
+      integrationId,
+      businessId!,
+      normalizedEndpoint,
+      method,
+      status,
+      code,
+      durationMs,
+      metadata
+    );
+    return errorResponse(code, message, status);
+  };
 
   try {
     // =====================
@@ -173,14 +257,14 @@ Deno.serve(async (req) => {
     // =====================
     if (method === "POST" && path === "/lookup-customer") {
       if (!hasPermission(permissions!, "lookup_customer")) {
-        return errorResponse("PERMISSION_DENIED", "Missing lookup_customer permission", 403);
+        return await createErrorResponse("PERMISSION_DENIED", "Missing lookup_customer permission", 403);
       }
 
       const body = await req.json();
       const { phone } = body;
 
       if (!phone) {
-        return errorResponse("VALIDATION_ERROR", "Phone number required", 400);
+        return await createErrorResponse("VALIDATION_ERROR", "Phone number required", 400);
       }
 
       const normalizedPhone = normalizePhone(phone);
@@ -194,7 +278,7 @@ Deno.serve(async (req) => {
 
       if (custError) {
         console.error("[lookup-customer] Query error:", custError);
-        return errorResponse("INTERNAL_ERROR", "Failed to search customers", 500);
+        return await createErrorResponse("INTERNAL_ERROR", "Failed to search customers", 500);
       }
 
       // Find matching customer by normalized phone
@@ -204,7 +288,7 @@ Deno.serve(async (req) => {
       });
 
       if (!customer) {
-        return jsonResponse({ found: false });
+        return await createResponse({ found: false }, 200, "SUCCESS", { found: false });
       }
 
       // Get active jobs for this customer
@@ -221,7 +305,7 @@ Deno.serve(async (req) => {
         .filter(Boolean)
         .join(", ");
 
-      return jsonResponse({
+      return await createResponse({
         found: true,
         customer: {
           id: customer.id,
@@ -236,7 +320,7 @@ Deno.serve(async (req) => {
           ...job,
           address: [job.address_line1, job.city, job.state, job.zip].filter(Boolean).join(", "),
         })),
-      });
+      }, 200, "SUCCESS", { found: true, active_jobs_count: activeJobs?.length || 0 });
     }
 
     // =====================
@@ -244,7 +328,7 @@ Deno.serve(async (req) => {
     // =====================
     if (method === "GET" && path === "/jobs") {
       if (!hasPermission(permissions!, "read_jobs")) {
-        return errorResponse("PERMISSION_DENIED", "Missing read_jobs permission", 403);
+        return await createErrorResponse("PERMISSION_DENIED", "Missing read_jobs permission", 403);
       }
 
       const customerId = url.searchParams.get("customer_id");
@@ -266,7 +350,7 @@ Deno.serve(async (req) => {
 
       if (error) {
         console.error("[jobs] Query error:", error);
-        return errorResponse("INTERNAL_ERROR", "Failed to fetch jobs", 500);
+        return await createErrorResponse("INTERNAL_ERROR", "Failed to fetch jobs", 500);
       }
 
       // Format address for response
@@ -275,7 +359,7 @@ Deno.serve(async (req) => {
         address: [job.address_line1, job.city, job.state, job.zip].filter(Boolean).join(", "),
       }));
 
-      return jsonResponse({ jobs: formattedJobs });
+      return await createResponse({ jobs: formattedJobs }, 200, "SUCCESS", { jobs_count: formattedJobs.length });
     }
 
     // =====================
@@ -284,7 +368,7 @@ Deno.serve(async (req) => {
     const etaMatch = path.match(/^\/jobs\/([^/]+)\/eta$/);
     if (method === "GET" && etaMatch) {
       if (!hasPermission(permissions!, "read_technician_eta")) {
-        return errorResponse("PERMISSION_DENIED", "Missing read_technician_eta permission", 403);
+        return await createErrorResponse("PERMISSION_DENIED", "Missing read_technician_eta permission", 403);
       }
 
       const jobId = etaMatch[1];
@@ -297,7 +381,7 @@ Deno.serve(async (req) => {
         .single();
 
       if (error || !job) {
-        return errorResponse("NOT_FOUND", "Job not found", 404);
+        return await createErrorResponse("NOT_FOUND", "Job not found", 404);
       }
 
       // Get technician name if assigned
@@ -321,14 +405,14 @@ Deno.serve(async (req) => {
         etaMinutes = Math.max(0, Math.round((eta.getTime() - now.getTime()) / 60000));
       }
 
-      return jsonResponse({
+      return await createResponse({
         has_eta: !!job.estimated_arrival,
         eta_minutes: etaMinutes,
         estimated_arrival: job.estimated_arrival,
         technician_name: technicianName,
         status: job.status,
         scheduled_start: job.scheduled_start,
-      });
+      }, 200, "SUCCESS", { has_eta: !!job.estimated_arrival });
     }
 
     // =====================
@@ -339,7 +423,7 @@ Deno.serve(async (req) => {
       const { address } = body;
 
       if (!address) {
-        return errorResponse("VALIDATION_ERROR", "Address required", 400);
+        return await createErrorResponse("VALIDATION_ERROR", "Address required", 400);
       }
 
       // Get business settings
@@ -352,10 +436,10 @@ Deno.serve(async (req) => {
       const serviceArea = business?.settings?.service_area;
 
       if (!serviceArea || serviceArea.type === "none") {
-        return jsonResponse({
+        return await createResponse({
           in_service_area: true,
           description: "No service area restrictions configured",
-        });
+        }, 200, "SUCCESS", { in_service_area: true });
       }
 
       // Geocode the address
@@ -364,10 +448,10 @@ Deno.serve(async (req) => {
       });
 
       if (geocodeResponse.error || !geocodeResponse.data?.latitude) {
-        return jsonResponse({
+        return await createResponse({
           in_service_area: false,
           description: "Could not verify address location",
-        });
+        }, 200, "GEOCODE_FAILED", { in_service_area: false });
       }
 
       const { latitude, longitude } = geocodeResponse.data;
@@ -387,19 +471,19 @@ Deno.serve(async (req) => {
         const radiusMiles = serviceArea.radius_miles || 25;
         const inArea = distance <= radiusMiles;
 
-        return jsonResponse({
+        return await createResponse({
           in_service_area: inArea,
           distance_miles: Math.round(distance * 10) / 10,
           description: inArea
             ? `Address is ${Math.round(distance)} miles from service center`
             : `Address is ${Math.round(distance)} miles away, outside our ${radiusMiles} mile service area`,
-        });
+        }, 200, "SUCCESS", { in_service_area: inArea });
       }
 
-      return jsonResponse({
+      return await createResponse({
         in_service_area: true,
         description: "Service area check completed",
-      });
+      }, 200, "SUCCESS", { in_service_area: true });
     }
 
     // =====================
@@ -407,7 +491,7 @@ Deno.serve(async (req) => {
     // =====================
     if (method === "POST" && path === "/requests") {
       if (!hasPermission(permissions!, "create_requests")) {
-        return errorResponse("PERMISSION_DENIED", "Missing create_requests permission", 403);
+        return await createErrorResponse("PERMISSION_DENIED", "Missing create_requests permission", 403);
       }
 
       const body = await req.json();
@@ -428,7 +512,7 @@ Deno.serve(async (req) => {
 
       // Validate required fields
       if (!description && !form_data?.description) {
-        return errorResponse("VALIDATION_ERROR", "Description is required", 400);
+        return await createErrorResponse("VALIDATION_ERROR", "Description is required", 400);
       }
 
       const priorityScore = calculatePriorityScore(urgency);
@@ -458,16 +542,16 @@ Deno.serve(async (req) => {
 
       if (error) {
         console.error("[requests] Insert error:", error);
-        return errorResponse("INTERNAL_ERROR", "Failed to create request", 500);
+        return await createErrorResponse("INTERNAL_ERROR", "Failed to create request", 500);
       }
 
       console.log(`[requests] Created job request: ${request.id}`);
 
-      return jsonResponse({
+      return await createResponse({
         success: true,
         request_id: request.id,
         confirmation_message: `Your service request has been submitted. A team member will review it shortly.`,
-      });
+      }, 200, "SUCCESS", { request_id: request.id, urgency });
     }
 
     // =====================
@@ -475,7 +559,7 @@ Deno.serve(async (req) => {
     // =====================
     if (method === "POST" && path === "/modifications") {
       if (!hasPermission(permissions!, "modify_jobs")) {
-        return errorResponse("PERMISSION_DENIED", "Missing modify_jobs permission", 403);
+        return await createErrorResponse("PERMISSION_DENIED", "Missing modify_jobs permission", 403);
       }
 
       const body = await req.json();
@@ -489,11 +573,11 @@ Deno.serve(async (req) => {
       } = body;
 
       if (!job_id) {
-        return errorResponse("VALIDATION_ERROR", "job_id is required", 400);
+        return await createErrorResponse("VALIDATION_ERROR", "job_id is required", 400);
       }
 
       if (!modification_type || !["reschedule", "cancel"].includes(modification_type)) {
-        return errorResponse("VALIDATION_ERROR", "modification_type must be 'reschedule' or 'cancel'", 400);
+        return await createErrorResponse("VALIDATION_ERROR", "modification_type must be 'reschedule' or 'cancel'", 400);
       }
 
       // Verify job exists and belongs to business
@@ -505,7 +589,7 @@ Deno.serve(async (req) => {
         .single();
 
       if (jobError || !job) {
-        return errorResponse("NOT_FOUND", "Job not found", 404);
+        return await createErrorResponse("NOT_FOUND", "Job not found", 404);
       }
 
       const { data: modification, error } = await supabase
@@ -526,7 +610,7 @@ Deno.serve(async (req) => {
 
       if (error) {
         console.error("[modifications] Insert error:", error);
-        return errorResponse("INTERNAL_ERROR", "Failed to create modification request", 500);
+        return await createErrorResponse("INTERNAL_ERROR", "Failed to create modification request", 500);
       }
 
       console.log(`[modifications] Created modification request: ${modification.id}`);
@@ -535,11 +619,11 @@ Deno.serve(async (req) => {
         ? "Your cancellation request has been submitted for review."
         : "Your reschedule request has been submitted. A team member will confirm the new time.";
 
-      return jsonResponse({
+      return await createResponse({
         success: true,
         modification_id: modification.id,
         message,
-      });
+      }, 200, "SUCCESS", { modification_id: modification.id, modification_type });
     }
 
     // =====================
@@ -553,12 +637,12 @@ Deno.serve(async (req) => {
         .single();
 
       if (error || !business) {
-        return errorResponse("INTERNAL_ERROR", "Failed to fetch business config", 500);
+        return await createErrorResponse("INTERNAL_ERROR", "Failed to fetch business config", 500);
       }
 
       const settings = business.settings || {};
 
-      return jsonResponse({
+      return await createResponse({
         business_id: business.id,
         business_name: business.name,
         service_types: settings.service_types || [],
@@ -571,16 +655,27 @@ Deno.serve(async (req) => {
         ],
         business_hours: settings.business_hours || null,
         permissions: permissions,
-      });
+      }, 200, "SUCCESS");
     }
 
     // =====================
     // 404 - Unknown route
     // =====================
-    return errorResponse("NOT_FOUND", `Unknown endpoint: ${method} ${path}`, 404);
+    return await createErrorResponse("NOT_FOUND", `Unknown endpoint: ${method} ${path}`, 404);
 
   } catch (err) {
     console.error("[phone-integration-api] Unhandled error:", err);
+    const durationMs = Date.now() - startTime;
+    await logRequest(
+      supabase,
+      integrationId,
+      businessId!,
+      normalizedEndpoint,
+      method,
+      500,
+      "INTERNAL_ERROR",
+      durationMs
+    );
     return errorResponse("INTERNAL_ERROR", "An unexpected error occurred", 500);
   }
 });
