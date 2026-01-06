@@ -39,6 +39,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import EmailPreferences from "./pages/EmailPreferences";
 import { Templates, TemplateEdit, TemplatePreview, Sequences, SequenceEdit, Campaigns, CampaignEdit, CampaignReport } from "./pages/marketing";
+import { PortalLogin, MagicLinkLanding } from "./pages/portal";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,10 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Portal routes (customer auth, not staff auth) */}
+            <Route path="/portal/login" element={<PortalLogin />} />
+            <Route path="/portal/magic/:token" element={<MagicLinkLanding />} />
+            
             {/* Public routes (no auth required) */}
             <Route path="/quote/:token" element={<PublicQuote />} />
             <Route path="/invoice/:token" element={<PublicInvoice />} />
