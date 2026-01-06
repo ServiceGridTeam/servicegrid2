@@ -11,3 +11,6 @@ export { ClockInOutButton } from "./ClockInOutButton";
 export { AutoAssignButton } from "./AutoAssignButton";
 export { AutoAssignDialog } from "./AutoAssignDialog";
 export { BulkAssignDialog } from "./BulkAssignDialog";
+export { ClockEventHistory } from "./ClockEventHistory";
+export { ClockEventTimeline } from "./ClockEventTimeline";
+export { ExpandGeofenceDialog } from "./ExpandGeofenceDialog";
