@@ -1,0 +1,549 @@
+{
+  "info": {
+    "name": "SG Phone Integration API Tests",
+    "description": "Complete test collection for the SG Phone Integration API - validates all 7 endpoints with sample data and automated tests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://wzglfwcftigofbuojeci.supabase.co/functions/v1/phone-integration-api",
+      "type": "string"
+    },
+    {
+      "key": "api_key",
+      "value": "YOUR_API_KEY_HERE",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Customer Lookup",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone\": \"555-123-4567\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/lookup-customer",
+          "host": ["{{base_url}}"],
+          "path": ["lookup-customer"]
+        },
+        "description": "Look up a customer by phone number.\n\n**Permission Required:** `lookup_customer`\n\n**Response:**\n- `found`: boolean indicating if customer exists\n- `customer`: customer object if found (id, name, email, phone, address)"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response has found property', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('found');",
+              "});",
+              "",
+              "pm.test('Save customer_id if found', function() {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.found && jsonData.customer) {",
+              "        pm.collectionVariables.set('test_customer_id', jsonData.customer.id);",
+              "        console.log('Saved customer_id:', jsonData.customer.id);",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. List Jobs",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/jobs?customer_id={{test_customer_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["jobs"],
+          "query": [
+            {
+              "key": "customer_id",
+              "value": "{{test_customer_id}}",
+              "description": "Optional: Filter by customer UUID"
+            },
+            {
+              "key": "job_number",
+              "value": "",
+              "description": "Optional: Search by job number",
+              "disabled": true
+            }
+          ]
+        },
+        "description": "List jobs for a customer or search by job number.\n\n**Permission Required:** `read_jobs`\n\n**Query Parameters:**\n- `customer_id`: Filter by customer UUID\n- `job_number`: Search by job number\n\n**Response:**\n- `jobs`: array of job objects"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response has jobs array', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('jobs');",
+              "    pm.expect(jsonData.jobs).to.be.an('array');",
+              "});",
+              "",
+              "pm.test('Save first job_id if available', function() {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.jobs && jsonData.jobs.length > 0) {",
+              "        pm.collectionVariables.set('test_job_id', jsonData.jobs[0].id);",
+              "        console.log('Saved job_id:', jsonData.jobs[0].id);",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Get Job ETA",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/jobs/{{test_job_id}}/eta",
+          "host": ["{{base_url}}"],
+          "path": ["jobs", "{{test_job_id}}", "eta"]
+        },
+        "description": "Get ETA and status for a specific job.\n\n**Permission Required:** `read_technician_eta`\n\n**Response:**\n- `job_id`: Job UUID\n- `status`: Current job status\n- `has_eta`: Whether ETA is available\n- `estimated_arrival`: ISO timestamp if available\n- `technician`: Assigned technician info"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response has required fields', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('job_id');",
+              "    pm.expect(jsonData).to.have.property('status');",
+              "    pm.expect(jsonData).to.have.property('has_eta');",
+              "});",
+              "",
+              "pm.test('has_eta is boolean', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.has_eta).to.be.a('boolean');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Check Service Area",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"address\": \"123 Main St, Austin, TX 78701\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/check-service-area",
+          "host": ["{{base_url}}"],
+          "path": ["check-service-area"]
+        },
+        "description": "Check if an address is within the business service area.\n\n**Permission Required:** None (uses API key business context)\n\n**Request Body:**\n- `address`: Full address string to check\n\n**Response:**\n- `in_service_area`: boolean\n- `description`: Human-readable message"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response has in_service_area boolean', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('in_service_area');",
+              "    pm.expect(jsonData.in_service_area).to.be.a('boolean');",
+              "});",
+              "",
+              "pm.test('Response has description', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('description');",
+              "    pm.expect(jsonData.description).to.be.a('string');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Create Job Request",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customer_id\": \"{{test_customer_id}}\",\n  \"description\": \"Test service request from Postman API validation\",\n  \"service_type\": \"General Repair\",\n  \"urgency\": \"routine\",\n  \"preferred_date\": \"2026-01-15\",\n  \"preferred_time\": \"morning\",\n  \"customer_name\": \"Test Customer\",\n  \"customer_phone\": \"555-123-4567\",\n  \"customer_email\": \"test@example.com\",\n  \"address\": {\n    \"line1\": \"123 Test Street\",\n    \"city\": \"Austin\",\n    \"state\": \"TX\",\n    \"zip\": \"78701\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/requests",
+          "host": ["{{base_url}}"],
+          "path": ["requests"]
+        },
+        "description": "Create a new job request from phone interaction.\n\n**Permission Required:** `create_requests`\n\n**Request Body:**\n- `customer_id`: Optional - link to existing customer\n- `customer_name`: Required if no customer_id\n- `customer_phone`: Customer phone number\n- `customer_email`: Optional email\n- `description`: Service description\n- `service_type`: Type of service\n- `urgency`: emergency | same_day | next_day | routine\n- `preferred_date`: YYYY-MM-DD\n- `preferred_time`: morning | afternoon | evening | anytime\n- `address`: Optional address object"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response indicates success', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('success');",
+              "    pm.expect(jsonData.success).to.be.true;",
+              "});",
+              "",
+              "pm.test('Response has request_id', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('request_id');",
+              "    pm.collectionVariables.set('test_request_id', jsonData.request_id);",
+              "    console.log('Created request_id:', jsonData.request_id);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Create Modification Request",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"job_id\": \"{{test_job_id}}\",\n  \"modification_type\": \"reschedule\",\n  \"reason\": \"Customer requested different time - API test\",\n  \"requested_date\": \"2026-01-20\",\n  \"time_preference\": \"afternoon\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/modifications",
+          "host": ["{{base_url}}"],
+          "path": ["modifications"]
+        },
+        "description": "Request modification to an existing job.\n\n**Permission Required:** `modify_jobs`\n\n**Request Body:**\n- `job_id`: Required - Job UUID to modify\n- `modification_type`: reschedule | cancel\n- `reason`: Reason for modification\n- `requested_date`: For reschedule - new date YYYY-MM-DD\n- `time_preference`: morning | afternoon | evening | anytime"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response indicates success', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('success');",
+              "    pm.expect(jsonData.success).to.be.true;",
+              "});",
+              "",
+              "pm.test('Response has modification_id', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('modification_id');",
+              "    console.log('Created modification_id:', jsonData.modification_id);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Get Business Config",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_key}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/config",
+          "host": ["{{base_url}}"],
+          "path": ["config"]
+        },
+        "description": "Get business configuration and API permissions.\n\n**Permission Required:** None (uses API key business context)\n\n**Response:**\n- `business_id`: Business UUID\n- `business_name`: Business display name\n- `permissions`: Object with all permission flags\n- `settings`: Business settings (timezone, etc.)"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response has business_id', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('business_id');",
+              "});",
+              "",
+              "pm.test('Response has permissions object', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('permissions');",
+              "    pm.expect(jsonData.permissions).to.be.an('object');",
+              "});",
+              "",
+              "pm.test('Permissions has expected keys', function() {",
+              "    var jsonData = pm.response.json();",
+              "    var p = jsonData.permissions;",
+              "    pm.expect(p).to.have.property('lookup_customer');",
+              "    pm.expect(p).to.have.property('read_jobs');",
+              "    pm.expect(p).to.have.property('create_requests');",
+              "    pm.expect(p).to.have.property('modify_jobs');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Tests",
+      "item": [
+        {
+          "name": "Missing Authorization",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/config",
+              "host": ["{{base_url}}"],
+              "path": ["config"]
+            },
+            "description": "Test missing Authorization header - should return 401"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401', function() {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Response has error code', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "    pm.expect(jsonData.error.code).to.equal('MISSING_AUTH');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invalid API Key",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer sgp_invalid_key_12345",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/config",
+              "host": ["{{base_url}}"],
+              "path": ["config"]
+            },
+            "description": "Test invalid API key - should return 401"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401', function() {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Response has error code', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "    pm.expect(jsonData.error.code).to.equal('INVALID_KEY');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Missing Required Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/requests",
+              "host": ["{{base_url}}"],
+              "path": ["requests"]
+            },
+            "description": "Test missing required fields - should return 400"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function() {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Response has validation error', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Job Not Found",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/jobs/00000000-0000-0000-0000-000000000000/eta",
+              "host": ["{{base_url}}"],
+              "path": ["jobs", "00000000-0000-0000-0000-000000000000", "eta"]
+            },
+            "description": "Test non-existent job ID - should return 404"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function() {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Response has error code', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "    pm.expect(jsonData.error.code).to.equal('NOT_FOUND');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
