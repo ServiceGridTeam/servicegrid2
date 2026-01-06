@@ -37,6 +37,7 @@ import PaymentCanceled from "./pages/PaymentCanceled";
 import AcceptInvite from "./pages/AcceptInvite";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import EmailPreferences from "./pages/EmailPreferences";
 import { Templates, TemplateEdit, TemplatePreview, Sequences, SequenceEdit, Campaigns, CampaignEdit, CampaignReport } from "./pages/marketing";
 
 const queryClient = new QueryClient();
@@ -59,6 +60,7 @@ const App = () => (
             <Route path="/payment/canceled" element={<PaymentCanceled />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/email-preferences/:token" element={<EmailPreferences />} />
             
             {/* Auth routes */}
             <Route path="/auth" element={<Auth />} />
