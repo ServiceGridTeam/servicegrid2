@@ -56,3 +56,9 @@ verify_jwt = false
 
 [functions.recalculate-etas]
 verify_jwt = true
+
+[functions.worker-location-update]
+verify_jwt = true
+
+[functions.send-delay-notification]
+verify_jwt = false

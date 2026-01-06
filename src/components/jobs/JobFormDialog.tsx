@@ -42,6 +42,7 @@ import { useUpdateJobAssignments } from "@/hooks/useJobAssignments";
 import { useCustomer } from "@/hooks/useCustomers";
 import { useBusiness } from "@/hooks/useBusiness";
 import { useToast } from "@/hooks/use-toast";
+import { JobGeofenceSettings } from "./JobGeofenceSettings";
 
 const jobFormSchema = z.object({
   customer_id: z.string().min(1, "Customer is required"),
@@ -59,6 +60,8 @@ const jobFormSchema = z.object({
   zip: z.string().optional(),
   notes: z.string().optional(),
   internal_notes: z.string().optional(),
+  geofence_radius_meters: z.string().optional(),
+  geofence_enforcement: z.string().optional(),
 });
 
 type JobFormValues = z.infer<typeof jobFormSchema>;
@@ -125,6 +128,8 @@ export function JobFormDialog({
       internal_notes: "",
       duration: "60",
       scheduled_time: "09:00",
+      geofence_radius_meters: "",
+      geofence_enforcement: "",
     },
   });
 
@@ -178,6 +183,8 @@ export function JobFormDialog({
         zip: job.zip || "",
         notes: job.notes || "",
         internal_notes: job.internal_notes || "",
+        geofence_radius_meters: job.geofence_radius_meters?.toString() || "",
+        geofence_enforcement: job.geofence_enforcement || "",
       });
     } else {
       form.reset({
@@ -196,6 +203,8 @@ export function JobFormDialog({
         zip: "",
         notes: "",
         internal_notes: "",
+        geofence_radius_meters: "",
+        geofence_enforcement: "",
       });
     }
   }, [job, defaultCustomerId, defaultDate, form]);
@@ -230,6 +239,14 @@ export function JobFormDialog({
       // First user in list is the lead/primary assignee
       const primaryAssignee = values.assigned_to.length > 0 ? values.assigned_to[0] : null;
 
+      // Handle geofence settings
+      const geofenceRadius = values.geofence_radius_meters && values.geofence_radius_meters !== "inherit"
+        ? parseInt(values.geofence_radius_meters)
+        : null;
+      const geofenceEnforcement = values.geofence_enforcement && values.geofence_enforcement !== "inherit"
+        ? values.geofence_enforcement
+        : null;
+
       const jobData = {
         customer_id: values.customer_id,
         title: values.title || "",
@@ -246,6 +263,8 @@ export function JobFormDialog({
         notes: values.notes || null,
         internal_notes: values.internal_notes || null,
         quote_id: quoteId || null,
+        geofence_radius_meters: geofenceRadius,
+        geofence_enforcement: geofenceEnforcement,
       };
 
       let jobId: string;
@@ -573,6 +592,15 @@ export function JobFormDialog({
                 />
               </div>
             </div>
+
+            {/* Geofence Settings */}
+            <JobGeofenceSettings
+              form={form}
+              businessDefaults={{
+                default_geofence_radius_meters: business?.default_geofence_radius_meters,
+                geofence_enforcement_mode: business?.geofence_enforcement_mode,
+              }}
+            />
 
             <FormField
               control={form.control}

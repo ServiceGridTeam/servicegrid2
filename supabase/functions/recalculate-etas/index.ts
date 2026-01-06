@@ -161,8 +161,36 @@ Deno.serve(async (req) => {
             jobId: job.id,
             jobNumber: job.job_number,
             delayMinutes: Math.round(delayMinutes),
+            newEta: job.estimated_arrival,
           });
         }
+      }
+    }
+
+    // Send delay notifications for significant delays
+    for (const delay of significantDelays) {
+      try {
+        const notificationResponse = await fetch(
+          `${supabaseUrl}/functions/v1/send-delay-notification`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${supabaseKey}`,
+            },
+            body: JSON.stringify({
+              jobId: delay.jobId,
+              delayMinutes: delay.delayMinutes,
+              newEta: delay.newEta,
+            }),
+          }
+        );
+
+        if (!notificationResponse.ok) {
+          console.error(`Failed to send delay notification for job ${delay.jobId}`);
+        }
+      } catch (notifyError) {
+        console.error(`Error sending delay notification for job ${delay.jobId}:`, notifyError);
       }
     }
 
@@ -173,6 +201,7 @@ Deno.serve(async (req) => {
         success: true,
         updatedCount: updatedJobs.length,
         significantDelays,
+        notificationsSent: significantDelays.length,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
