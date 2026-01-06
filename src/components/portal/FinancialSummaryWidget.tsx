@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { DollarSign, TrendingUp, CreditCard } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { usePortalBasePath } from '@/hooks/usePortalBasePath';
 
 interface FinancialSummaryWidgetProps {
   totalOwed: number;
@@ -12,6 +13,8 @@ export function FinancialSummaryWidget({
   totalOwed,
   isLoading 
 }: FinancialSummaryWidgetProps) {
+  const { buildPath } = usePortalBasePath();
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -58,7 +61,7 @@ export function FinancialSummaryWidget({
             
             {totalOwed > 0 && (
               <Button asChild size="sm">
-                <Link to="/portal/documents?tab=invoices">
+                <Link to={buildPath('/documents?tab=invoices')}>
                   <CreditCard className="h-4 w-4 mr-2" />
                   Pay Now
                 </Link>
