@@ -728,6 +728,192 @@ export type Database = {
           },
         ]
       }
+      job_modification_requests: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          id: string
+          job_id: string
+          modification_type: string
+          new_scheduled_end: string | null
+          new_scheduled_start: string | null
+          processed_at: string | null
+          processed_by: string | null
+          reason: string | null
+          requested_date: string | null
+          source: string
+          source_metadata: Json | null
+          status: string
+          time_preference: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          id?: string
+          job_id: string
+          modification_type: string
+          new_scheduled_end?: string | null
+          new_scheduled_start?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          reason?: string | null
+          requested_date?: string | null
+          source: string
+          source_metadata?: Json | null
+          status?: string
+          time_preference?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          id?: string
+          job_id?: string
+          modification_type?: string
+          new_scheduled_end?: string | null
+          new_scheduled_start?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          reason?: string | null
+          requested_date?: string | null
+          source?: string
+          source_metadata?: Json | null
+          status?: string
+          time_preference?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_modification_requests_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_modification_requests_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_modification_requests_processed_by_fkey"
+            columns: ["processed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_requests: {
+        Row: {
+          address: Json | null
+          business_id: string
+          converted_to_job_id: string | null
+          created_at: string | null
+          customer_email: string | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          description: string | null
+          form_data: Json
+          id: string
+          preferred_date: string | null
+          preferred_time: string | null
+          priority_score: number | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          service_type: string | null
+          source: string
+          source_metadata: Json | null
+          status: string
+          updated_at: string | null
+          urgency: string | null
+        }
+        Insert: {
+          address?: Json | null
+          business_id: string
+          converted_to_job_id?: string | null
+          created_at?: string | null
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          description?: string | null
+          form_data?: Json
+          id?: string
+          preferred_date?: string | null
+          preferred_time?: string | null
+          priority_score?: number | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_type?: string | null
+          source: string
+          source_metadata?: Json | null
+          status?: string
+          updated_at?: string | null
+          urgency?: string | null
+        }
+        Update: {
+          address?: Json | null
+          business_id?: string
+          converted_to_job_id?: string | null
+          created_at?: string | null
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          description?: string | null
+          form_data?: Json
+          id?: string
+          preferred_date?: string | null
+          preferred_time?: string | null
+          priority_score?: number | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_type?: string | null
+          source?: string
+          source_metadata?: Json | null
+          status?: string
+          updated_at?: string | null
+          urgency?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_requests_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_requests_converted_to_job_id_fkey"
+            columns: ["converted_to_job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_requests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           actual_arrival: string | null
@@ -1153,6 +1339,79 @@ export type Database = {
             columns: ["invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phone_integrations: {
+        Row: {
+          api_key_hash: string
+          api_key_prefix: string
+          business_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          last_used_at: string | null
+          name: string | null
+          permissions: Json
+          request_count: number | null
+          request_count_reset_at: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          status: string
+        }
+        Insert: {
+          api_key_hash: string
+          api_key_prefix: string
+          business_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          last_used_at?: string | null
+          name?: string | null
+          permissions?: Json
+          request_count?: number | null
+          request_count_reset_at?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+        }
+        Update: {
+          api_key_hash?: string
+          api_key_prefix?: string
+          business_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          last_used_at?: string | null
+          name?: string | null
+          permissions?: Json
+          request_count?: number | null
+          request_count_reset_at?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phone_integrations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_integrations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_integrations_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
