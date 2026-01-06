@@ -426,3 +426,78 @@ export function useUpdateJobRequest() {
     },
   });
 }
+
+/**
+ * Bulk approve multiple job requests
+ */
+export function useBulkApproveRequests() {
+  const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
+
+  return useMutation({
+    mutationFn: async (requestIds: string[]) => {
+      if (!profile?.id) throw new Error("No user found");
+
+      const { error } = await supabase
+        .from("job_requests")
+        .update({
+          status: "approved",
+          reviewed_by: profile.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .in("id", requestIds);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, requestIds) => {
+      queryClient.invalidateQueries({ queryKey: ["job-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["job-requests-count"] });
+      toast.success(`${requestIds.length} requests approved`);
+    },
+    onError: (error) => {
+      console.error("Failed to bulk approve requests:", error);
+      toast.error("Failed to approve requests");
+    },
+  });
+}
+
+/**
+ * Bulk reject multiple job requests
+ */
+export function useBulkRejectRequests() {
+  const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
+
+  return useMutation({
+    mutationFn: async ({
+      requestIds,
+      reason,
+    }: {
+      requestIds: string[];
+      reason: string;
+    }) => {
+      if (!profile?.id) throw new Error("No user found");
+
+      const { error } = await supabase
+        .from("job_requests")
+        .update({
+          status: "rejected",
+          reviewed_by: profile.id,
+          reviewed_at: new Date().toISOString(),
+          rejection_reason: reason,
+        })
+        .in("id", requestIds);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, { requestIds }) => {
+      queryClient.invalidateQueries({ queryKey: ["job-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["job-requests-count"] });
+      toast.success(`${requestIds.length} requests rejected`);
+    },
+    onError: (error) => {
+      console.error("Failed to bulk reject requests:", error);
+      toast.error("Failed to reject requests");
+    },
+  });
+}
