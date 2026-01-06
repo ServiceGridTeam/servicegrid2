@@ -13,3 +13,4 @@ export { SavedPaymentMethods } from './SavedPaymentMethods';
 export { CustomerServiceRequestForm } from './CustomerServiceRequestForm';
 export { FeedbackForm } from './FeedbackForm';
 export { FeedbackPrompt } from './FeedbackPrompt';
+export { PortalErrorBoundary } from './PortalErrorBoundary';

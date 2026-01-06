@@ -122,3 +122,9 @@ verify_jwt = false
 
 [functions.portal-payment-methods]
 verify_jwt = false
+
+[functions.portal-service-requests]
+verify_jwt = false
+
+[functions.portal-feedback]
+verify_jwt = false
