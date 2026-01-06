@@ -10,3 +10,6 @@ export { RequestChangesDialog } from './RequestChangesDialog';
 export { InvoicePayment } from './InvoicePayment';
 export { PaymentMethodSelector } from './PaymentMethodSelector';
 export { SavedPaymentMethods } from './SavedPaymentMethods';
+export { CustomerServiceRequestForm } from './CustomerServiceRequestForm';
+export { FeedbackForm } from './FeedbackForm';
+export { FeedbackPrompt } from './FeedbackPrompt';
