@@ -87,8 +87,8 @@ const chartConfig: ChartConfig = {
 };
 
 export function PortalAnalyticsDashboard() {
-  const { businessId } = useBusinessContext();
-  const { data: analytics, isLoading, error } = usePortalAnalytics(businessId, 30);
+  const { activeBusinessId } = useBusinessContext();
+  const { data: analytics, isLoading, error } = usePortalAnalytics(activeBusinessId, 30);
 
   if (isLoading) {
     return <LoadingSkeleton />;

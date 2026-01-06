@@ -17,6 +17,37 @@ interface ActionRequest {
   customerName?: string;
 }
 
+interface AuditLogParams {
+  customerId: string;
+  businessId: string;
+  customerAccountId?: string;
+  eventType: "invite_sent" | "login" | "first_login" | "access_revoked";
+  eventDetails?: Record<string, unknown>;
+  performedBy?: string;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+async function createAuditLog(supabase: any, params: AuditLogParams) {
+  try {
+    const { error } = await supabase.from("portal_access_audit").insert({
+      customer_id: params.customerId,
+      business_id: params.businessId,
+      customer_account_id: params.customerAccountId,
+      event_type: params.eventType,
+      event_details: params.eventDetails || {},
+      performed_by: params.performedBy,
+      ip_address: params.ipAddress,
+      user_agent: params.userAgent,
+    });
+    if (error) {
+      console.error("[portal-auth] Failed to create audit log:", error);
+    }
+  } catch (err) {
+    console.error("[portal-auth] Audit log error:", err);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -51,9 +82,9 @@ Deno.serve(async (req) => {
       case "switch-context":
         return await handleSwitchContext(supabase, body);
       case "send-invite":
-        return await handleSendInvite(supabase, body, resendApiKey);
+        return await handleSendInvite(supabase, body, resendApiKey, req);
       case "revoke-access":
-        return await handleRevokeAccess(supabase, body);
+        return await handleRevokeAccess(supabase, body, req);
       default:
         return new Response(
           JSON.stringify({ error: "Unknown action" }),
@@ -270,12 +301,23 @@ async function handleValidateMagicLink(supabase: any, body: ActionRequest, req: 
     })
     .eq("id", account.id);
 
+  // Create audit log for login
+  const customerName = invite.customers
+    ? `${invite.customers.first_name} ${invite.customers.last_name}`
+    : null;
+  
+  await createAuditLog(supabase, {
+    customerId: invite.customer_id,
+    businessId: invite.business_id,
+    customerAccountId: account.id,
+    eventType: isFirstLogin ? "first_login" : "login",
+    eventDetails: { method: "magic_link" },
+    ipAddress: ipAddress,
+    userAgent: userAgent,
+  });
+
   // Send first login notification if applicable
   if (isFirstLogin && invite.business_id && invite.customer_id) {
-    const customerName = invite.customers
-      ? `${invite.customers.first_name} ${invite.customers.last_name}`
-      : null;
-    
     // Fire and forget - don't block the login response
     sendFirstLoginNotification(supabase, resendApiKey, {
       customerId: invite.customer_id,
@@ -426,6 +468,19 @@ async function handlePasswordLogin(supabase: any, body: ActionRequest, req: Requ
     logoUrl: l.businesses?.logo_url,
     isPrimary: l.is_primary,
   })) || [];
+
+  // Create audit log for login
+  if (primaryLink?.business_id && primaryLink?.customer_id) {
+    await createAuditLog(supabase, {
+      customerId: primaryLink.customer_id,
+      businessId: primaryLink.business_id,
+      customerAccountId: account.id,
+      eventType: isFirstLogin ? "first_login" : "login",
+      eventDetails: { method: "password" },
+      ipAddress: ipAddress,
+      userAgent: userAgent,
+    });
+  }
 
   // Send first login notification if applicable
   if (isFirstLogin && primaryLink?.business_id && primaryLink?.customer_id) {
@@ -631,7 +686,8 @@ async function handleSwitchContext(supabase: any, body: ActionRequest) {
 async function handleSendInvite(
   supabase: any,
   body: ActionRequest,
-  resendApiKey: string | undefined
+  resendApiKey: string | undefined,
+  req: Request
 ) {
   const { customerId, businessId, email, customerName } = body;
   
@@ -769,6 +825,21 @@ async function handleSendInvite(
     return errorResponse("Email service not configured", 500);
   }
 
+  // Create audit log for invite
+  const userAgent = req.headers.get("user-agent") || "";
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  const ipAddress = forwardedFor?.split(",")[0]?.trim() || "0.0.0.0";
+
+  await createAuditLog(supabase, {
+    customerId,
+    businessId,
+    customerAccountId: account.id,
+    eventType: "invite_sent",
+    eventDetails: { email: customerEmail },
+    ipAddress,
+    userAgent,
+  });
+
   return successResponse({ 
     success: true, 
     message: "Portal invite sent",
@@ -776,7 +847,7 @@ async function handleSendInvite(
   });
 }
 
-async function handleRevokeAccess(supabase: any, body: ActionRequest) {
+async function handleRevokeAccess(supabase: any, body: ActionRequest, req: Request) {
   const { customerId, businessId } = body;
   
   if (!customerId || !businessId) {
@@ -823,6 +894,20 @@ async function handleRevokeAccess(supabase: any, body: ActionRequest) {
     // Don't fail the request - the link is already revoked
   }
 
+  // Create audit log for revocation
+  const userAgent = req.headers.get("user-agent") || "";
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  const ipAddress = forwardedFor?.split(",")[0]?.trim() || "0.0.0.0";
+
+  await createAuditLog(supabase, {
+    customerId,
+    businessId,
+    customerAccountId: link.customer_account_id,
+    eventType: "access_revoked",
+    ipAddress,
+    userAgent,
+  });
+
   console.log(`[portal-auth] Successfully revoked access for customer ${customerId}`);
   return successResponse({ success: true, message: "Portal access revoked" });
 }
@@ -860,58 +945,83 @@ async function sendFirstLoginNotification(
     .eq("business_id", businessId)
     .eq("status", "active");
 
-  // Create in-app notifications for team
+  // Create in-app notifications for team (respecting preferences)
   if (members && members.length > 0) {
-    const notifications = members.map((member: any) => ({
-      user_id: member.user_id,
-      business_id: businessId,
-      type: "portal",
-      title: `${customerName || customerEmail} logged into the portal`,
-      message: `Your customer has successfully accessed their portal for the first time.`,
-      data: { customerId, customerEmail },
-    }));
+    for (const member of members) {
+      // Check notification preferences
+      const { data: prefs } = await supabase
+        .from("notification_preferences")
+        .select("inapp_portal_activity")
+        .eq("user_id", member.user_id)
+        .single();
 
-    const { error: notifError } = await supabase
-      .from("notifications")
-      .insert(notifications);
+      // Only create notification if preference is enabled (default true)
+      if (prefs?.inapp_portal_activity !== false) {
+        const { error: notifError } = await supabase
+          .from("notifications")
+          .insert({
+            user_id: member.user_id,
+            business_id: businessId,
+            type: "portal",
+            title: `${customerName || customerEmail} logged into the portal`,
+            message: `Your customer has successfully accessed their portal for the first time.`,
+            data: { customerId, customerEmail },
+          });
 
-    if (notifError) {
-      console.error("[portal-auth] Failed to create notifications:", notifError);
+        if (notifError) {
+          console.error("[portal-auth] Failed to create notification:", notifError);
+        }
+      }
     }
   }
 
-  // Send email notification to business
-  if (resendApiKey && business.email) {
-    try {
-      const { Resend } = await import("https://esm.sh/resend@2.0.0");
-      const resend = new Resend(resendApiKey);
-      const baseUrl = Deno.env.get("SUPABASE_URL")?.replace(".supabase.co", ".lovable.app");
-      
-      await resend.emails.send({
-        from: "ServiceGrid <noreply@resend.dev>",
-        to: [business.email],
-        subject: `${customerName || customerEmail} just logged into their portal`,
-        html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2>🎉 New Portal Login</h2>
-            <p>Great news! <strong>${customerName || "A customer"}</strong> (${customerEmail}) has successfully logged into their customer portal for the first time.</p>
-            <p>They now have access to:</p>
-            <ul>
-              <li>View and approve quotes</li>
-              <li>Pay invoices online</li>
-              <li>Request service appointments</li>
-              <li>Track job progress</li>
-            </ul>
-            <a href="${baseUrl}/customers/${customerId}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
-              View Customer
-            </a>
-            <p style="color: #666; font-size: 14px;">— ${business.name || "ServiceGrid"}</p>
-          </div>
-        `,
-      });
-      console.log(`[portal-auth] First login notification email sent to ${business.email}`);
-    } catch (emailError) {
-      console.error("[portal-auth] Failed to send first login email:", emailError);
+  // Send email notification to team members who have the preference enabled
+  if (resendApiKey && members && members.length > 0) {
+    const baseUrl = Deno.env.get("SUPABASE_URL")?.replace(".supabase.co", ".lovable.app");
+    
+    for (const member of members) {
+      const memberEmail = member.profiles?.email;
+      if (!memberEmail) continue;
+
+      // Check notification preferences
+      const { data: prefs } = await supabase
+        .from("notification_preferences")
+        .select("email_portal_first_login")
+        .eq("user_id", member.user_id)
+        .single();
+
+      // Only send email if preference is enabled (default true)
+      if (prefs?.email_portal_first_login !== false) {
+        try {
+          const resend = new Resend(resendApiKey);
+          
+          await resend.emails.send({
+            from: "ServiceGrid <noreply@resend.dev>",
+            to: [memberEmail],
+            subject: `${customerName || customerEmail} just logged into their portal`,
+            html: `
+              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2>🎉 New Portal Login</h2>
+                <p>Great news! <strong>${customerName || "A customer"}</strong> (${customerEmail}) has successfully logged into their customer portal for the first time.</p>
+                <p>They now have access to:</p>
+                <ul>
+                  <li>View and approve quotes</li>
+                  <li>Pay invoices online</li>
+                  <li>Request service appointments</li>
+                  <li>Track job progress</li>
+                </ul>
+                <a href="${baseUrl}/customers/${customerId}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+                  View Customer
+                </a>
+                <p style="color: #666; font-size: 14px;">— ${business.name || "ServiceGrid"}</p>
+              </div>
+            `,
+          });
+          console.log(`[portal-auth] First login notification email sent to ${memberEmail}`);
+        } catch (emailError) {
+          console.error("[portal-auth] Failed to send first login email:", emailError);
+        }
+      }
     }
   }
 }

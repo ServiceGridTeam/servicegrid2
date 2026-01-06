@@ -226,6 +226,26 @@ export function NotificationPreferencesCard() {
               disabled={isPending}
             />
           </div>
+
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider pt-4">Customer Portal</p>
+            <PreferenceToggle
+              label="First login alerts"
+              description="When a customer logs into their portal for the first time"
+              field="email_portal_first_login"
+              checked={prefs.email_portal_first_login}
+              onCheckedChange={handleToggle}
+              disabled={isPending}
+            />
+            <PreferenceToggle
+              label="All login alerts"
+              description="Every time a customer logs into their portal"
+              field="email_portal_login"
+              checked={prefs.email_portal_login}
+              onCheckedChange={handleToggle}
+              disabled={isPending}
+            />
+          </div>
         </PreferenceSection>
 
         <Separator />
@@ -285,6 +305,14 @@ export function NotificationPreferencesCard() {
             description="Submissions, approvals, rejections"
             field="inapp_timesheet_activity"
             checked={prefs.inapp_timesheet_activity}
+            onCheckedChange={handleToggle}
+            disabled={isPending}
+          />
+          <PreferenceToggle
+            label="Portal activity"
+            description="Customer logins, invite acceptances"
+            field="inapp_portal_activity"
+            checked={prefs.inapp_portal_activity}
             onCheckedChange={handleToggle}
             disabled={isPending}
           />
