@@ -114,6 +114,53 @@ export type Database = {
           },
         ]
       }
+      break_rules: {
+        Row: {
+          business_id: string
+          created_at: string
+          deduction_minutes: number
+          id: string
+          is_active: boolean | null
+          is_automatic: boolean | null
+          is_paid: boolean | null
+          name: string
+          trigger_hours: number
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          deduction_minutes: number
+          id?: string
+          is_active?: boolean | null
+          is_automatic?: boolean | null
+          is_paid?: boolean | null
+          name: string
+          trigger_hours: number
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          deduction_minutes?: number
+          id?: string
+          is_active?: boolean | null
+          is_automatic?: boolean | null
+          is_paid?: boolean | null
+          name?: string
+          trigger_hours?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "break_rules_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
           address_line1: string | null
@@ -920,6 +967,76 @@ export type Database = {
           },
         ]
       }
+      employee_pay_rates: {
+        Row: {
+          bill_rate: number | null
+          business_id: string
+          created_at: string
+          created_by: string | null
+          double_time_rate: number | null
+          effective_from: string
+          effective_to: string | null
+          hourly_rate: number
+          id: string
+          is_current: boolean | null
+          overtime_rate: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bill_rate?: number | null
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          double_time_rate?: number | null
+          effective_from?: string
+          effective_to?: string | null
+          hourly_rate: number
+          id?: string
+          is_current?: boolean | null
+          overtime_rate?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bill_rate?: number | null
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          double_time_rate?: number | null
+          effective_from?: string
+          effective_to?: string | null
+          hourly_rate?: number
+          id?: string
+          is_current?: boolean | null
+          overtime_rate?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_pay_rates_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_pay_rates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_pay_rates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       geocode_cache: {
         Row: {
           address: string
@@ -1430,6 +1547,9 @@ export type Database = {
           state: string | null
           status: string | null
           title: string
+          total_billable_amount: number | null
+          total_labor_cost: number | null
+          total_labor_minutes: number | null
           tracking_token: string | null
           updated_at: string
           zip: string | null
@@ -1481,6 +1601,9 @@ export type Database = {
           state?: string | null
           status?: string | null
           title: string
+          total_billable_amount?: number | null
+          total_labor_cost?: number | null
+          total_labor_minutes?: number | null
           tracking_token?: string | null
           updated_at?: string
           zip?: string | null
@@ -1532,6 +1655,9 @@ export type Database = {
           state?: string | null
           status?: string | null
           title?: string
+          total_billable_amount?: number | null
+          total_labor_cost?: number | null
+          total_labor_minutes?: number | null
           tracking_token?: string | null
           updated_at?: string
           zip?: string | null
@@ -1754,6 +1880,72 @@ export type Database = {
           },
         ]
       }
+      pay_periods: {
+        Row: {
+          business_id: string
+          created_at: string
+          end_date: string
+          id: string
+          locked_at: string | null
+          locked_by: string | null
+          period_type: string
+          start_date: string
+          status: string
+          total_hours: number | null
+          total_labor_cost: number | null
+          total_overtime_hours: number | null
+          total_regular_hours: number | null
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          end_date: string
+          id?: string
+          locked_at?: string | null
+          locked_by?: string | null
+          period_type?: string
+          start_date: string
+          status?: string
+          total_hours?: number | null
+          total_labor_cost?: number | null
+          total_overtime_hours?: number | null
+          total_regular_hours?: number | null
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          locked_at?: string | null
+          locked_by?: string | null
+          period_type?: string
+          start_date?: string
+          status?: string
+          total_hours?: number | null
+          total_labor_cost?: number | null
+          total_overtime_hours?: number | null
+          total_regular_hours?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pay_periods_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pay_periods_locked_by_fkey"
+            columns: ["locked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -1945,7 +2137,9 @@ export type Database = {
         Row: {
           avatar_url: string | null
           business_id: string | null
+          can_approve_timesheets: boolean | null
           created_at: string
+          default_hourly_rate: number | null
           email: string | null
           first_name: string | null
           home_address: string | null
@@ -1957,14 +2151,18 @@ export type Database = {
           last_name: string | null
           max_daily_hours: number | null
           max_daily_jobs: number | null
+          overtime_exempt: boolean | null
           phone: string | null
+          requires_timesheet_approval: boolean | null
           skill_tags: string[] | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
           business_id?: string | null
+          can_approve_timesheets?: boolean | null
           created_at?: string
+          default_hourly_rate?: number | null
           email?: string | null
           first_name?: string | null
           home_address?: string | null
@@ -1976,14 +2174,18 @@ export type Database = {
           last_name?: string | null
           max_daily_hours?: number | null
           max_daily_jobs?: number | null
+          overtime_exempt?: boolean | null
           phone?: string | null
+          requires_timesheet_approval?: boolean | null
           skill_tags?: string[] | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
           business_id?: string | null
+          can_approve_timesheets?: boolean | null
           created_at?: string
+          default_hourly_rate?: number | null
           email?: string | null
           first_name?: string | null
           home_address?: string | null
@@ -1995,7 +2197,9 @@ export type Database = {
           last_name?: string | null
           max_daily_hours?: number | null
           max_daily_jobs?: number | null
+          overtime_exempt?: boolean | null
           phone?: string | null
+          requires_timesheet_approval?: boolean | null
           skill_tags?: string[] | null
           updated_at?: string
         }
@@ -2474,6 +2678,9 @@ export type Database = {
       }
       time_entries: {
         Row: {
+          approved_duration_minutes: number | null
+          bill_amount: number | null
+          break_deduction_minutes: number | null
           business_id: string
           clock_in: string
           clock_in_event_id: string | null
@@ -2485,14 +2692,24 @@ export type Database = {
           clock_out_longitude: number | null
           created_at: string
           duration_minutes: number | null
+          edited_at: string | null
+          edited_by: string | null
           entry_type: string | null
           id: string
+          is_billable: boolean | null
+          is_manual: boolean | null
           job_id: string
+          labor_cost: number | null
           location_accuracy: number | null
+          manual_entry_reason: string | null
           notes: string | null
+          pay_period_id: string | null
           user_id: string
         }
         Insert: {
+          approved_duration_minutes?: number | null
+          bill_amount?: number | null
+          break_deduction_minutes?: number | null
           business_id: string
           clock_in?: string
           clock_in_event_id?: string | null
@@ -2504,14 +2721,24 @@ export type Database = {
           clock_out_longitude?: number | null
           created_at?: string
           duration_minutes?: number | null
+          edited_at?: string | null
+          edited_by?: string | null
           entry_type?: string | null
           id?: string
+          is_billable?: boolean | null
+          is_manual?: boolean | null
           job_id: string
+          labor_cost?: number | null
           location_accuracy?: number | null
+          manual_entry_reason?: string | null
           notes?: string | null
+          pay_period_id?: string | null
           user_id: string
         }
         Update: {
+          approved_duration_minutes?: number | null
+          bill_amount?: number | null
+          break_deduction_minutes?: number | null
           business_id?: string
           clock_in?: string
           clock_in_event_id?: string | null
@@ -2523,11 +2750,18 @@ export type Database = {
           clock_out_longitude?: number | null
           created_at?: string
           duration_minutes?: number | null
+          edited_at?: string | null
+          edited_by?: string | null
           entry_type?: string | null
           id?: string
+          is_billable?: boolean | null
+          is_manual?: boolean | null
           job_id?: string
+          labor_cost?: number | null
           location_accuracy?: number | null
+          manual_entry_reason?: string | null
           notes?: string | null
+          pay_period_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -2553,6 +2787,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "time_entries_edited_by_fkey"
+            columns: ["edited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "time_entries_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
@@ -2560,10 +2801,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "time_entries_pay_period_id_fkey"
+            columns: ["pay_period_id"]
+            isOneToOne: false
+            referencedRelation: "pay_periods"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "time_entries_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_entry_edits: {
+        Row: {
+          business_id: string
+          created_at: string
+          edit_reason: string
+          edited_by: string
+          id: string
+          new_values: Json
+          previous_values: Json
+          time_entry_id: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          edit_reason: string
+          edited_by: string
+          id?: string
+          new_values: Json
+          previous_values: Json
+          time_entry_id: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          edit_reason?: string
+          edited_by?: string
+          id?: string
+          new_values?: Json
+          previous_values?: Json
+          time_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entry_edits_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entry_edits_edited_by_fkey"
+            columns: ["edited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entry_edits_time_entry_id_fkey"
+            columns: ["time_entry_id"]
+            isOneToOne: false
+            referencedRelation: "time_entries"
             referencedColumns: ["id"]
           },
         ]
@@ -2622,6 +2925,104 @@ export type Database = {
           },
           {
             foreignKeyName: "time_off_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timesheet_approvals: {
+        Row: {
+          anomaly_details: Json | null
+          business_id: string
+          created_at: string
+          double_time_hours: number | null
+          has_anomalies: boolean | null
+          id: string
+          overtime_hours: number | null
+          pay_period_id: string
+          regular_hours: number | null
+          rejection_reason: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_at: string | null
+          submitted_notes: string | null
+          total_hours: number | null
+          total_labor_cost: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          anomaly_details?: Json | null
+          business_id: string
+          created_at?: string
+          double_time_hours?: number | null
+          has_anomalies?: boolean | null
+          id?: string
+          overtime_hours?: number | null
+          pay_period_id: string
+          regular_hours?: number | null
+          rejection_reason?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_notes?: string | null
+          total_hours?: number | null
+          total_labor_cost?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          anomaly_details?: Json | null
+          business_id?: string
+          created_at?: string
+          double_time_hours?: number | null
+          has_anomalies?: boolean | null
+          id?: string
+          overtime_hours?: number | null
+          pay_period_id?: string
+          regular_hours?: number | null
+          rejection_reason?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_notes?: string | null
+          total_hours?: number | null
+          total_labor_cost?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timesheet_approvals_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timesheet_approvals_pay_period_id_fkey"
+            columns: ["pay_period_id"]
+            isOneToOne: false
+            referencedRelation: "pay_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timesheet_approvals_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timesheet_approvals_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -2769,6 +3170,10 @@ export type Database = {
       accept_team_invite: { Args: { _token: string }; Returns: Json }
       calculate_distance_meters: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
+        Returns: number
+      }
+      calculate_time_entry_labor_cost: {
+        Args: { p_entry_id: string }
         Returns: number
       }
       get_user_business_id: { Args: never; Returns: string }
