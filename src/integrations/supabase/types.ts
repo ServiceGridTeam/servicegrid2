@@ -967,6 +967,95 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          daily_digest: boolean | null
+          email_delay_notification: boolean | null
+          email_invoice_overdue: boolean | null
+          email_invoice_reminder: boolean | null
+          email_invoice_sent: boolean | null
+          email_job_assigned: boolean | null
+          email_job_status_changed: boolean | null
+          email_payment_failed: boolean | null
+          email_payment_received: boolean | null
+          email_quote_approved: boolean | null
+          email_quote_sent: boolean | null
+          email_team_invite: boolean | null
+          id: string
+          inapp_geofence_alerts: boolean | null
+          inapp_invoice_activity: boolean | null
+          inapp_job_activity: boolean | null
+          inapp_payment_activity: boolean | null
+          inapp_quote_activity: boolean | null
+          inapp_team_activity: boolean | null
+          updated_at: string
+          user_id: string
+          weekly_summary: boolean | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          daily_digest?: boolean | null
+          email_delay_notification?: boolean | null
+          email_invoice_overdue?: boolean | null
+          email_invoice_reminder?: boolean | null
+          email_invoice_sent?: boolean | null
+          email_job_assigned?: boolean | null
+          email_job_status_changed?: boolean | null
+          email_payment_failed?: boolean | null
+          email_payment_received?: boolean | null
+          email_quote_approved?: boolean | null
+          email_quote_sent?: boolean | null
+          email_team_invite?: boolean | null
+          id?: string
+          inapp_geofence_alerts?: boolean | null
+          inapp_invoice_activity?: boolean | null
+          inapp_job_activity?: boolean | null
+          inapp_payment_activity?: boolean | null
+          inapp_quote_activity?: boolean | null
+          inapp_team_activity?: boolean | null
+          updated_at?: string
+          user_id: string
+          weekly_summary?: boolean | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          daily_digest?: boolean | null
+          email_delay_notification?: boolean | null
+          email_invoice_overdue?: boolean | null
+          email_invoice_reminder?: boolean | null
+          email_invoice_sent?: boolean | null
+          email_job_assigned?: boolean | null
+          email_job_status_changed?: boolean | null
+          email_payment_failed?: boolean | null
+          email_payment_received?: boolean | null
+          email_quote_approved?: boolean | null
+          email_quote_sent?: boolean | null
+          email_team_invite?: boolean | null
+          id?: string
+          inapp_geofence_alerts?: boolean | null
+          inapp_invoice_activity?: boolean | null
+          inapp_job_activity?: boolean | null
+          inapp_payment_activity?: boolean | null
+          inapp_quote_activity?: boolean | null
+          inapp_team_activity?: boolean | null
+          updated_at?: string
+          user_id?: string
+          weekly_summary?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           business_id: string

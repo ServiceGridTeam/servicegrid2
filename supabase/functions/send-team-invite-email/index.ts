@@ -1,9 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { notifyBusinessTeam } from "../_shared/notifications.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -142,6 +141,14 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResult = await emailResponse.json();
 
     console.log("Email sent successfully:", emailResult);
+
+    // Create in-app notification for team about new invite
+    await notifyBusinessTeam(supabase, invite.business_id, {
+      type: "team",
+      title: "Team Invite Sent",
+      message: `Invitation sent to ${invite.email} as ${roleLabel}`,
+      data: { inviteId: invite_id, email: invite.email, role: invite.role },
+    });
 
     return new Response(JSON.stringify({ success: true, emailResult }), {
       status: 200,

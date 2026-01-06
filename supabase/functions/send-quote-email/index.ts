@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
 import { Resend } from "https://esm.sh/resend@4.0.0"
 import { render } from "https://esm.sh/@react-email/render@0.0.12"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { notifyBusinessTeam } from "../_shared/notifications.ts"
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY'))
 
@@ -197,6 +198,14 @@ serve(async (req) => {
       .from('quotes')
       .update({ status: 'sent', sent_at: new Date().toISOString() })
       .eq('id', quote_id)
+
+    // Create in-app notification for team
+    await notifyBusinessTeam(supabase, quote.business_id, {
+      type: "quote",
+      title: "Quote Sent",
+      message: `Quote ${quote.quote_number} sent to ${customer.first_name} ${customer.last_name}`,
+      data: { quoteId: quote_id, customerId: customer.id },
+    })
 
     return new Response(
       JSON.stringify({ success: true, email_sent: true, email_id: emailData?.id }),

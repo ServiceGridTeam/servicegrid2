@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { notifyBusinessTeam } from "../_shared/notifications.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -171,6 +172,14 @@ Deno.serve(async (req) => {
         // Email is still queued, so we don't fail the request
       }
     }
+
+    // Create in-app notification for team
+    await notifyBusinessTeam(adminClient, job.business_id, {
+      type: "job",
+      title: "Job Delayed",
+      message: `${job.title || job.job_number} delayed by ${delayMinutes} minutes. New ETA: ${formattedEta}`,
+      data: { jobId, delayMinutes, newEta: formattedEta },
+    });
 
     return new Response(
       JSON.stringify({

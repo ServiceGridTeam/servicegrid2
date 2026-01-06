@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
 import { Resend } from "https://esm.sh/resend@4.0.0"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { notifyBusinessTeam } from "../_shared/notifications.ts"
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY'))
 
@@ -204,6 +205,14 @@ serve(async (req) => {
       .from('invoices')
       .update({ status: 'sent', sent_at: new Date().toISOString() })
       .eq('id', invoice_id)
+
+    // Create in-app notification for team
+    await notifyBusinessTeam(supabase, invoice.business_id, {
+      type: "invoice",
+      title: "Invoice Sent",
+      message: `Invoice ${invoice.invoice_number} sent to ${customer.first_name} ${customer.last_name}`,
+      data: { invoiceId: invoice_id, customerId: customer.id },
+    })
 
     return new Response(
       JSON.stringify({ success: true, email_sent: true, email_id: emailData?.id }),
