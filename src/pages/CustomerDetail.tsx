@@ -18,6 +18,7 @@ import { DeleteCustomerDialog } from "@/components/customers/DeleteCustomerDialo
 import { CustomerInvoiceTable } from "@/components/customers/CustomerInvoiceTable";
 import { PortalStatusBadge } from "@/components/customers/PortalStatusBadge";
 import { PortalInviteHistoryDialog } from "@/components/customers/PortalInviteHistoryDialog";
+import { RevokePortalAccessDialog } from "@/components/customers/RevokePortalAccessDialog";
 import { QuoteTable } from "@/components/quotes/QuoteTable";
 import { JobTable } from "@/components/jobs/JobTable";
 import { JobDetailSheet } from "@/components/jobs/JobDetailSheet";
@@ -47,6 +48,7 @@ import {
   History,
   Send,
   Globe,
+  ShieldX,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
@@ -57,6 +59,7 @@ export default function CustomerDetail() {
   const qualifyLead = useQualifyLead();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
   const { activeBusinessId } = useBusinessContext();
   
   // Fetch related data
@@ -426,16 +429,28 @@ export default function CustomerDetail() {
                     <History className="mr-2 h-3.5 w-3.5" />
                     History
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => setHistoryDialogOpen(true)}
-                    disabled={!customer.email}
-                  >
-                    <Send className="mr-2 h-3.5 w-3.5" />
-                    {portalStatus?.hasPortalAccess ? "New Link" : "Invite"}
-                  </Button>
+                  {portalStatus?.hasPortalAccess ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 text-destructive hover:text-destructive"
+                      onClick={() => setRevokeDialogOpen(true)}
+                    >
+                      <ShieldX className="mr-2 h-3.5 w-3.5" />
+                      Revoke
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setHistoryDialogOpen(true)}
+                      disabled={!customer.email}
+                    >
+                      <Send className="mr-2 h-3.5 w-3.5" />
+                      Invite
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -578,6 +593,15 @@ export default function CustomerDetail() {
         businessId={activeBusinessId || ""}
         open={historyDialogOpen}
         onOpenChange={setHistoryDialogOpen}
+      />
+
+      {/* Revoke Portal Access Dialog */}
+      <RevokePortalAccessDialog
+        customerId={customer.id}
+        customerName={`${customer.first_name} ${customer.last_name}`}
+        businessId={activeBusinessId || ""}
+        open={revokeDialogOpen}
+        onOpenChange={setRevokeDialogOpen}
       />
     </div>
   );

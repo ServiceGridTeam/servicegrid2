@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,13 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PortalStatusBadge } from "./PortalStatusBadge";
+import { RevokePortalAccessDialog } from "./RevokePortalAccessDialog";
 import { usePortalInviteHistory } from "@/hooks/usePortalInviteHistory";
 import { useSingleCustomerPortalStatus } from "@/hooks/useCustomerPortalStatus";
 import { useSendPortalInvite } from "@/hooks/usePortalInvite";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { format, formatDistanceToNow } from "date-fns";
-import { Send, History, CheckCircle, Clock, XCircle, Mail, User, Calendar } from "lucide-react";
+import { Send, History, CheckCircle, Clock, XCircle, Mail, User, Calendar, ShieldX } from "lucide-react";
 
 interface PortalInviteHistoryDialogProps {
   open: boolean;
@@ -39,6 +41,7 @@ export function PortalInviteHistoryDialog({
   const { sendInvite, isLoading: sendingInvite } = useSendPortalInvite();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
 
   const handleResendInvite = async () => {
     if (!customerEmail) {
@@ -198,19 +201,42 @@ export function PortalInviteHistoryDialog({
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-2 border-t">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Close
-            </Button>
-            <Button
-              onClick={handleResendInvite}
-              disabled={sendingInvite || !customerEmail}
-            >
-              <Send className="mr-2 h-4 w-4" />
-              {sendingInvite ? "Sending..." : status?.hasPortalAccess ? "Send New Link" : "Send Invite"}
-            </Button>
+          <div className="flex justify-between gap-2 pt-2 border-t">
+            <div>
+              {status?.hasPortalAccess && (
+                <Button
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setRevokeDialogOpen(true)}
+                >
+                  <ShieldX className="mr-2 h-4 w-4" />
+                  Revoke Access
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Close
+              </Button>
+              <Button
+                onClick={handleResendInvite}
+                disabled={sendingInvite || !customerEmail}
+              >
+                <Send className="mr-2 h-4 w-4" />
+                {sendingInvite ? "Sending..." : status?.hasPortalAccess ? "Send New Link" : "Send Invite"}
+              </Button>
+            </div>
           </div>
         </div>
+
+        <RevokePortalAccessDialog
+          open={revokeDialogOpen}
+          onOpenChange={setRevokeDialogOpen}
+          customerId={customerId}
+          customerName={customerName}
+          businessId={businessId}
+          onSuccess={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   );
