@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusiness } from "./useBusiness";
 import type { Tables } from "@/integrations/supabase/types";
+import { toast } from "sonner";
 
 export type TimesheetApproval = Tables<"timesheet_approvals">;
 
@@ -183,8 +184,25 @@ export function useSubmitTimesheet() {
         return data;
       }
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["timesheet-approvals"] });
+      
+      // Trigger notification to managers
+      if (business?.id && user?.id && data) {
+        try {
+          await supabase.functions.invoke("notify-timesheet-event", {
+            body: {
+              eventType: "submitted",
+              timesheetApprovalId: data.id,
+              businessId: business.id,
+              userId: user.id,
+              payPeriodId: data.pay_period_id,
+            },
+          });
+        } catch (error) {
+          console.error("Failed to send timesheet notification:", error);
+        }
+      }
     },
   });
 }
@@ -193,6 +211,7 @@ export function useSubmitTimesheet() {
 export function useApproveTimesheet() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { data: business } = useBusiness();
   
   return useMutation({
     mutationFn: async (params: {
@@ -216,8 +235,27 @@ export function useApproveTimesheet() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["timesheet-approvals"] });
+      toast.success("Timesheet approved");
+      
+      // Trigger notification to worker
+      if (business?.id && user?.id && data) {
+        try {
+          await supabase.functions.invoke("notify-timesheet-event", {
+            body: {
+              eventType: "approved",
+              timesheetApprovalId: data.id,
+              businessId: business.id,
+              userId: data.user_id,
+              payPeriodId: data.pay_period_id,
+              reviewerId: user.id,
+            },
+          });
+        } catch (error) {
+          console.error("Failed to send approval notification:", error);
+        }
+      }
     },
   });
 }
@@ -226,6 +264,7 @@ export function useApproveTimesheet() {
 export function useRejectTimesheet() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { data: business } = useBusiness();
   
   return useMutation({
     mutationFn: async (params: {
@@ -249,8 +288,28 @@ export function useRejectTimesheet() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["timesheet-approvals"] });
+      toast.success("Timesheet rejected");
+      
+      // Trigger notification to worker
+      if (business?.id && user?.id && data) {
+        try {
+          await supabase.functions.invoke("notify-timesheet-event", {
+            body: {
+              eventType: "rejected",
+              timesheetApprovalId: data.id,
+              businessId: business.id,
+              userId: data.user_id,
+              payPeriodId: data.pay_period_id,
+              reviewerId: user.id,
+              rejectionReason: variables.rejectionReason,
+            },
+          });
+        } catch (error) {
+          console.error("Failed to send rejection notification:", error);
+        }
+      }
     },
   });
 }

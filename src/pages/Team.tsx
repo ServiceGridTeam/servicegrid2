@@ -18,6 +18,7 @@ import { GeofenceAlertList } from "@/components/team/GeofenceAlertList";
 import { WorkerStatusList } from "@/components/team/WorkerStatusList";
 import { WorkerStatusMap } from "@/components/team/WorkerStatusMap";
 import { TimesheetApprovalQueue } from "@/components/team/TimesheetApprovalQueue";
+import { TimesheetAnalyticsDashboard } from "@/components/team/TimesheetAnalyticsDashboard";
 import { usePendingAlertsCount } from "@/hooks/useGeofenceAlerts";
 import { usePendingTimesheetApprovals } from "@/hooks/useTimesheetApprovals";
 
@@ -51,7 +52,7 @@ export default function Team() {
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="timesheets">Timesheets</TabsTrigger>
           {canManage && (
@@ -64,6 +65,7 @@ export default function Team() {
               )}
             </TabsTrigger>
           )}
+          {canManage && <TabsTrigger value="analytics">Analytics</TabsTrigger>}
           <TabsTrigger value="availability">Availability</TabsTrigger>
           <TabsTrigger value="time-off">Time Off</TabsTrigger>
           {canManage && (
@@ -95,6 +97,12 @@ export default function Team() {
         {canManage && (
           <TabsContent value="approvals" className="space-y-6">
             <TimesheetApprovalQueue />
+          </TabsContent>
+        )}
+
+        {canManage && (
+          <TabsContent value="analytics" className="space-y-6">
+            <TimesheetAnalyticsDashboard />
           </TabsContent>
         )}
 

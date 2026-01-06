@@ -18,12 +18,16 @@ export interface NotificationPreferences {
   email_job_status_changed: boolean;
   email_delay_notification: boolean;
   email_team_invite: boolean;
+  email_timesheet_submitted: boolean;
+  email_timesheet_approved: boolean;
+  email_timesheet_rejected: boolean;
   inapp_invoice_activity: boolean;
   inapp_payment_activity: boolean;
   inapp_quote_activity: boolean;
   inapp_job_activity: boolean;
   inapp_team_activity: boolean;
   inapp_geofence_alerts: boolean;
+  inapp_timesheet_activity: boolean;
   daily_digest: boolean;
   weekly_summary: boolean;
   created_at: string;
@@ -42,12 +46,16 @@ const DEFAULT_PREFERENCES: Omit<NotificationPreferences, "id" | "user_id" | "bus
   email_job_status_changed: true,
   email_delay_notification: true,
   email_team_invite: true,
+  email_timesheet_submitted: true,
+  email_timesheet_approved: true,
+  email_timesheet_rejected: true,
   inapp_invoice_activity: true,
   inapp_payment_activity: true,
   inapp_quote_activity: true,
   inapp_job_activity: true,
   inapp_team_activity: true,
   inapp_geofence_alerts: true,
+  inapp_timesheet_activity: true,
   daily_digest: false,
   weekly_summary: false,
 };

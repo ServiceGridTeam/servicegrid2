@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Bell, Check, CheckCheck, Trash2, FileText, Users, Briefcase, Receipt, AlertCircle } from "lucide-react";
+import { Bell, Check, CheckCheck, Trash2, FileText, Users, Briefcase, Receipt, AlertCircle, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,6 +20,8 @@ import {
   type Notification,
 } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
@@ -35,6 +37,8 @@ const getNotificationIcon = (type: string) => {
       return <Receipt className="h-4 w-4 text-green-500" />;
     case "alert":
       return <AlertCircle className="h-4 w-4 text-destructive" />;
+    case "timesheet":
+      return <ClipboardCheck className="h-4 w-4 text-blue-500" />;
     default:
       return <Bell className="h-4 w-4" />;
   }
@@ -42,11 +46,35 @@ const getNotificationIcon = (type: string) => {
 
 export function NotificationsDropdown() {
   const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
   const { data: notifications = [] } = useNotifications();
   const { data: unreadCount = 0 } = useUnreadNotificationsCount();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
   const deleteNotification = useDeleteNotification();
+
+  // Subscribe to real-time notifications
+  useEffect(() => {
+    const channel = supabase
+      .channel("notifications-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+        },
+        () => {
+          // Invalidate queries to refresh notifications
+          queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.read_at) {
