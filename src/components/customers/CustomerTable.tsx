@@ -29,6 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LeadScoreBadge } from "./LeadScoreBadge";
 import { DeleteCustomerDialog } from "./DeleteCustomerDialog";
 import { Customer, useQualifyLead } from "@/hooks/useCustomers";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 import {
   MoreHorizontal,
   Search,
@@ -40,6 +41,7 @@ import {
   Briefcase,
   Mail,
   Phone,
+  ExternalLink,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -70,10 +72,16 @@ export function CustomerTable({
 }: CustomerTableProps) {
   const navigate = useNavigate();
   const qualifyLead = useQualifyLead();
+  const { activeBusinessId } = useBusinessContext();
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     customer: Customer | null;
   }>({ open: false, customer: null });
+
+  const handlePreviewPortal = (customerId: string) => {
+    const url = `/portal/preview?customerId=${customerId}&businessId=${activeBusinessId}`;
+    window.open(url, '_blank');
+  };
 
   const getStatusBadge = (status: string | null) => {
     switch (status) {
@@ -261,6 +269,15 @@ export function CustomerTable({
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit
                           </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePreviewPortal(customer.id);
+                          }}
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          Preview Portal
                         </DropdownMenuItem>
                         {customer.lead_status !== "qualified" &&
                           customer.lead_status !== "converted" && (
