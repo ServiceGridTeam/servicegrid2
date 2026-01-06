@@ -37,6 +37,7 @@ import PaymentCanceled from "./pages/PaymentCanceled";
 import AcceptInvite from "./pages/AcceptInvite";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import { Templates, TemplateEdit } from "./pages/marketing";
 
 const queryClient = new QueryClient();
 
@@ -86,6 +87,9 @@ const App = () => (
               <Route path="/payments" element={<Payments />} />
               <Route path="/team" element={<Team />} />
               <Route path="/settings" element={<Settings />} />
+              {/* Marketing routes */}
+              <Route path="/marketing/templates" element={<Templates />} />
+              <Route path="/marketing/templates/:id" element={<TemplateEdit />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

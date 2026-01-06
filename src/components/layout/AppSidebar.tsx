@@ -27,6 +27,7 @@ import {
   LogOut,
   Route,
   Inbox,
+  Mail,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
@@ -48,6 +49,10 @@ const mainMenuItems = [
   { title: "Routes", url: "/routes", icon: Route },
   { title: "Payments", url: "/payments", icon: CreditCard },
   { title: "Team", url: "/team", icon: Users },
+];
+
+const marketingMenuItems = [
+  { title: "Templates", url: "/marketing/templates", icon: Mail },
 ];
 
 const settingsMenuItems = [
@@ -129,6 +134,41 @@ export function AppSidebar() {
                         </Badge>
                       )}
                       {!collapsed && isActive(item.url) && item.url !== "/requests" && (
+                        <ChevronRight className="ml-auto h-4 w-4 text-foreground" />
+                      )}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-muted-foreground text-xs tracking-wide uppercase">
+            {collapsed ? "" : "Marketing"}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {marketingMenuItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.url)}
+                    tooltip={item.title}
+                    className={isActive(item.url) 
+                      ? "bg-foreground/10 text-foreground border-l-2 border-foreground" 
+                      : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    }
+                  >
+                    <NavLink
+                      to={item.url}
+                      className="flex items-center gap-3"
+                      activeClassName=""
+                    >
+                      <item.icon className={`h-4 w-4 shrink-0 ${isActive(item.url) ? "text-foreground" : ""}`} />
+                      {!collapsed && <span>{item.title}</span>}
+                      {!collapsed && isActive(item.url) && (
                         <ChevronRight className="ml-auto h-4 w-4 text-foreground" />
                       )}
                     </NavLink>
