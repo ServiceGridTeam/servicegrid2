@@ -4,3 +4,7 @@ export { default as PortalDashboard } from './PortalDashboard';
 export { default as PortalDocuments } from './PortalDocuments';
 export { default as PortalQuoteDetail } from './PortalQuoteDetail';
 export { default as PortalInvoiceDetail } from './PortalInvoiceDetail';
+export { default as PortalSchedule } from './PortalSchedule';
+export { default as PortalJobDetail } from './PortalJobDetail';
+export { default as PortalServiceRequest } from './PortalServiceRequest';
+export { default as PortalAccount } from './PortalAccount';
