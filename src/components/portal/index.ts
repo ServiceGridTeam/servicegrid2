@@ -14,3 +14,5 @@ export { CustomerServiceRequestForm } from './CustomerServiceRequestForm';
 export { FeedbackForm } from './FeedbackForm';
 export { FeedbackPrompt } from './FeedbackPrompt';
 export { PortalErrorBoundary } from './PortalErrorBoundary';
+export { AddPaymentMethodDialog } from './AddPaymentMethodDialog';
+export { RescheduleRequestDialog } from './RescheduleRequestDialog';

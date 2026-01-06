@@ -95,39 +95,45 @@ export function QuoteActions({ quoteId, currentStatus, onActionComplete }: Quote
               exit={{ opacity: 0 }}
               className="flex flex-col gap-2 sm:flex-row"
             >
-              <Button
-                onClick={handleApprove}
-                disabled={isPending}
-                className="gap-2"
-                size="lg"
-              >
-                {isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Check className="h-4 w-4" />
-                )}
-                Approve Quote
-              </Button>
+              <motion.div whileTap={{ scale: 0.98 }}>
+                <Button
+                  onClick={handleApprove}
+                  disabled={isPending}
+                  className="gap-2"
+                  size="lg"
+                >
+                  {isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Check className="h-4 w-4" />
+                  )}
+                  Approve Quote
+                </Button>
+              </motion.div>
 
-              <Button
-                variant="outline"
-                onClick={() => setShowRequestChanges(true)}
-                disabled={isPending}
-                className="gap-2"
-              >
-                <Edit className="h-4 w-4" />
-                Request Changes
-              </Button>
+              <motion.div whileTap={{ scale: 0.98 }}>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRequestChanges(true)}
+                  disabled={isPending}
+                  className="gap-2"
+                >
+                  <Edit className="h-4 w-4" />
+                  Request Changes
+                </Button>
+              </motion.div>
 
-              <Button
-                variant="ghost"
-                onClick={handleDecline}
-                disabled={isPending}
-                className="gap-2 text-muted-foreground hover:text-destructive"
-              >
-                <X className="h-4 w-4" />
-                Decline
-              </Button>
+              <motion.div whileTap={{ scale: 0.98 }}>
+                <Button
+                  variant="ghost"
+                  onClick={handleDecline}
+                  disabled={isPending}
+                  className="gap-2 text-muted-foreground hover:text-destructive"
+                >
+                  <X className="h-4 w-4" />
+                  Decline
+                </Button>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
