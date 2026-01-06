@@ -12,11 +12,14 @@ import { TeamManagement } from "@/components/settings/TeamManagement";
 import { InviteMemberDialog } from "@/components/settings/InviteMemberDialog";
 import { OvertimeSettingsCard } from "@/components/team/OvertimeSettingsCard";
 import { GeofenceAlertBanner } from "@/components/team/GeofenceAlertBanner";
+import { GeofenceAlertList } from "@/components/team/GeofenceAlertList";
 import { WorkerStatusList } from "@/components/team/WorkerStatusList";
 import { WorkerStatusMap } from "@/components/team/WorkerStatusMap";
+import { usePendingAlertsCount } from "@/hooks/useGeofenceAlerts";
 
 export default function Team() {
   const { data: canManage } = useCanManageTeam();
+  const { data: pendingAlertsCount } = usePendingAlertsCount();
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   return (
@@ -47,6 +50,16 @@ export default function Team() {
           <TabsTrigger value="timesheets">Timesheets</TabsTrigger>
           <TabsTrigger value="availability">Availability</TabsTrigger>
           <TabsTrigger value="time-off">Time Off</TabsTrigger>
+          {canManage && (
+            <TabsTrigger value="alerts" className="relative">
+              Alerts
+              {pendingAlertsCount && pendingAlertsCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
+                  {pendingAlertsCount > 99 ? "99+" : pendingAlertsCount}
+                </span>
+              )}
+            </TabsTrigger>
+          )}
           <TabsTrigger value="members">Members</TabsTrigger>
           {canManage && <TabsTrigger value="settings">Settings</TabsTrigger>}
         </TabsList>
@@ -71,6 +84,12 @@ export default function Team() {
           {canManage && <PendingApprovalsCard />}
           <TimeOffRequestList />
         </TabsContent>
+
+        {canManage && (
+          <TabsContent value="alerts" className="space-y-6">
+            <GeofenceAlertList />
+          </TabsContent>
+        )}
 
         <TabsContent value="members" className="space-y-6">
           <TeamManagement />
