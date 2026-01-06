@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserPlus } from "lucide-react";
 import { useCanManageTeam } from "@/hooks/useTeamManagement";
-import { TeamDashboard } from "@/components/team/TeamDashboard";
+import { TeamDashboard, PayPeriodSettings } from "@/components/team";
 import { TimesheetView } from "@/components/team/TimesheetView";
 import { TeamAvailabilityGrid } from "@/components/team/TeamAvailabilityGrid";
 import { TimeOffRequestList } from "@/components/team/TimeOffRequestList";
@@ -118,6 +118,7 @@ export default function Team() {
 
         {canManage && (
           <TabsContent value="settings" className="space-y-6">
+            <PayPeriodSettings />
             <PayRatesSettings />
             <OvertimeSettingsCard />
           </TabsContent>
