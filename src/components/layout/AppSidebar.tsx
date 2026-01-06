@@ -26,18 +26,22 @@ import {
   ChevronRight,
   LogOut,
   Route,
+  Inbox,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useBusiness } from "@/hooks/useBusiness";
+import { usePendingRequestsCount } from "@/hooks/useJobRequests";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const mainMenuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Customers", url: "/customers", icon: Users },
   { title: "Quotes", url: "/quotes", icon: FileText },
   { title: "Jobs", url: "/jobs", icon: Briefcase },
+  { title: "Requests", url: "/requests", icon: Inbox },
   { title: "Invoices", url: "/invoices", icon: Receipt },
   { title: "Calendar", url: "/calendar", icon: Calendar },
   { title: "Routes", url: "/routes", icon: Route },
@@ -56,6 +60,7 @@ export function AppSidebar() {
   const { signOut } = useAuth();
   const { data: profile } = useProfile();
   const { data: business } = useBusiness();
+  const { data: pendingRequestsCount } = usePendingRequestsCount();
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
 
@@ -114,7 +119,12 @@ export function AppSidebar() {
                     >
                       <item.icon className={`h-4 w-4 shrink-0 ${isActive(item.url) ? "text-foreground" : ""}`} />
                       {!collapsed && <span>{item.title}</span>}
-                      {!collapsed && isActive(item.url) && (
+                      {!collapsed && item.url === "/requests" && pendingRequestsCount && pendingRequestsCount > 0 && (
+                        <Badge variant="destructive" className="ml-auto h-5 min-w-5 px-1 text-xs">
+                          {pendingRequestsCount > 99 ? "99+" : pendingRequestsCount}
+                        </Badge>
+                      )}
+                      {!collapsed && isActive(item.url) && item.url !== "/requests" && (
                         <ChevronRight className="ml-auto h-4 w-4 text-foreground" />
                       )}
                     </NavLink>
