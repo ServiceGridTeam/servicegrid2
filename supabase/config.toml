@@ -92,3 +92,6 @@ verify_jwt = false
 
 [functions.send-campaign-emails]
 verify_jwt = true
+
+[functions.resend-webhook]
+verify_jwt = false
