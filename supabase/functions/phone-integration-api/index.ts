@@ -189,7 +189,7 @@ Deno.serve(async (req) => {
       // Search customers with flexible matching
       const { data: customers, error: custError } = await supabase
         .from("customers")
-        .select("id, name, email, phone, address, notes")
+        .select("id, first_name, last_name, email, phone, address_line1, city, state, zip")
         .eq("business_id", businessId);
 
       if (custError) {
@@ -210,21 +210,32 @@ Deno.serve(async (req) => {
       // Get active jobs for this customer
       const { data: activeJobs } = await supabase
         .from("jobs")
-        .select("id, job_number, title, status, scheduled_start, scheduled_end, address")
+        .select("id, job_number, title, status, scheduled_start, scheduled_end, address_line1, city, state, zip")
         .eq("customer_id", customer.id)
         .in("status", ["scheduled", "in_progress", "on_hold"])
         .order("scheduled_start", { ascending: true });
+
+      // Format customer name and address
+      const customerName = `${customer.first_name || ""} ${customer.last_name || ""}`.trim();
+      const customerAddress = [customer.address_line1, customer.city, customer.state, customer.zip]
+        .filter(Boolean)
+        .join(", ");
 
       return jsonResponse({
         found: true,
         customer: {
           id: customer.id,
-          name: customer.name,
+          name: customerName,
+          first_name: customer.first_name,
+          last_name: customer.last_name,
           email: customer.email,
           phone: customer.phone,
-          address: customer.address,
+          address: customerAddress,
         },
-        active_jobs: activeJobs || [],
+        active_jobs: (activeJobs || []).map((job: any) => ({
+          ...job,
+          address: [job.address_line1, job.city, job.state, job.zip].filter(Boolean).join(", "),
+        })),
       });
     }
 
@@ -241,7 +252,7 @@ Deno.serve(async (req) => {
 
       let query = supabase
         .from("jobs")
-        .select("id, job_number, title, description, status, scheduled_start, scheduled_end, address, assigned_to")
+        .select("id, job_number, title, description, status, scheduled_start, scheduled_end, address_line1, city, state, zip, assigned_to")
         .eq("business_id", businessId);
 
       if (customerId) {
@@ -258,7 +269,13 @@ Deno.serve(async (req) => {
         return errorResponse("INTERNAL_ERROR", "Failed to fetch jobs", 500);
       }
 
-      return jsonResponse({ jobs: jobs || [] });
+      // Format address for response
+      const formattedJobs = (jobs || []).map((job: any) => ({
+        ...job,
+        address: [job.address_line1, job.city, job.state, job.zip].filter(Boolean).join(", "),
+      }));
+
+      return jsonResponse({ jobs: formattedJobs });
     }
 
     // =====================
@@ -274,7 +291,7 @@ Deno.serve(async (req) => {
 
       const { data: job, error } = await supabase
         .from("jobs")
-        .select("id, status, scheduled_start, assigned_to, eta_minutes")
+        .select("id, status, scheduled_start, estimated_arrival, assigned_to")
         .eq("id", jobId)
         .eq("business_id", businessId)
         .single();
@@ -296,9 +313,18 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Calculate ETA in minutes from now if estimated_arrival exists
+      let etaMinutes = null;
+      if (job.estimated_arrival) {
+        const now = new Date();
+        const eta = new Date(job.estimated_arrival);
+        etaMinutes = Math.max(0, Math.round((eta.getTime() - now.getTime()) / 60000));
+      }
+
       return jsonResponse({
-        has_eta: !!job.eta_minutes,
-        eta_minutes: job.eta_minutes || null,
+        has_eta: !!job.estimated_arrival,
+        eta_minutes: etaMinutes,
+        estimated_arrival: job.estimated_arrival,
         technician_name: technicianName,
         status: job.status,
         scheduled_start: job.scheduled_start,
