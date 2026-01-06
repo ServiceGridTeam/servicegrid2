@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNotificationPreferences, useUpdateNotificationPreference, NotificationPreferences } from "@/hooks/useNotificationPreferences";
-import { Mail, Bell, Calendar } from "lucide-react";
+import { Mail, Bell, Calendar, ClipboardCheck } from "lucide-react";
 
 interface PreferenceToggleProps {
   label: string;
@@ -198,6 +198,34 @@ export function NotificationPreferencesCard() {
               disabled={isPending}
             />
           </div>
+
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider pt-4">Timesheets</p>
+            <PreferenceToggle
+              label="Timesheet submitted for review"
+              description="When a team member submits their timesheet"
+              field="email_timesheet_submitted"
+              checked={prefs.email_timesheet_submitted}
+              onCheckedChange={handleToggle}
+              disabled={isPending}
+            />
+            <PreferenceToggle
+              label="Timesheet approved"
+              description="When your timesheet is approved"
+              field="email_timesheet_approved"
+              checked={prefs.email_timesheet_approved}
+              onCheckedChange={handleToggle}
+              disabled={isPending}
+            />
+            <PreferenceToggle
+              label="Timesheet rejected"
+              description="When your timesheet is rejected"
+              field="email_timesheet_rejected"
+              checked={prefs.email_timesheet_rejected}
+              onCheckedChange={handleToggle}
+              disabled={isPending}
+            />
+          </div>
         </PreferenceSection>
 
         <Separator />
@@ -249,6 +277,14 @@ export function NotificationPreferencesCard() {
             description="Clock-in/out location warnings"
             field="inapp_geofence_alerts"
             checked={prefs.inapp_geofence_alerts}
+            onCheckedChange={handleToggle}
+            disabled={isPending}
+          />
+          <PreferenceToggle
+            label="Timesheet activity"
+            description="Submissions, approvals, rejections"
+            field="inapp_timesheet_activity"
+            checked={prefs.inapp_timesheet_activity}
             onCheckedChange={handleToggle}
             disabled={isPending}
           />

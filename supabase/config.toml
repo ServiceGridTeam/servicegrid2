@@ -107,3 +107,6 @@ verify_jwt = true
 
 [functions.export-payroll]
 verify_jwt = true
+
+[functions.notify-timesheet-event]
+verify_jwt = true

@@ -1763,6 +1763,9 @@ export type Database = {
           email_quote_approved: boolean | null
           email_quote_sent: boolean | null
           email_team_invite: boolean | null
+          email_timesheet_approved: boolean | null
+          email_timesheet_rejected: boolean | null
+          email_timesheet_submitted: boolean | null
           id: string
           inapp_geofence_alerts: boolean | null
           inapp_invoice_activity: boolean | null
@@ -1770,6 +1773,7 @@ export type Database = {
           inapp_payment_activity: boolean | null
           inapp_quote_activity: boolean | null
           inapp_team_activity: boolean | null
+          inapp_timesheet_activity: boolean | null
           updated_at: string
           user_id: string
           weekly_summary: boolean | null
@@ -1789,6 +1793,9 @@ export type Database = {
           email_quote_approved?: boolean | null
           email_quote_sent?: boolean | null
           email_team_invite?: boolean | null
+          email_timesheet_approved?: boolean | null
+          email_timesheet_rejected?: boolean | null
+          email_timesheet_submitted?: boolean | null
           id?: string
           inapp_geofence_alerts?: boolean | null
           inapp_invoice_activity?: boolean | null
@@ -1796,6 +1803,7 @@ export type Database = {
           inapp_payment_activity?: boolean | null
           inapp_quote_activity?: boolean | null
           inapp_team_activity?: boolean | null
+          inapp_timesheet_activity?: boolean | null
           updated_at?: string
           user_id: string
           weekly_summary?: boolean | null
@@ -1815,6 +1823,9 @@ export type Database = {
           email_quote_approved?: boolean | null
           email_quote_sent?: boolean | null
           email_team_invite?: boolean | null
+          email_timesheet_approved?: boolean | null
+          email_timesheet_rejected?: boolean | null
+          email_timesheet_submitted?: boolean | null
           id?: string
           inapp_geofence_alerts?: boolean | null
           inapp_invoice_activity?: boolean | null
@@ -1822,6 +1833,7 @@ export type Database = {
           inapp_payment_activity?: boolean | null
           inapp_quote_activity?: boolean | null
           inapp_team_activity?: boolean | null
+          inapp_timesheet_activity?: boolean | null
           updated_at?: string
           user_id?: string
           weekly_summary?: boolean | null
