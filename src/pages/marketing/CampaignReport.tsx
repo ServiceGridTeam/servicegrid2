@@ -75,6 +75,32 @@ export default function CampaignReport() {
     }
   };
 
+  const handleExportCSV = () => {
+    if (!emailSends || emailSends.length === 0) return;
+    
+    const headers = ["Recipient", "Email", "Status", "Opened At", "Clicked At", "Sent At"];
+    const rows = emailSends.map((send) => [
+      send.customer ? `${send.customer.first_name} ${send.customer.last_name}` : send.to_name || "",
+      send.to_email,
+      send.status,
+      send.opened_at ? format(new Date(send.opened_at), "yyyy-MM-dd HH:mm:ss") : "",
+      send.clicked_at ? format(new Date(send.clicked_at), "yyyy-MM-dd HH:mm:ss") : "",
+      send.sent_at ? format(new Date(send.sent_at), "yyyy-MM-dd HH:mm:ss") : "",
+    ]);
+    
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${campaign.name}-recipients-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -93,7 +119,7 @@ export default function CampaignReport() {
           </div>
         </div>
 
-        <Button variant="outline">
+        <Button variant="outline" onClick={handleExportCSV} disabled={!emailSends?.length}>
           <Download className="h-4 w-4 mr-2" />
           Export CSV
         </Button>
