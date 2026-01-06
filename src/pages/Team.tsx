@@ -15,11 +15,15 @@ import { GeofenceAlertBanner } from "@/components/team/GeofenceAlertBanner";
 import { GeofenceAlertList } from "@/components/team/GeofenceAlertList";
 import { WorkerStatusList } from "@/components/team/WorkerStatusList";
 import { WorkerStatusMap } from "@/components/team/WorkerStatusMap";
+import { TimesheetApprovalQueue } from "@/components/team/TimesheetApprovalQueue";
 import { usePendingAlertsCount } from "@/hooks/useGeofenceAlerts";
+import { usePendingTimesheetApprovals } from "@/hooks/useTimesheetApprovals";
 
 export default function Team() {
   const { data: canManage } = useCanManageTeam();
   const { data: pendingAlertsCount } = usePendingAlertsCount();
+  const { data: pendingApprovals } = usePendingTimesheetApprovals();
+  const pendingApprovalsCount = pendingApprovals?.length || 0;
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   return (
@@ -48,6 +52,16 @@ export default function Team() {
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="timesheets">Timesheets</TabsTrigger>
+          {canManage && (
+            <TabsTrigger value="approvals" className="relative">
+              Approvals
+              {pendingApprovalsCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
+                  {pendingApprovalsCount > 99 ? "99+" : pendingApprovalsCount}
+                </span>
+              )}
+            </TabsTrigger>
+          )}
           <TabsTrigger value="availability">Availability</TabsTrigger>
           <TabsTrigger value="time-off">Time Off</TabsTrigger>
           {canManage && (
@@ -75,6 +89,12 @@ export default function Team() {
         <TabsContent value="timesheets" className="space-y-6">
           <TimesheetView />
         </TabsContent>
+
+        {canManage && (
+          <TabsContent value="approvals" className="space-y-6">
+            <TimesheetApprovalQueue />
+          </TabsContent>
+        )}
 
         <TabsContent value="availability" className="space-y-6">
           <TeamAvailabilityGrid />

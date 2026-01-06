@@ -13,3 +13,5 @@ export { GeofenceAlertBanner } from "./GeofenceAlertBanner";
 export { TimesheetSubmissionCard } from "./TimesheetSubmissionCard";
 export { ManualTimeEntryDialog } from "./ManualTimeEntryDialog";
 export { EditTimeEntryDialog } from "./EditTimeEntryDialog";
+export { TimesheetApprovalQueue } from "./TimesheetApprovalQueue";
+export { TimesheetDetailModal } from "./TimesheetDetailModal";
