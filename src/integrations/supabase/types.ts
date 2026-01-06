@@ -1343,6 +1343,63 @@ export type Database = {
           },
         ]
       }
+      phone_integration_logs: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          duration_ms: number | null
+          endpoint: string
+          id: string
+          integration_id: string
+          ip_address: string | null
+          method: string
+          request_metadata: Json | null
+          response_code: string | null
+          status_code: number
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          duration_ms?: number | null
+          endpoint: string
+          id?: string
+          integration_id: string
+          ip_address?: string | null
+          method: string
+          request_metadata?: Json | null
+          response_code?: string | null
+          status_code: number
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          duration_ms?: number | null
+          endpoint?: string
+          id?: string
+          integration_id?: string
+          ip_address?: string | null
+          method?: string
+          request_metadata?: Json | null
+          response_code?: string | null
+          status_code?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phone_integration_logs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "phone_integration_logs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "phone_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       phone_integrations: {
         Row: {
           api_key_hash: string

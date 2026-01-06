@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Phone, Key, Copy, Loader2, AlertTriangle, Clock, Activity } from "lucide-react";
+import { Phone, Key, Copy, Loader2, AlertTriangle, Clock, Activity, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -26,6 +26,7 @@ import {
   PhoneIntegrationPermissions,
 } from "@/hooks/usePhoneIntegration";
 import { ApiKeyModal } from "./ApiKeyModal";
+import { PhoneIntegrationLogs } from "./PhoneIntegrationLogs";
 
 const PERMISSIONS_CONFIG: {
   key: keyof PhoneIntegrationPermissions;
@@ -50,6 +51,7 @@ export function PhoneIntegrationCard() {
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
   const [showRevokeDialog, setShowRevokeDialog] = useState(false);
   const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
 
   const handleGenerateKey = async () => {
     try {
@@ -210,7 +212,14 @@ export function PhoneIntegrationCard() {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-wrap gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowLogs(true)}
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  View Logs
+                </Button>
                 <Button
                   variant="outline"
                   onClick={() => setShowRegenerateDialog(true)}
@@ -289,6 +298,15 @@ export function PhoneIntegrationCard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Logs Sheet */}
+      {integration && (
+        <PhoneIntegrationLogs
+          integrationId={integration.id}
+          open={showLogs}
+          onOpenChange={setShowLogs}
+        />
+      )}
     </>
   );
 }
