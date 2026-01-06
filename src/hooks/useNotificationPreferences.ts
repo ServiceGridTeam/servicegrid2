@@ -21,6 +21,8 @@ export interface NotificationPreferences {
   email_timesheet_submitted: boolean;
   email_timesheet_approved: boolean;
   email_timesheet_rejected: boolean;
+  email_portal_first_login: boolean;
+  email_portal_login: boolean;
   inapp_invoice_activity: boolean;
   inapp_payment_activity: boolean;
   inapp_quote_activity: boolean;
@@ -28,6 +30,7 @@ export interface NotificationPreferences {
   inapp_team_activity: boolean;
   inapp_geofence_alerts: boolean;
   inapp_timesheet_activity: boolean;
+  inapp_portal_activity: boolean;
   daily_digest: boolean;
   weekly_summary: boolean;
   created_at: string;
@@ -49,6 +52,8 @@ const DEFAULT_PREFERENCES: Omit<NotificationPreferences, "id" | "user_id" | "bus
   email_timesheet_submitted: true,
   email_timesheet_approved: true,
   email_timesheet_rejected: true,
+  email_portal_first_login: true,
+  email_portal_login: false,
   inapp_invoice_activity: true,
   inapp_payment_activity: true,
   inapp_quote_activity: true,
@@ -56,6 +61,7 @@ const DEFAULT_PREFERENCES: Omit<NotificationPreferences, "id" | "user_id" | "bus
   inapp_team_activity: true,
   inapp_geofence_alerts: true,
   inapp_timesheet_activity: true,
+  inapp_portal_activity: true,
   daily_digest: false,
   weekly_summary: false,
 };
