@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useClockEvents, type ClockEvent } from "@/hooks/useClockEvents";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -329,6 +329,52 @@ function GeofenceCircle({
   return null;
 }
 
+// Chronological path connecting clock events
+function ChronologicalPath({ events }: { events: ClockEvent[] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || !window.google?.maps || events.length < 2) return;
+
+    // Sort by recorded_at ascending (oldest first)
+    const sortedEvents = [...events]
+      .filter(e => e.latitude && e.longitude && e.recorded_at)
+      .sort((a, b) => 
+        new Date(a.recorded_at!).getTime() - new Date(b.recorded_at!).getTime()
+      );
+
+    if (sortedEvents.length < 2) return;
+
+    // Create path from coordinates
+    const path = sortedEvents.map(e => ({
+      lat: e.latitude!,
+      lng: e.longitude!,
+    }));
+
+    const polyline = new google.maps.Polyline({
+      path,
+      strokeColor: '#6b7280', // gray-500
+      strokeOpacity: 0.6,
+      strokeWeight: 2,
+      geodesic: true,
+      icons: [{
+        icon: {
+          path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+          scale: 2,
+          strokeColor: '#6b7280',
+        },
+        offset: '50%',
+        repeat: '100px',
+      }],
+      map,
+    });
+
+    return () => polyline.setMap(null);
+  }, [map, events]);
+
+  return null;
+}
+
 // Map component showing clock events
 function ClockEventMap({ 
   events, 
@@ -387,6 +433,9 @@ function ClockEventMap({
             radius={effectiveRadius} 
             isExpanded={isExpanded ?? false}
           />
+
+          {/* Chronological Path */}
+          <ChronologicalPath events={validEvents} />
 
           {/* Job Site Marker */}
           <AdvancedMarker position={jobCenter}>
