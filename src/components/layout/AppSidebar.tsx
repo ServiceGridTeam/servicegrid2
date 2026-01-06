@@ -106,7 +106,7 @@ export function AppSidebar() {
         <Zap className="h-5 w-5" />
       </div>
       {!collapsed && (
-        <div className="flex flex-col overflow-hidden flex-1 min-w-0">
+        <div className="flex flex-col items-start overflow-hidden flex-1 min-w-0">
           <AnimatePresence mode="wait">
             <motion.span
               key={activeBusinessName || "default"}
