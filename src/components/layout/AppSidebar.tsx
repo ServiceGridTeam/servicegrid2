@@ -29,6 +29,7 @@ import {
   Inbox,
   Mail,
   GitBranch,
+  Megaphone,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
@@ -55,6 +56,7 @@ const mainMenuItems = [
 const marketingMenuItems = [
   { title: "Templates", url: "/marketing/templates", icon: Mail },
   { title: "Sequences", url: "/marketing/sequences", icon: GitBranch },
+  { title: "Campaigns", url: "/marketing/campaigns", icon: Megaphone },
 ];
 
 const settingsMenuItems = [
