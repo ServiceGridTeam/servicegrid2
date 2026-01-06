@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavLink } from "@/components/NavLink";
@@ -15,10 +15,17 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { ChevronRight, LogOut, Zap } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown, ChevronRight, Check, LogOut, Zap } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
+import { useBusinessMemberships } from "@/hooks/useBusinessMemberships";
 import { usePendingRequestsCount } from "@/hooks/useJobRequests";
 import { usePendingModificationsCount } from "@/hooks/useJobModificationRequests";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -32,11 +39,14 @@ export function AppSidebar() {
   const location = useLocation();
   const { signOut } = useAuth();
   const { data: profile } = useProfile();
-  const { activeBusinessName, activeRole, navGroups, isLoading } = useBusinessContext();
+  const { activeBusinessName, activeBusinessId, activeRole, navGroups, isLoading, switchBusiness } = useBusinessContext();
+  const { data: memberships = [] } = useBusinessMemberships();
   const { data: pendingRequestsCount } = usePendingRequestsCount();
   const { data: pendingModificationsCount } = usePendingModificationsCount();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const totalPendingCount = (pendingRequestsCount || 0) + (pendingModificationsCount || 0);
+  const hasMultipleBusinesses = memberships.length > 1;
 
   // Track previous role for animation key
   const prevRoleRef = useRef(activeRole);
@@ -68,6 +78,11 @@ export function AppSidebar() {
 
   const roleConfig = activeRole ? ROLE_CONFIG[activeRole] : null;
 
+  const handleSelectBusiness = async (businessId: string) => {
+    setDropdownOpen(false);
+    await switchBusiness(businessId);
+  };
+
   // Animation variants for staggered nav items
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -85,44 +100,89 @@ export function AppSidebar() {
     visible: { opacity: 1, x: 0 },
   };
 
+  const headerContent = (
+    <div className="flex items-center gap-3 w-full">
+      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-foreground text-background shrink-0">
+        <Zap className="h-5 w-5" />
+      </div>
+      {!collapsed && (
+        <div className="flex flex-col overflow-hidden flex-1 min-w-0">
+          <AnimatePresence mode="wait">
+            <motion.span
+              key={activeBusinessName || "default"}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="font-semibold text-sidebar-foreground truncate tracking-tight"
+            >
+              {activeBusinessName || "ServiceGrid"}
+            </motion.span>
+          </AnimatePresence>
+          <AnimatePresence mode="wait">
+            {roleConfig && (
+              <motion.span
+                key={activeRole}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.15 }}
+                className="text-xs text-muted-foreground truncate"
+              >
+                {roleConfig.label}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+      {!collapsed && hasMultipleBusinesses && (
+        <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+      )}
+    </div>
+  );
+
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
       <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-foreground text-background shrink-0">
-            <Zap className="h-5 w-5" />
-          </div>
-          {!collapsed && (
-            <div className="flex flex-col overflow-hidden">
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={activeBusinessName || "default"}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2 }}
-                  className="font-semibold text-sidebar-foreground truncate tracking-tight"
-                >
-                  {activeBusinessName || "ServiceGrid"}
-                </motion.span>
-              </AnimatePresence>
-              <AnimatePresence mode="wait">
-                {roleConfig && (
-                  <motion.span
-                    key={activeRole}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.15 }}
-                    className="text-xs text-muted-foreground truncate"
+        {hasMultipleBusinesses ? (
+          <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center w-full rounded-lg p-2 -m-2 transition-colors hover:bg-sidebar-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                {headerContent}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[240px]" sideOffset={8}>
+              {memberships.map((membership) => {
+                const memberRoleConfig = ROLE_CONFIG[membership.role];
+                const isCurrentBusiness = membership.businessId === activeBusinessId;
+                return (
+                  <DropdownMenuItem
+                    key={membership.id}
+                    onClick={() => handleSelectBusiness(membership.businessId)}
+                    className="flex items-center gap-3 py-2.5 cursor-pointer"
                   >
-                    {roleConfig.label}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
-        </div>
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarFallback className="bg-muted text-xs">
+                        {membership.businessName?.slice(0, 2).toUpperCase() || "BZ"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <span className="font-medium truncate text-sm">{membership.businessName}</span>
+                      <span className="text-xs text-muted-foreground">{memberRoleConfig?.label || membership.role}</span>
+                    </div>
+                    {isCurrentBusiness && (
+                      <Check className="h-4 w-4 text-primary shrink-0" />
+                    )}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <div className="flex items-center w-full">
+            {headerContent}
+          </div>
+        )}
       </SidebarHeader>
 
       <SidebarContent>
