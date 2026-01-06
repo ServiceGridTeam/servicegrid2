@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Webhook } from "https://esm.sh/svix@1.24.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,13 +34,51 @@ serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const webhookSecret = Deno.env.get("RESEND_WEBHOOK_SECRET");
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("Missing Supabase environment variables");
     }
 
+    // Read body as text for signature verification
+    const body = await req.text();
+
+    // Verify webhook signature if secret is configured
+    if (webhookSecret) {
+      const svixId = req.headers.get("svix-id");
+      const svixTimestamp = req.headers.get("svix-timestamp");
+      const svixSignature = req.headers.get("svix-signature");
+
+      if (!svixId || !svixTimestamp || !svixSignature) {
+        console.error("Missing Svix headers for webhook verification");
+        return new Response("Missing webhook signature headers", { 
+          status: 401, 
+          headers: corsHeaders 
+        });
+      }
+
+      const wh = new Webhook(webhookSecret);
+      try {
+        wh.verify(body, {
+          "svix-id": svixId,
+          "svix-timestamp": svixTimestamp,
+          "svix-signature": svixSignature,
+        });
+        console.log("Webhook signature verified successfully");
+      } catch (err: unknown) {
+        const errMessage = err instanceof Error ? err.message : String(err);
+        console.error("Invalid webhook signature:", errMessage);
+        return new Response("Invalid webhook signature", { 
+          status: 401, 
+          headers: corsHeaders 
+        });
+      }
+    } else {
+      console.warn("RESEND_WEBHOOK_SECRET not configured - skipping signature verification");
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const payload: ResendWebhookPayload = await req.json();
+    const payload: ResendWebhookPayload = JSON.parse(body);
 
     console.log(`Received Resend webhook: ${payload.type}`, JSON.stringify(payload.data));
 
