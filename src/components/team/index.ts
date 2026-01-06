@@ -18,3 +18,5 @@ export { EditTimeEntryDialog } from "./EditTimeEntryDialog";
 export { TimesheetApprovalQueue } from "./TimesheetApprovalQueue";
 export { TimesheetDetailModal } from "./TimesheetDetailModal";
 export { PayRatesSettings } from "./PayRatesSettings";
+export { BreakRulesSettings } from "./BreakRulesSettings";
+export { BreakToggleButton } from "./BreakToggleButton";

@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { useActiveTimeEntryForJob, useClockIn, useClockOut } from "@/hooks/useTimeEntries";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useValidateClockIn, GeofenceValidationResult } from "@/hooks/useGeofenceValidation";
+import { useActiveBreakEntry } from "@/hooks/useBreakTracking";
 import { useToast } from "@/hooks/use-toast";
 import { Clock, Play, Square, MapPin, Loader2, AlertTriangle, CheckCircle } from "lucide-react";
+import { BreakToggleButton } from "@/components/team/BreakToggleButton";
 import { cn } from "@/lib/utils";
 import { LocationAccuracyIndicator } from "./LocationAccuracyIndicator";
 import { GeofenceOverrideDialog } from "./GeofenceOverrideDialog";
@@ -58,6 +60,7 @@ export function ClockInOutButton({
 }: ClockInOutButtonProps) {
   const { toast } = useToast();
   const { data: activeEntry, isLoading } = useActiveTimeEntryForJob(jobId);
+  const { data: activeBreak } = useActiveBreakEntry(jobId);
   const clockIn = useClockIn();
   const clockOut = useClockOut();
   const geolocation = useGeolocation();
@@ -343,26 +346,44 @@ export function ClockInOutButton({
     );
   }
 
-  // Clocked in state
-  if (activeEntry) {
+  // Clocked in state (or on break)
+  if (activeEntry || activeBreak) {
+    const isOnBreak = !!activeBreak;
+    
     return (
       <>
-        <div className="flex flex-col gap-1">
-          <Button
-            variant="destructive"
-            size={variant === "compact" ? "sm" : "default"}
-            onClick={handleClockOut}
-            disabled={clockOut.isPending}
-            className={cn("gap-2", className)}
-          >
-            <Square className="h-4 w-4 fill-current" />
-            {variant === "default" ? (
-              <>Clock Out ({duration})</>
-            ) : (
-              <span className="text-xs">{duration}</span>
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            {/* Only show Clock Out if not on break */}
+            {!isOnBreak && activeEntry && (
+              <Button
+                variant="destructive"
+                size={variant === "compact" ? "sm" : "default"}
+                onClick={handleClockOut}
+                disabled={clockOut.isPending}
+                className={cn("gap-2", className)}
+              >
+                <Square className="h-4 w-4 fill-current" />
+                {variant === "default" ? (
+                  <>Clock Out ({duration})</>
+                ) : (
+                  <span className="text-xs">{duration}</span>
+                )}
+              </Button>
             )}
-          </Button>
-          {variant === "default" && geolocation.accuracy && (
+            
+            {/* Break Toggle Button - show when clocked in (not on break) or when on break */}
+            {activeEntry && (
+              <BreakToggleButton
+                jobId={jobId}
+                businessId={businessId}
+                currentWorkEntryId={activeEntry.id}
+                variant={variant}
+              />
+            )}
+          </div>
+          
+          {variant === "default" && geolocation.accuracy && !isOnBreak && (
             <LocationAccuracyIndicator accuracy={geolocation.accuracy} className="justify-center" />
           )}
         </div>
