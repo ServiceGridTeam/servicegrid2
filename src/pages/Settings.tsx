@@ -17,6 +17,7 @@ import { GoogleMapsVerificationCard } from "@/components/settings/GoogleMapsVeri
 import { GeofenceSettingsCard } from "@/components/settings/GeofenceSettingsCard";
 import { NotificationPreferencesCard } from "@/components/settings/NotificationPreferencesCard";
 import { PhoneIntegrationCard } from "@/components/settings/PhoneIntegrationCard";
+import { PhoneSettingsForm } from "@/components/settings/PhoneSettingsForm";
 export default function Settings() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: business, isLoading: businessLoading } = useBusiness();
@@ -458,6 +459,7 @@ export default function Settings() {
             </p>
           </div>
           <PhoneIntegrationCard />
+          <PhoneSettingsForm />
           
           <div className="mt-6">
             <h2 className="text-lg font-semibold mb-1">Field Operations</h2>
