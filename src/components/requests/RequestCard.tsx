@@ -3,6 +3,7 @@ import { Phone, Globe, Store, MapPin, User, Calendar } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { JobRequest } from "@/hooks/useJobRequests";
 
 interface RequestCardProps {
@@ -11,6 +12,9 @@ interface RequestCardProps {
   onScheduleApprove: () => void;
   onViewDetails: () => void;
   onReject: () => void;
+  selectable?: boolean;
+  selected?: boolean;
+  onSelectionChange?: (selected: boolean) => void;
 }
 
 const sourceIcons = {
@@ -46,6 +50,9 @@ export function RequestCard({
   onScheduleApprove,
   onViewDetails,
   onReject,
+  selectable = false,
+  selected = false,
+  onSelectionChange,
 }: RequestCardProps) {
   const SourceIcon = sourceIcons[request.source] || Phone;
   const displayName =
@@ -66,109 +73,124 @@ export function RequestCard({
     : null;
 
   const isPending = request.status === "pending" || request.status === "reviewing";
+  const showCheckbox = selectable && isPending;
 
   return (
     <Card className="border-border/50 hover:border-border transition-colors">
       <CardContent className="p-4">
-        {/* Header row */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="gap-1 text-xs">
-              <SourceIcon className="h-3 w-3" />
-              {sourceLabels[request.source]}
-            </Badge>
-            <Badge className={`text-xs ${urgencyColors[request.urgency]}`}>
-              {request.urgency.charAt(0).toUpperCase() + request.urgency.slice(1)}
-            </Badge>
-            <Badge className={`text-xs ${statusColors[request.status]}`}>
-              {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-            </Badge>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>
-              {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
-            </span>
-            <span className="font-mono">{request.id.slice(0, 8)}</span>
+        <div className="flex gap-3">
+          {/* Checkbox */}
+          {showCheckbox && (
+            <div className="pt-1">
+              <Checkbox
+                checked={selected}
+                onCheckedChange={(checked) => onSelectionChange?.(checked === true)}
+              />
+            </div>
+          )}
+
+          <div className="flex-1 min-w-0">
+            {/* Header row */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="gap-1 text-xs">
+                  <SourceIcon className="h-3 w-3" />
+                  {sourceLabels[request.source]}
+                </Badge>
+                <Badge className={`text-xs ${urgencyColors[request.urgency]}`}>
+                  {request.urgency.charAt(0).toUpperCase() + request.urgency.slice(1)}
+                </Badge>
+                <Badge className={`text-xs ${statusColors[request.status]}`}>
+                  {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>
+                  {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
+                </span>
+                <span className="font-mono">{request.id.slice(0, 8)}</span>
+              </div>
+            </div>
+
+            {/* Customer info */}
+            <div className="flex items-center gap-2 mb-2">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">{displayName}</span>
+              {request.customer_id && (
+                <Badge variant="secondary" className="text-xs">
+                  Existing
+                </Badge>
+              )}
+              {request.customer_phone && (
+                <span className="text-sm text-muted-foreground">
+                  {request.customer_phone}
+                </span>
+              )}
+            </div>
+
+            {/* Service info */}
+            <div className="mb-2">
+              {request.service_type && (
+                <span className="font-medium text-sm">{request.service_type}</span>
+              )}
+              {request.description && (
+                <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                  {request.description}
+                </p>
+              )}
+            </div>
+
+            {/* Address */}
+            {addressString && (
+              <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
+                <MapPin className="h-3 w-3" />
+                <span>{addressString}</span>
+              </div>
+            )}
+
+            {/* Preferred date/time */}
+            {(request.preferred_date || request.preferred_time) && (
+              <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                <span>
+                  Preferred: {request.preferred_date || ""}{" "}
+                  {request.preferred_time || ""}
+                </span>
+              </div>
+            )}
+
+            {/* Actions */}
+            {isPending && (
+              <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                <Button size="sm" onClick={onApprove}>
+                  Approve
+                </Button>
+                <Button size="sm" variant="secondary" onClick={onScheduleApprove}>
+                  Schedule & Approve
+                </Button>
+                <Button size="sm" variant="outline" onClick={onViewDetails}>
+                  Details
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive"
+                  onClick={onReject}
+                >
+                  Reject
+                </Button>
+              </div>
+            )}
+
+            {!isPending && (
+              <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                <Button size="sm" variant="outline" onClick={onViewDetails}>
+                  View Details
+                </Button>
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Customer info */}
-        <div className="flex items-center gap-2 mb-2">
-          <User className="h-4 w-4 text-muted-foreground" />
-          <span className="font-medium">{displayName}</span>
-          {request.customer_id && (
-            <Badge variant="secondary" className="text-xs">
-              Existing
-            </Badge>
-          )}
-          {request.customer_phone && (
-            <span className="text-sm text-muted-foreground">
-              {request.customer_phone}
-            </span>
-          )}
-        </div>
-
-        {/* Service info */}
-        <div className="mb-2">
-          {request.service_type && (
-            <span className="font-medium text-sm">{request.service_type}</span>
-          )}
-          {request.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-              {request.description}
-            </p>
-          )}
-        </div>
-
-        {/* Address */}
-        {addressString && (
-          <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
-            <MapPin className="h-3 w-3" />
-            <span>{addressString}</span>
-          </div>
-        )}
-
-        {/* Preferred date/time */}
-        {(request.preferred_date || request.preferred_time) && (
-          <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
-            <Calendar className="h-3 w-3" />
-            <span>
-              Preferred: {request.preferred_date || ""}{" "}
-              {request.preferred_time || ""}
-            </span>
-          </div>
-        )}
-
-        {/* Actions */}
-        {isPending && (
-          <div className="flex items-center gap-2 pt-2 border-t border-border/50">
-            <Button size="sm" onClick={onApprove}>
-              Approve
-            </Button>
-            <Button size="sm" variant="secondary" onClick={onScheduleApprove}>
-              Schedule & Approve
-            </Button>
-            <Button size="sm" variant="outline" onClick={onViewDetails}>
-              Details
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-destructive hover:text-destructive"
-              onClick={onReject}
-            >
-              Reject
-            </Button>
-          </div>
-        )}
-
-        {!isPending && (
-          <div className="flex items-center gap-2 pt-2 border-t border-border/50">
-            <Button size="sm" variant="outline" onClick={onViewDetails}>
-              View Details
-            </Button>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

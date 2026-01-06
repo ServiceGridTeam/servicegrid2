@@ -7,3 +7,5 @@ export { ModificationRequestCard } from "./ModificationRequestCard";
 export { ModificationApprovalDialog } from "./ModificationApprovalDialog";
 export { ModificationRejectDialog } from "./ModificationRejectDialog";
 export { ModificationFilters } from "./ModificationFilters";
+export { BulkActionBar } from "./BulkActionBar";
+export { BulkRejectDialog } from "./BulkRejectDialog";

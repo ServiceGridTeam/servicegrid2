@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Inbox, CalendarClock } from "lucide-react";
 import {
   RequestStats,
@@ -10,6 +10,8 @@ import {
   ModificationApprovalDialog,
   ModificationRejectDialog,
   ModificationFilters,
+  BulkActionBar,
+  BulkRejectDialog,
 } from "@/components/requests";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,6 +21,8 @@ import {
   useJobRequestsRealtime,
   useRejectJobRequest,
   useApproveJobRequest,
+  useBulkApproveRequests,
+  useBulkRejectRequests,
   JobRequest,
   JobRequestFilters,
 } from "@/hooks/useJobRequests";
@@ -39,6 +43,10 @@ export default function Requests() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [requestToReject, setRequestToReject] = useState<string | null>(null);
 
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
+
   // Modification request state
   const [modFilters, setModFilters] = useState<ModificationRequestFilters>({});
   const [selectedModification, setSelectedModification] = useState<JobModificationRequest | null>(null);
@@ -49,6 +57,8 @@ export default function Requests() {
   const { data: requests, isLoading } = useJobRequests(filters);
   const rejectRequest = useRejectJobRequest();
   const approveRequest = useApproveJobRequest();
+  const bulkApprove = useBulkApproveRequests();
+  const bulkReject = useBulkRejectRequests();
 
   // Modification request queries
   const { data: modifications, isLoading: modLoading } = useJobModificationRequests(modFilters);
@@ -58,6 +68,58 @@ export default function Requests() {
 
   // Subscribe to realtime updates
   useJobRequestsRealtime();
+
+  // Get pending requests for bulk selection
+  const pendingRequests = useMemo(
+    () => requests?.filter((r) => r.status === "pending" || r.status === "reviewing") || [],
+    [requests]
+  );
+
+  // Selection handlers
+  const toggleSelection = (id: string, selected: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (selected) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    setSelectedIds(new Set(pendingRequests.map((r) => r.id)));
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  // Bulk action handlers
+  const handleBulkApprove = () => {
+    const ids = Array.from(selectedIds);
+    bulkApprove.mutate(ids, {
+      onSuccess: () => clearSelection(),
+    });
+  };
+
+  const handleBulkRejectClick = () => {
+    setBulkRejectOpen(true);
+  };
+
+  const handleBulkRejectConfirm = (reason: string) => {
+    const ids = Array.from(selectedIds);
+    bulkReject.mutate(
+      { requestIds: ids, reason },
+      {
+        onSuccess: () => {
+          clearSelection();
+          setBulkRejectOpen(false);
+        },
+      }
+    );
+  };
 
   // Job request handlers
   const handleViewDetails = (request: JobRequest) => {
@@ -193,6 +255,9 @@ export default function Requests() {
                   onScheduleApprove={() => handleScheduleApprove(request)}
                   onViewDetails={() => handleViewDetails(request)}
                   onReject={() => handleRejectClick(request.id)}
+                  selectable={pendingRequests.length > 0}
+                  selected={selectedIds.has(request.id)}
+                  onSelectionChange={(selected) => toggleSelection(request.id, selected)}
                 />
               ))}
             </div>
@@ -246,6 +311,26 @@ export default function Requests() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Bulk Action Bar */}
+      <BulkActionBar
+        selectedCount={selectedIds.size}
+        totalCount={pendingRequests.length}
+        onSelectAll={selectAll}
+        onClearSelection={clearSelection}
+        onApprove={handleBulkApprove}
+        onReject={handleBulkRejectClick}
+        isApproving={bulkApprove.isPending}
+      />
+
+      {/* Bulk Reject Dialog */}
+      <BulkRejectDialog
+        open={bulkRejectOpen}
+        onOpenChange={setBulkRejectOpen}
+        onConfirm={handleBulkRejectConfirm}
+        count={selectedIds.size}
+        isLoading={bulkReject.isPending}
+      />
 
       {/* Job Request Dialogs */}
       <RequestDetailModal
