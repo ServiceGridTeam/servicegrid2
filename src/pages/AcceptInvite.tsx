@@ -45,29 +45,8 @@ export default function AcceptInvite() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [acceptedSuccessfully, setAcceptedSuccessfully] = useState(false);
 
-  // If user is already logged in and belongs to a business, redirect
-  useEffect(() => {
-    const checkExistingBusiness = async () => {
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("business_id")
-          .eq("id", user.id)
-          .single();
-        
-        if (profile?.business_id) {
-          toast({
-            variant: "destructive",
-            title: "Already part of a business",
-            description: "You are already a member of a business. Sign out first to accept this invite.",
-          });
-          navigate("/dashboard");
-        }
-      }
-    };
-    
-    checkExistingBusiness();
-  }, [user, navigate, toast]);
+  // Multi-business: Users can belong to multiple businesses
+  // No redirect needed - just let them accept the invite
 
   // Pre-fill email from invite
   useEffect(() => {

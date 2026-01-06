@@ -5,10 +5,13 @@
 
 import type { AppRole } from './permissions';
 
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 const STORAGE_KEYS = {
   ACTIVE_BUSINESS_ID: 'sg_active_business_id',
   ACTIVE_ROLE: 'sg_active_role',
   MEMBERSHIPS: 'sg_memberships',
+  MEMBERSHIPS_TIMESTAMP: 'sg_memberships_ts',
 } as const;
 
 export interface StoredMembership {
@@ -76,10 +79,22 @@ export function setActiveRole(role: AppRole | null): void {
 }
 
 /**
- * Get cached memberships from localStorage
+ * Get cached memberships from localStorage (with TTL check)
  */
 export function getMemberships(): StoredMembership[] {
   try {
+    // Check if cache has expired
+    const timestamp = localStorage.getItem(STORAGE_KEYS.MEMBERSHIPS_TIMESTAMP);
+    if (timestamp) {
+      const age = Date.now() - parseInt(timestamp, 10);
+      if (age > CACHE_TTL_MS) {
+        // Cache expired, clear it
+        localStorage.removeItem(STORAGE_KEYS.MEMBERSHIPS);
+        localStorage.removeItem(STORAGE_KEYS.MEMBERSHIPS_TIMESTAMP);
+        return [];
+      }
+    }
+    
     const raw = localStorage.getItem(STORAGE_KEYS.MEMBERSHIPS);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
@@ -93,11 +108,12 @@ export function getMemberships(): StoredMembership[] {
 }
 
 /**
- * Set memberships in localStorage
+ * Set memberships in localStorage (with timestamp for TTL)
  */
 export function setMemberships(memberships: StoredMembership[]): void {
   try {
     localStorage.setItem(STORAGE_KEYS.MEMBERSHIPS, JSON.stringify(memberships));
+    localStorage.setItem(STORAGE_KEYS.MEMBERSHIPS_TIMESTAMP, Date.now().toString());
   } catch {
     // Ignore storage errors
   }
@@ -119,6 +135,7 @@ export function clearLocalState(): void {
     localStorage.removeItem(STORAGE_KEYS.ACTIVE_BUSINESS_ID);
     localStorage.removeItem(STORAGE_KEYS.ACTIVE_ROLE);
     localStorage.removeItem(STORAGE_KEYS.MEMBERSHIPS);
+    localStorage.removeItem(STORAGE_KEYS.MEMBERSHIPS_TIMESTAMP);
   } catch {
     // Ignore storage errors
   }
