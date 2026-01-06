@@ -25,6 +25,7 @@ interface UseJobsOptions {
   status?: string;
   dateFrom?: Date;
   dateTo?: Date;
+  customerId?: string;
 }
 
 export function useJobs(options?: UseJobsOptions) {
@@ -40,6 +41,10 @@ export function useJobs(options?: UseJobsOptions) {
           assignments:job_assignments(id, user_id, role, user:profiles(id, first_name, last_name, email, avatar_url))
         `)
         .order("scheduled_start", { ascending: true, nullsFirst: false });
+
+      if (options?.customerId) {
+        query = query.eq("customer_id", options.customerId);
+      }
 
       if (options?.search) {
         query = query.or(`title.ilike.%${options.search}%,job_number.ilike.%${options.search}%`);
