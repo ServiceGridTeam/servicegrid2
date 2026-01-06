@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Table,
@@ -29,8 +29,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LeadScoreBadge } from "./LeadScoreBadge";
 import { DeleteCustomerDialog } from "./DeleteCustomerDialog";
 import { SendPortalInviteDialog } from "./SendPortalInviteDialog";
+import { PortalStatusBadge } from "./PortalStatusBadge";
+import { PortalInviteHistoryDialog } from "./PortalInviteHistoryDialog";
 import { Customer, useQualifyLead } from "@/hooks/useCustomers";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
+import { useCustomerPortalStatus } from "@/hooks/useCustomerPortalStatus";
 import {
   MoreHorizontal,
   Search,
@@ -44,6 +47,7 @@ import {
   Phone,
   ExternalLink,
   Send,
+  History,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -83,6 +87,13 @@ export function CustomerTable({
     open: boolean;
     customer: Customer | null;
   }>({ open: false, customer: null });
+  const [historyDialog, setHistoryDialog] = useState<{
+    open: boolean;
+    customer: Customer | null;
+  }>({ open: false, customer: null });
+
+  const customerIds = useMemo(() => customers.map((c) => c.id), [customers]);
+  const { data: portalStatusMap } = useCustomerPortalStatus(customerIds);
 
   const handlePreviewPortal = (customerId: string) => {
     const url = `/portal/preview?customerId=${customerId}&businessId=${activeBusinessId}`;
@@ -119,6 +130,7 @@ export function CustomerTable({
                 <TableHead>Contact</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Lead Score</TableHead>
+                <TableHead>Portal</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead className="w-[70px]"></TableHead>
               </TableRow>
@@ -134,6 +146,9 @@ export function CustomerTable({
                   </TableCell>
                   <TableCell>
                     <Skeleton className="h-5 w-20" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-16" />
                   </TableCell>
                   <TableCell>
                     <Skeleton className="h-5 w-16" />
@@ -189,6 +204,7 @@ export function CustomerTable({
               <TableHead>Contact</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Lead Score</TableHead>
+              <TableHead>Portal</TableHead>
               <TableHead>Created</TableHead>
               <TableHead className="w-[70px]"></TableHead>
             </TableRow>
@@ -197,150 +213,169 @@ export function CustomerTable({
             {customers.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="h-24 text-center text-muted-foreground"
                 >
                   No customers found.
                 </TableCell>
               </TableRow>
             ) : (
-              customers.map((customer) => (
-                <TableRow
-                  key={customer.id}
-                  className="cursor-pointer"
-                  onClick={() => navigate(`/customers/${customer.id}`)}
-                >
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">
-                        {customer.first_name} {customer.last_name}
+              customers.map((customer) => {
+                const portalStatus = portalStatusMap?.[customer.id];
+                return (
+                  <TableRow
+                    key={customer.id}
+                    className="cursor-pointer"
+                    onClick={() => navigate(`/customers/${customer.id}`)}
+                  >
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">
+                          {customer.first_name} {customer.last_name}
+                        </div>
+                        {customer.company_name && (
+                          <div className="text-sm text-muted-foreground">
+                            {customer.company_name}
+                          </div>
+                        )}
                       </div>
-                      {customer.company_name && (
-                        <div className="text-sm text-muted-foreground">
-                          {customer.company_name}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {customer.email && (
-                        <div className="flex items-center gap-1.5 text-sm">
-                          <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="truncate max-w-[180px]">
-                            {customer.email}
-                          </span>
-                        </div>
-                      )}
-                      {customer.phone && (
-                        <div className="flex items-center gap-1.5 text-sm">
-                          <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                          {customer.phone}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>{getStatusBadge(customer.lead_status)}</TableCell>
-                  <TableCell>
-                    <LeadScoreBadge
-                      score={customer.lead_score ?? 0}
-                      status={customer.lead_status ?? undefined}
-                      showScore={false}
-                    />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {format(new Date(customer.created_at), "MMM d, yyyy")}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Actions</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link to={`/customers/${customer.id}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link to={`/customers/${customer.id}/edit`}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePreviewPortal(customer.id);
-                          }}
-                        >
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          Preview Portal
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setInviteDialog({ open: true, customer });
-                          }}
-                        >
-                          <Send className="mr-2 h-4 w-4" />
-                          Send Portal Invite
-                        </DropdownMenuItem>
-                        {customer.lead_status !== "qualified" &&
-                          customer.lead_status !== "converted" && (
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                qualifyLead.mutate(customer.id);
-                              }}
-                            >
-                              <CheckCircle className="mr-2 h-4 w-4" />
-                              Qualify Lead
-                            </DropdownMenuItem>
-                          )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/quotes/new?customer=${customer.id}`);
-                          }}
-                        >
-                          <FileText className="mr-2 h-4 w-4" />
-                          Create Quote
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/jobs/new?customer=${customer.id}`);
-                          }}
-                        >
-                          <Briefcase className="mr-2 h-4 w-4" />
-                          Create Job
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteDialog({ open: true, customer });
-                          }}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {customer.email && (
+                          <div className="flex items-center gap-1.5 text-sm">
+                            <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="truncate max-w-[180px]">
+                              {customer.email}
+                            </span>
+                          </div>
+                        )}
+                        {customer.phone && (
+                          <div className="flex items-center gap-1.5 text-sm">
+                            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                            {customer.phone}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(customer.lead_status)}</TableCell>
+                    <TableCell>
+                      <LeadScoreBadge
+                        score={customer.lead_score ?? 0}
+                        status={customer.lead_status ?? undefined}
+                        showScore={false}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <PortalStatusBadge
+                        hasPortalAccess={portalStatus?.hasPortalAccess ?? false}
+                        pendingInvite={portalStatus?.pendingInvite ?? false}
+                      />
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {format(new Date(customer.created_at), "MMM d, yyyy")}
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Actions</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link to={`/customers/${customer.id}`}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link to={`/customers/${customer.id}/edit`}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePreviewPortal(customer.id);
+                            }}
+                          >
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            Preview Portal
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setInviteDialog({ open: true, customer });
+                            }}
+                          >
+                            <Send className="mr-2 h-4 w-4" />
+                            Send Portal Invite
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setHistoryDialog({ open: true, customer });
+                            }}
+                          >
+                            <History className="mr-2 h-4 w-4" />
+                            View Portal History
+                          </DropdownMenuItem>
+                          {customer.lead_status !== "qualified" &&
+                            customer.lead_status !== "converted" && (
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  qualifyLead.mutate(customer.id);
+                                }}
+                              >
+                                <CheckCircle className="mr-2 h-4 w-4" />
+                                Qualify Lead
+                              </DropdownMenuItem>
+                            )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/quotes/new?customer=${customer.id}`);
+                            }}
+                          >
+                            <FileText className="mr-2 h-4 w-4" />
+                            Create Quote
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/jobs/new?customer=${customer.id}`);
+                            }}
+                          >
+                            <Briefcase className="mr-2 h-4 w-4" />
+                            Create Job
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteDialog({ open: true, customer });
+                            }}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -368,6 +403,20 @@ export function CustomerTable({
           open={inviteDialog.open}
           onOpenChange={(open) =>
             setInviteDialog({ open, customer: open ? inviteDialog.customer : null })
+          }
+        />
+      )}
+
+      {/* Portal History Dialog */}
+      {historyDialog.customer && (
+        <PortalInviteHistoryDialog
+          customerId={historyDialog.customer.id}
+          customerName={`${historyDialog.customer.first_name} ${historyDialog.customer.last_name}`}
+          customerEmail={historyDialog.customer.email}
+          businessId={activeBusinessId || ""}
+          open={historyDialog.open}
+          onOpenChange={(open) =>
+            setHistoryDialog({ open, customer: open ? historyDialog.customer : null })
           }
         />
       )}

@@ -16,6 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LeadScoreBadge } from "@/components/customers/LeadScoreBadge";
 import { DeleteCustomerDialog } from "@/components/customers/DeleteCustomerDialog";
 import { CustomerInvoiceTable } from "@/components/customers/CustomerInvoiceTable";
+import { PortalStatusBadge } from "@/components/customers/PortalStatusBadge";
+import { PortalInviteHistoryDialog } from "@/components/customers/PortalInviteHistoryDialog";
 import { QuoteTable } from "@/components/quotes/QuoteTable";
 import { JobTable } from "@/components/jobs/JobTable";
 import { JobDetailSheet } from "@/components/jobs/JobDetailSheet";
@@ -24,6 +26,8 @@ import { useCustomer, useQualifyLead } from "@/hooks/useCustomers";
 import { useQuotes } from "@/hooks/useQuotes";
 import { useJobs, type JobWithCustomer } from "@/hooks/useJobs";
 import { useInvoices } from "@/hooks/useInvoices";
+import { useSingleCustomerPortalStatus } from "@/hooks/useCustomerPortalStatus";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
 import {
   ArrowLeft,
   Pencil,
@@ -40,8 +44,11 @@ import {
   Clock,
   Tag,
   Loader2,
+  History,
+  Send,
+  Globe,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 
 export default function CustomerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -49,11 +56,14 @@ export default function CustomerDetail() {
   const { data: customer, isLoading } = useCustomer(id);
   const qualifyLead = useQualifyLead();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const { activeBusinessId } = useBusinessContext();
   
   // Fetch related data
   const { data: quotes, isLoading: quotesLoading } = useQuotes({ customerId: id });
   const { data: jobs, isLoading: jobsLoading } = useJobs({ customerId: id });
   const { data: invoices, isLoading: invoicesLoading } = useInvoices({ customerId: id });
+  const { data: portalStatus } = useSingleCustomerPortalStatus(id);
   
   // Job interaction state
   const [selectedJob, setSelectedJob] = useState<JobWithCustomer | null>(null);
@@ -375,6 +385,60 @@ export default function CustomerDetail() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Portal Access */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  Portal Access
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Status</span>
+                  <PortalStatusBadge
+                    hasPortalAccess={portalStatus?.hasPortalAccess ?? false}
+                    pendingInvite={portalStatus?.pendingInvite ?? false}
+                  />
+                </div>
+                {portalStatus?.hasPortalAccess && portalStatus.accountEmail && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Account Email</span>
+                    <span className="text-sm font-medium">{portalStatus.accountEmail}</span>
+                  </div>
+                )}
+                {portalStatus?.lastLogin && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Last Login</span>
+                    <span className="text-sm">
+                      {formatDistanceToNow(new Date(portalStatus.lastLogin), { addSuffix: true })}
+                    </span>
+                  </div>
+                )}
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setHistoryDialogOpen(true)}
+                  >
+                    <History className="mr-2 h-3.5 w-3.5" />
+                    History
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setHistoryDialogOpen(true)}
+                    disabled={!customer.email}
+                  >
+                    <Send className="mr-2 h-3.5 w-3.5" />
+                    {portalStatus?.hasPortalAccess ? "New Link" : "Invite"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Notes */}
@@ -504,6 +568,16 @@ export default function CustomerDetail() {
         job={editJob}
         open={!!editJob}
         onOpenChange={(open) => !open && setEditJob(null)}
+      />
+
+      {/* Portal History Dialog */}
+      <PortalInviteHistoryDialog
+        customerId={customer.id}
+        customerName={`${customer.first_name} ${customer.last_name}`}
+        customerEmail={customer.email}
+        businessId={activeBusinessId || ""}
+        open={historyDialogOpen}
+        onOpenChange={setHistoryDialogOpen}
       />
     </div>
   );
