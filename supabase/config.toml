@@ -77,3 +77,6 @@ verify_jwt = false
 
 [functions.phone-integration-api]
 verify_jwt = false
+
+[functions.render-email-template]
+verify_jwt = true
