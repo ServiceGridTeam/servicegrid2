@@ -3,3 +3,7 @@ export { RequestFilters } from "./RequestFilters";
 export { RequestCard } from "./RequestCard";
 export { RequestDetailModal } from "./RequestDetailModal";
 export { RejectRequestDialog } from "./RejectRequestDialog";
+export { ModificationRequestCard } from "./ModificationRequestCard";
+export { ModificationApprovalDialog } from "./ModificationApprovalDialog";
+export { ModificationRejectDialog } from "./ModificationRejectDialog";
+export { ModificationFilters } from "./ModificationFilters";

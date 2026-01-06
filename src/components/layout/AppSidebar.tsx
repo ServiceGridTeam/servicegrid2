@@ -32,6 +32,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { useBusiness } from "@/hooks/useBusiness";
 import { usePendingRequestsCount } from "@/hooks/useJobRequests";
+import { usePendingModificationsCount } from "@/hooks/useJobModificationRequests";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +62,9 @@ export function AppSidebar() {
   const { data: profile } = useProfile();
   const { data: business } = useBusiness();
   const { data: pendingRequestsCount } = usePendingRequestsCount();
+  const { data: pendingModificationsCount } = usePendingModificationsCount();
+
+  const totalPendingCount = (pendingRequestsCount || 0) + (pendingModificationsCount || 0);
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
 
@@ -119,9 +123,9 @@ export function AppSidebar() {
                     >
                       <item.icon className={`h-4 w-4 shrink-0 ${isActive(item.url) ? "text-foreground" : ""}`} />
                       {!collapsed && <span>{item.title}</span>}
-                      {!collapsed && item.url === "/requests" && pendingRequestsCount && pendingRequestsCount > 0 && (
+                      {!collapsed && item.url === "/requests" && totalPendingCount > 0 && (
                         <Badge variant="destructive" className="ml-auto h-5 min-w-5 px-1 text-xs">
-                          {pendingRequestsCount > 99 ? "99+" : pendingRequestsCount}
+                          {totalPendingCount > 99 ? "99+" : totalPendingCount}
                         </Badge>
                       )}
                       {!collapsed && isActive(item.url) && item.url !== "/requests" && (
