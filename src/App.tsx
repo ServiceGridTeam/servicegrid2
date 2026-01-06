@@ -41,6 +41,7 @@ import EmailPreferences from "./pages/EmailPreferences";
 import { Templates, TemplateEdit, TemplatePreview, Sequences, SequenceEdit, Campaigns, CampaignEdit, CampaignReport } from "./pages/marketing";
 import { PortalLogin, MagicLinkLanding, PortalDashboard, PortalDocuments, PortalQuoteDetail, PortalInvoiceDetail, PortalSchedule, PortalJobDetail, PortalServiceRequest, PortalAccount } from "./pages/portal";
 import { PortalLayout } from "./components/portal";
+import { PreviewPortalLayout } from "./components/portal/PreviewPortalLayout";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,16 @@ const App = () => (
               <Route path="jobs/:id" element={<PortalJobDetail />} />
               <Route path="request-service" element={<PortalServiceRequest />} />
               <Route path="account" element={<PortalAccount />} />
+            </Route>
+            
+            {/* Portal preview routes (staff viewing as customer) */}
+            <Route path="/portal/preview" element={<PreviewPortalLayout />}>
+              <Route index element={<PortalDashboard />} />
+              <Route path="documents" element={<PortalDocuments />} />
+              <Route path="quotes/:id" element={<PortalQuoteDetail />} />
+              <Route path="invoices/:id" element={<PortalInvoiceDetail />} />
+              <Route path="schedule" element={<PortalSchedule />} />
+              <Route path="jobs/:id" element={<PortalJobDetail />} />
             </Route>
             
             {/* Public routes (no auth required) */}

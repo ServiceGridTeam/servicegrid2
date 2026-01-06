@@ -6,9 +6,21 @@ import {
   StoredDashboardCache,
 } from '@/lib/portalLocalState';
 import { usePortalSession } from './usePortalSession';
+import { usePortalPreview } from '@/contexts/PortalPreviewContext';
 
-export function usePortalDashboard() {
-  const { activeBusinessId, activeCustomerId, isAuthenticated } = usePortalSession();
+interface UsePortalDashboardOptions {
+  businessId?: string | null;
+  customerId?: string | null;
+}
+
+export function usePortalDashboard(options?: UsePortalDashboardOptions) {
+  const session = usePortalSession();
+  const preview = usePortalPreview();
+  
+  // Use provided overrides, then preview context, then session
+  const activeBusinessId = options?.businessId ?? preview.businessId ?? session.activeBusinessId;
+  const activeCustomerId = options?.customerId ?? preview.customerId ?? session.activeCustomerId;
+  const isAuthenticated = preview.isPreviewMode || session.isAuthenticated;
 
   // Get cached data for instant hydration
   const cachedData = getPortalDashboardCache();
