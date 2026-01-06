@@ -11,6 +11,7 @@ import { PendingApprovalsCard } from "@/components/team/PendingApprovalsCard";
 import { TeamManagement } from "@/components/settings/TeamManagement";
 import { InviteMemberDialog } from "@/components/settings/InviteMemberDialog";
 import { OvertimeSettingsCard } from "@/components/team/OvertimeSettingsCard";
+import { PayRatesSettings } from "@/components/team/PayRatesSettings";
 import { GeofenceAlertBanner } from "@/components/team/GeofenceAlertBanner";
 import { GeofenceAlertList } from "@/components/team/GeofenceAlertList";
 import { WorkerStatusList } from "@/components/team/WorkerStatusList";
@@ -117,6 +118,7 @@ export default function Team() {
 
         {canManage && (
           <TabsContent value="settings" className="space-y-6">
+            <PayRatesSettings />
             <OvertimeSettingsCard />
           </TabsContent>
         )}
