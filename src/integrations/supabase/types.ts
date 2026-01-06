@@ -2176,6 +2176,54 @@ export type Database = {
         }
         Relationships: []
       }
+      sequence_enrollment_queue: {
+        Row: {
+          business_id: string
+          created_at: string
+          customer_id: string
+          id: string
+          processed_at: string | null
+          source_id: string
+          source_table: string
+          trigger_type: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          processed_at?: string | null
+          source_id: string
+          source_table: string
+          trigger_type: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          processed_at?: string | null
+          source_id?: string
+          source_table?: string
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sequence_enrollment_queue_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sequence_enrollment_queue_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sequence_enrollments: {
         Row: {
           business_id: string
