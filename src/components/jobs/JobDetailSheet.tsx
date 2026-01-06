@@ -14,12 +14,13 @@ import { DeleteJobDialog } from "./DeleteJobDialog";
 import { ClockInOutButton } from "./ClockInOutButton";
 import { AssigneeAvatarGroup } from "./AssigneeAvatarGroup";
 import { AutoAssignButton } from "./AutoAssignButton";
-import { ClockEventHistory } from "./ClockEventHistory";
+import { ClockEventTimeline } from "./ClockEventTimeline";
+import { ExpandGeofenceDialog } from "./ExpandGeofenceDialog";
 import { TimeEntriesTable } from "@/components/team/TimeEntriesTable";
 import { useUpdateJob, type JobWithCustomer } from "@/hooks/useJobs";
 import { useBusiness } from "@/hooks/useBusiness";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, formatDistanceToNow, isPast } from "date-fns";
 import {
   Calendar,
   Clock,
@@ -34,6 +35,8 @@ import {
   FileText,
   Receipt,
   Timer,
+  Shield,
+  Expand,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +55,33 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
   const { data: business } = useBusiness();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [showTimeEntries, setShowTimeEntries] = useState(false);
+  const [expandDialogOpen, setExpandDialogOpen] = useState(false);
+
+  // Check if geofence is currently expanded
+  const isGeofenceExpanded =
+    job?.geofence_expanded_until &&
+    job?.geofence_expanded_radius_meters &&
+    !isPast(new Date(job.geofence_expanded_until));
+
+  const handleCancelExpansion = async () => {
+    try {
+      await updateJob.mutateAsync({
+        id: job.id,
+        geofence_expanded_radius_meters: null,
+        geofence_expanded_until: null,
+      });
+      toast({
+        title: "Expansion cancelled",
+        description: "Geofence has been restored to normal radius.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to cancel geofence expansion.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (!job) return null;
 
@@ -320,7 +350,84 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
               )}
               
               <div className="mt-4">
-                <ClockEventHistory jobId={job.id} />
+                <ClockEventTimeline jobId={job.id} />
+              </div>
+            </div>
+            <Separator />
+
+            {/* Geofence Settings */}
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Geofence Settings
+              </h3>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Radius</span>
+                  <span>
+                    {job.geofence_radius_meters ||
+                      business?.default_geofence_radius_meters ||
+                      150}
+                    m
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Enforcement</span>
+                  <span className="capitalize">
+                    {job.geofence_enforcement ||
+                      business?.geofence_enforcement_mode ||
+                      "warn"}
+                  </span>
+                </div>
+
+                {isGeofenceExpanded && (
+                  <div className="mt-2 p-3 rounded-lg border border-foreground/10 bg-foreground/5">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Expand className="h-4 w-4 text-foreground/70" />
+                        <span className="text-sm font-medium">
+                          Temporarily Expanded
+                        </span>
+                      </div>
+                      <Badge variant="secondary">
+                        {job.geofence_expanded_radius_meters}m
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-2">
+                      Expires{" "}
+                      {formatDistanceToNow(
+                        new Date(job.geofence_expanded_until!),
+                        { addSuffix: true }
+                      )}{" "}
+                      ({format(
+                        new Date(job.geofence_expanded_until!),
+                        "h:mm a"
+                      )})
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={handleCancelExpansion}
+                    >
+                      Cancel Expansion
+                    </Button>
+                  </div>
+                )}
+
+                {!isGeofenceExpanded &&
+                  (job.status === "scheduled" ||
+                    job.status === "in_progress") && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-2"
+                      onClick={() => setExpandDialogOpen(true)}
+                    >
+                      <Expand className="h-4 w-4" />
+                      Expand Geofence Temporarily
+                    </Button>
+                  )}
               </div>
             </div>
             <Separator />
@@ -448,6 +555,12 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
         jobId={job.id}
         jobNumber={job.job_number}
         onSuccess={() => onOpenChange(false)}
+      />
+
+      <ExpandGeofenceDialog
+        job={job}
+        open={expandDialogOpen}
+        onOpenChange={setExpandDialogOpen}
       />
     </>
   );

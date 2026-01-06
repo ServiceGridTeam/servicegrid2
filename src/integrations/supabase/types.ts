@@ -163,6 +163,8 @@ export type Database = {
           latitude: number | null
           location_source: string | null
           longitude: number | null
+          override_approved_at: string | null
+          override_approved_by: string | null
           override_photo_url: string | null
           override_reason: string | null
           recorded_at: string | null
@@ -184,6 +186,8 @@ export type Database = {
           latitude?: number | null
           location_source?: string | null
           longitude?: number | null
+          override_approved_at?: string | null
+          override_approved_by?: string | null
           override_photo_url?: string | null
           override_reason?: string | null
           recorded_at?: string | null
@@ -205,6 +209,8 @@ export type Database = {
           latitude?: number | null
           location_source?: string | null
           longitude?: number | null
+          override_approved_at?: string | null
+          override_approved_by?: string | null
           override_photo_url?: string | null
           override_reason?: string | null
           recorded_at?: string | null
@@ -751,6 +757,8 @@ export type Database = {
           estimated_arrival: string | null
           estimated_duration_minutes: number | null
           geofence_enforcement: string | null
+          geofence_expanded_radius_meters: number | null
+          geofence_expanded_until: string | null
           geofence_radius_meters: number | null
           id: string
           internal_notes: string | null
@@ -800,6 +808,8 @@ export type Database = {
           estimated_arrival?: string | null
           estimated_duration_minutes?: number | null
           geofence_enforcement?: string | null
+          geofence_expanded_radius_meters?: number | null
+          geofence_expanded_until?: string | null
           geofence_radius_meters?: number | null
           id?: string
           internal_notes?: string | null
@@ -849,6 +859,8 @@ export type Database = {
           estimated_arrival?: string | null
           estimated_duration_minutes?: number | null
           geofence_enforcement?: string | null
+          geofence_expanded_radius_meters?: number | null
+          geofence_expanded_until?: string | null
           geofence_radius_meters?: number | null
           id?: string
           internal_notes?: string | null
@@ -1682,6 +1694,34 @@ export type Database = {
           _phone?: string
         }
         Returns: string
+      }
+      update_worker_status: {
+        Args: {
+          p_accuracy_meters?: number
+          p_business_id: string
+          p_lat: number
+          p_lng: number
+          p_user_id: string
+        }
+        Returns: {
+          business_id: string
+          clocked_in_at: string | null
+          current_job_id: string | null
+          current_location_lat: number | null
+          current_location_lng: number | null
+          current_status: string
+          id: string
+          last_location_at: string | null
+          status_since: string
+          updated_at: string | null
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "worker_statuses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       user_belongs_to_business: {
         Args: { _business_id: string }
