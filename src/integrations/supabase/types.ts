@@ -766,6 +766,8 @@ export type Database = {
           expires_at: string
           id: string
           invite_token: string
+          last_reminder_sent_at: string | null
+          reminder_count: number | null
           sent_at: string | null
           status: string
         }
@@ -779,6 +781,8 @@ export type Database = {
           expires_at?: string
           id?: string
           invite_token?: string
+          last_reminder_sent_at?: string | null
+          reminder_count?: number | null
           sent_at?: string | null
           status?: string
         }
@@ -792,6 +796,8 @@ export type Database = {
           expires_at?: string
           id?: string
           invite_token?: string
+          last_reminder_sent_at?: string | null
+          reminder_count?: number | null
           sent_at?: string | null
           status?: string
         }
@@ -2367,6 +2373,8 @@ export type Database = {
           email_job_status_changed: boolean | null
           email_payment_failed: boolean | null
           email_payment_received: boolean | null
+          email_portal_first_login: boolean | null
+          email_portal_login: boolean | null
           email_quote_approved: boolean | null
           email_quote_sent: boolean | null
           email_team_invite: boolean | null
@@ -2378,6 +2386,7 @@ export type Database = {
           inapp_invoice_activity: boolean | null
           inapp_job_activity: boolean | null
           inapp_payment_activity: boolean | null
+          inapp_portal_activity: boolean | null
           inapp_quote_activity: boolean | null
           inapp_team_activity: boolean | null
           inapp_timesheet_activity: boolean | null
@@ -2397,6 +2406,8 @@ export type Database = {
           email_job_status_changed?: boolean | null
           email_payment_failed?: boolean | null
           email_payment_received?: boolean | null
+          email_portal_first_login?: boolean | null
+          email_portal_login?: boolean | null
           email_quote_approved?: boolean | null
           email_quote_sent?: boolean | null
           email_team_invite?: boolean | null
@@ -2408,6 +2419,7 @@ export type Database = {
           inapp_invoice_activity?: boolean | null
           inapp_job_activity?: boolean | null
           inapp_payment_activity?: boolean | null
+          inapp_portal_activity?: boolean | null
           inapp_quote_activity?: boolean | null
           inapp_team_activity?: boolean | null
           inapp_timesheet_activity?: boolean | null
@@ -2427,6 +2439,8 @@ export type Database = {
           email_job_status_changed?: boolean | null
           email_payment_failed?: boolean | null
           email_payment_received?: boolean | null
+          email_portal_first_login?: boolean | null
+          email_portal_login?: boolean | null
           email_quote_approved?: boolean | null
           email_quote_sent?: boolean | null
           email_team_invite?: boolean | null
@@ -2438,6 +2452,7 @@ export type Database = {
           inapp_invoice_activity?: boolean | null
           inapp_job_activity?: boolean | null
           inapp_payment_activity?: boolean | null
+          inapp_portal_activity?: boolean | null
           inapp_quote_activity?: boolean | null
           inapp_team_activity?: boolean | null
           inapp_timesheet_activity?: boolean | null
@@ -2746,6 +2761,74 @@ export type Database = {
           {
             foreignKeyName: "phone_integrations_revoked_by_fkey"
             columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portal_access_audit: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          customer_account_id: string | null
+          customer_id: string
+          event_details: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          performed_by: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          customer_account_id?: string | null
+          customer_id: string
+          event_details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          performed_by?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          customer_account_id?: string | null
+          customer_id?: string
+          event_details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          performed_by?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_access_audit_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_access_audit_customer_account_id_fkey"
+            columns: ["customer_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_access_audit_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_access_audit_performed_by_fkey"
+            columns: ["performed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
