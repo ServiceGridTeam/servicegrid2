@@ -14,6 +14,7 @@ interface ActionRequest {
   sessionToken?: string;
   businessId?: string;
   customerId?: string;
+  customerName?: string;
 }
 
 Deno.serve(async (req) => {
@@ -49,6 +50,8 @@ Deno.serve(async (req) => {
         return await handleLogout(supabase, body);
       case "switch-context":
         return await handleSwitchContext(supabase, body);
+      case "send-invite":
+        return await handleSendInvite(supabase, body, resendApiKey);
       default:
         return new Response(
           JSON.stringify({ error: "Unknown action" }),
@@ -583,6 +586,154 @@ async function handleSwitchContext(supabase: any, body: ActionRequest) {
     .eq("id", session.id);
 
   return successResponse({ success: true });
+}
+
+async function handleSendInvite(
+  supabase: any,
+  body: ActionRequest,
+  resendApiKey: string | undefined
+) {
+  const { customerId, businessId, email, customerName } = body;
+  
+  if (!customerId || !businessId) {
+    return errorResponse("Customer ID and Business ID are required", 400);
+  }
+
+  // Get customer details if email not provided
+  let customerEmail = email;
+  let displayName = customerName;
+  
+  if (!customerEmail) {
+    const { data: customer, error: customerError } = await supabase
+      .from("customers")
+      .select("email, first_name, last_name")
+      .eq("id", customerId)
+      .single();
+
+    if (customerError || !customer) {
+      return errorResponse("Customer not found", 404);
+    }
+
+    if (!customer.email) {
+      return errorResponse("Customer has no email address", 400);
+    }
+
+    customerEmail = customer.email;
+    displayName = `${customer.first_name} ${customer.last_name}`;
+  }
+
+  // Get business details for branding
+  const { data: business } = await supabase
+    .from("businesses")
+    .select("name, logo_url")
+    .eq("id", businessId)
+    .single();
+
+  // Find or create customer account
+  let { data: account } = await supabase
+    .from("customer_accounts")
+    .select("id")
+    .eq("email", customerEmail!.toLowerCase())
+    .single();
+
+  if (!account) {
+    const { data: newAccount, error: createError } = await supabase
+      .from("customer_accounts")
+      .insert({
+        email: customerEmail!.toLowerCase(),
+        auth_method: "magic_link",
+        email_verified: false,
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      console.error("[portal-auth] Failed to create account:", createError);
+      return errorResponse("Failed to create customer account", 500);
+    }
+    account = newAccount;
+  }
+
+  // Create or update customer account link
+  const { data: existingLink } = await supabase
+    .from("customer_account_links")
+    .select("id")
+    .eq("customer_account_id", account.id)
+    .eq("customer_id", customerId)
+    .eq("business_id", businessId)
+    .single();
+
+  if (!existingLink) {
+    await supabase.from("customer_account_links").insert({
+      customer_account_id: account.id,
+      customer_id: customerId,
+      business_id: businessId,
+      is_primary: true,
+      status: "active",
+    });
+  }
+
+  // Generate magic link token
+  const token = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+  // Create portal invite record
+  const { error: inviteError } = await supabase
+    .from("customer_portal_invites")
+    .insert({
+      invite_token: token,
+      email: customerEmail!.toLowerCase(),
+      customer_id: customerId,
+      business_id: businessId,
+      expires_at: expiresAt.toISOString(),
+      status: "pending",
+    });
+
+  if (inviteError) {
+    console.error("[portal-auth] Failed to create invite:", inviteError);
+    return errorResponse("Failed to generate invite", 500);
+  }
+
+  // Send email via Resend
+  if (resendApiKey) {
+    try {
+      const resend = new Resend(resendApiKey);
+      const baseUrl = Deno.env.get("SUPABASE_URL")?.replace(".supabase.co", ".lovable.app");
+      const portalUrl = `${baseUrl}/portal/magic/${token}`;
+      const businessName = business?.name || "ServiceGrid";
+
+      await resend.emails.send({
+        from: "ServiceGrid <noreply@resend.dev>",
+        to: [customerEmail!],
+        subject: `Access Your ${businessName} Customer Portal`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Welcome to ${businessName}</h2>
+            <p>Hi${displayName ? ` ${displayName}` : ''},</p>
+            <p>You've been invited to access your customer portal where you can view quotes, invoices, schedule appointments, and more.</p>
+            <a href="${portalUrl}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Access Your Portal
+            </a>
+            <p style="color: #666; font-size: 14px;">This link expires in 15 minutes.</p>
+            <p style="color: #666; font-size: 14px;">If you didn't expect this email, you can safely ignore it.</p>
+          </div>
+        `,
+      });
+      console.log(`[portal-auth] Portal invite sent to ${customerEmail}`);
+    } catch (emailError) {
+      console.error("[portal-auth] Failed to send invite email:", emailError);
+      return errorResponse("Failed to send invite email", 500);
+    }
+  } else {
+    console.warn("[portal-auth] No RESEND_API_KEY configured, skipping email");
+    return errorResponse("Email service not configured", 500);
+  }
+
+  return successResponse({ 
+    success: true, 
+    message: "Portal invite sent",
+    email: customerEmail
+  });
 }
 
 function successResponse(data: any) {
