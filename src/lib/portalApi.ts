@@ -93,6 +93,7 @@ export interface QuoteActionResponse {
 export interface PaymentIntentResponse {
   clientSecret: string;
   paymentIntentId: string;
+  status?: string;
 }
 
 export interface PaymentMethod {
