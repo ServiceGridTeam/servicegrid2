@@ -16,6 +16,7 @@ import { TeamManagement } from "@/components/settings/TeamManagement";
 import { GoogleMapsVerificationCard } from "@/components/settings/GoogleMapsVerificationCard";
 import { GeofenceSettingsCard } from "@/components/settings/GeofenceSettingsCard";
 import { NotificationPreferencesCard } from "@/components/settings/NotificationPreferencesCard";
+import { PhoneIntegrationCard } from "@/components/settings/PhoneIntegrationCard";
 export default function Settings() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: business, isLoading: businessLoading } = useBusiness();
@@ -449,6 +450,14 @@ export default function Settings() {
             </p>
           </div>
           <GoogleMapsVerificationCard />
+          
+          <div className="mt-6">
+            <h2 className="text-lg font-semibold mb-1">Phone Integration</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Connect the SG Phone AI Receptionist to your business
+            </p>
+          </div>
+          <PhoneIntegrationCard />
           
           <div className="mt-6">
             <h2 className="text-lg font-semibold mb-1">Field Operations</h2>
