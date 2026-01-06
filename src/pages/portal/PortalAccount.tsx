@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { usePortalSession } from '@/hooks/usePortalSession';
 import { clearPortalLocalState } from '@/lib/portalLocalState';
 import { SavedPaymentMethods } from '@/components/portal/SavedPaymentMethods';
+import { AddPaymentMethodDialog } from '@/components/portal/AddPaymentMethodDialog';
 import { toast } from 'sonner';
 
 export default function PortalAccount() {
@@ -19,6 +20,7 @@ export default function PortalAccount() {
   const { email, customerAccountId } = usePortalSession();
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showPaymentMethods, setShowPaymentMethods] = useState(false);
+  const [showAddPayment, setShowAddPayment] = useState(false);
 
   const handleLogout = () => {
     clearPortalLocalState();
@@ -93,15 +95,27 @@ export default function PortalAccount() {
           </CardHeader>
           <CardContent>
             {showPaymentMethods ? (
-              <SavedPaymentMethods />
+              <>
+                <SavedPaymentMethods onAddNew={() => setShowAddPayment(true)} />
+                <AddPaymentMethodDialog
+                  open={showAddPayment}
+                  onOpenChange={setShowAddPayment}
+                  onSuccess={() => {
+                    // Trigger refetch of payment methods
+                    setShowAddPayment(false);
+                  }}
+                />
+              </>
             ) : (
-              <Button 
-                variant="outline" 
-                onClick={() => setShowPaymentMethods(true)}
-                className="w-full"
-              >
-                View Saved Payment Methods
-              </Button>
+              <motion.div whileTap={{ scale: 0.98 }}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowPaymentMethods(true)}
+                  className="w-full"
+                >
+                  View Saved Payment Methods
+                </Button>
+              </motion.div>
             )}
           </CardContent>
         </Card>
@@ -138,14 +152,16 @@ export default function PortalAccount() {
         </Card>
 
         {/* Logout */}
-        <Button 
-          variant="outline" 
-          className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
-          onClick={handleLogout}
-        >
-          <LogOut className="h-4 w-4 mr-2" />
-          Log Out
-        </Button>
+        <motion.div whileTap={{ scale: 0.98 }}>
+          <Button 
+            variant="outline" 
+            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Log Out
+          </Button>
+        </motion.div>
       </motion.div>
     </div>
   );

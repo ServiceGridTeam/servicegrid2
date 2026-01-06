@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
-import { ArrowLeft, MapPin, Clock, User, CheckCircle, Circle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, User, CheckCircle, Circle, AlertCircle, CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { FeedbackPrompt } from '@/components/portal/FeedbackPrompt';
 import { FeedbackForm } from '@/components/portal/FeedbackForm';
+import { RescheduleRequestDialog } from '@/components/portal/RescheduleRequestDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { usePortalSession } from '@/hooks/usePortalSession';
 import { useCustomerFeedback } from '@/hooks/useCustomerFeedback';
@@ -19,6 +21,7 @@ export default function PortalJobDetail() {
   const navigate = useNavigate();
   const { activeCustomerId, activeBusinessId } = usePortalSession();
   const { pendingJobs } = useCustomerFeedback();
+  const [showReschedule, setShowReschedule] = useState(false);
 
   const { data: job, isLoading, error } = useQuery({
     queryKey: ['portal-job', id],
@@ -41,7 +44,8 @@ export default function PortalJobDetail() {
     enabled: !!id && !!activeCustomerId,
   });
 
-  const needsFeedback = job?.status === 'Completed' && 
+  const canReschedule = job?.status === 'Scheduled' || job?.status === 'En Route';
+  const needsFeedback = job?.status === 'Completed' &&
     pendingJobs.some(pj => pj.jobId === job.id);
 
   const getStatusColor = (status: string) => {
@@ -90,10 +94,12 @@ export default function PortalJobDetail() {
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
-      <Button variant="ghost" onClick={() => navigate('/portal/schedule')}>
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Schedule
-      </Button>
+      <motion.div whileTap={{ scale: 0.98 }} className="inline-block">
+        <Button variant="ghost" onClick={() => navigate('/portal/schedule')}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Schedule
+        </Button>
+      </motion.div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -193,9 +199,37 @@ export default function PortalJobDetail() {
                 </div>
               </>
             )}
+
+            {/* Reschedule Button */}
+            {canReschedule && (
+              <>
+                <Separator />
+                <motion.div whileTap={{ scale: 0.98 }}>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setShowReschedule(true)}
+                  >
+                    <CalendarClock className="h-4 w-4 mr-2" />
+                    Request Reschedule
+                  </Button>
+                </motion.div>
+              </>
+            )}
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Reschedule Dialog */}
+      {job && (
+        <RescheduleRequestDialog
+          open={showReschedule}
+          onOpenChange={setShowReschedule}
+          jobId={job.id}
+          jobTitle={job.title}
+          onSuccess={() => setShowReschedule(false)}
+        />
+      )}
 
       {/* Feedback Section */}
       {needsFeedback && (

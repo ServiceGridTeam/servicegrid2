@@ -92,10 +92,12 @@ export default function PortalSchedule() {
     <div className="container mx-auto px-4 py-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Schedule</h1>
-        <Button onClick={() => navigate('/portal/request-service')}>
-          <Plus className="h-4 w-4 mr-2" />
-          Request Service
-        </Button>
+        <motion.div whileTap={{ scale: 0.98 }}>
+          <Button onClick={() => navigate('/portal/request-service')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Request Service
+          </Button>
+        </motion.div>
       </div>
 
       <FeedbackPrompt />
@@ -177,9 +179,11 @@ export default function PortalSchedule() {
                     <p className="text-sm text-muted-foreground mb-4">
                       Request a service to get started.
                     </p>
-                    <Button onClick={() => navigate('/portal/request-service')}>
-                      Request Service
-                    </Button>
+                    <motion.div whileTap={{ scale: 0.98 }}>
+                      <Button onClick={() => navigate('/portal/request-service')}>
+                        Request Service
+                      </Button>
+                    </motion.div>
                   </CardContent>
                 </Card>
               )}
@@ -235,9 +239,11 @@ export default function PortalSchedule() {
                 <p className="text-sm text-muted-foreground mb-4">
                   You haven't submitted any service requests yet.
                 </p>
-                <Button onClick={() => navigate('/portal/request-service')}>
-                  Request Service
-                </Button>
+                <motion.div whileTap={{ scale: 0.98 }}>
+                  <Button onClick={() => navigate('/portal/request-service')}>
+                    Request Service
+                  </Button>
+                </motion.div>
               </CardContent>
             </Card>
           )}
