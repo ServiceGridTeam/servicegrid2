@@ -88,7 +88,7 @@ export function useTimeEntriesForJob(jobId: string | undefined) {
         .from("time_entries")
         .select(`
           *,
-          user:profiles(id, first_name, last_name, avatar_url)
+          user:profiles!time_entries_user_id_fkey(id, first_name, last_name, avatar_url)
         `)
         .eq("job_id", jobId)
         .order("clock_in", { ascending: false });
@@ -114,7 +114,7 @@ export function useTimeEntriesForDateRange(
         .select(`
           *,
           job:jobs(id, job_number, title, customer:customers(first_name, last_name)),
-          user:profiles(id, first_name, last_name, avatar_url)
+          user:profiles!time_entries_user_id_fkey(id, first_name, last_name, avatar_url)
         `)
         .gte("clock_in", startDate.toISOString())
         .lte("clock_in", endDate.toISOString())
@@ -150,7 +150,7 @@ export function useTeamTimeStats() {
         .from("time_entries")
         .select(`
           *,
-          user:profiles(id, first_name, last_name, avatar_url),
+          user:profiles!time_entries_user_id_fkey(id, first_name, last_name, avatar_url),
           job:jobs(id, job_number, title, customer:customers(first_name, last_name))
         `)
         .gte("clock_in", today.toISOString())
@@ -163,7 +163,7 @@ export function useTeamTimeStats() {
         .from("time_entries")
         .select(`
           *,
-          user:profiles(id, first_name, last_name, avatar_url),
+          user:profiles!time_entries_user_id_fkey(id, first_name, last_name, avatar_url),
           job:jobs(id, job_number, title, customer:customers(first_name, last_name))
         `)
         .is("clock_out", null);
