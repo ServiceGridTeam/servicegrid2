@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import * as localState from "@/lib/localState";
 
 interface AuthContextType {
   user: User | null;
@@ -67,6 +68,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    // Clear local state on logout
+    localState.clearLocalState();
     await supabase.auth.signOut();
   };
 
