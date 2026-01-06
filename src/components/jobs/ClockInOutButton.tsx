@@ -8,6 +8,16 @@ import { Clock, Play, Square, MapPin, Loader2, AlertTriangle, CheckCircle } from
 import { cn } from "@/lib/utils";
 import { LocationAccuracyIndicator } from "./LocationAccuracyIndicator";
 import { GeofenceOverrideDialog } from "./GeofenceOverrideDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ClockInOutButtonProps {
   jobId: string;
@@ -37,7 +47,8 @@ type ClockState =
   | "in_range" 
   | "out_of_range_warn" 
   | "out_of_range_strict" 
-  | "clocked_in";
+  | "clocked_in"
+  | "accuracy_warning";
 
 export function ClockInOutButton({ 
   jobId, 
@@ -56,7 +67,9 @@ export function ClockInOutButton({
   const [clockState, setClockState] = useState<ClockState>("idle");
   const [validationResult, setValidationResult] = useState<GeofenceValidationResult | null>(null);
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
+  const [showAccuracyWarning, setShowAccuracyWarning] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
+  const [pendingClockInLocation, setPendingClockInLocation] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
 
   // Update duration every second when clocked in
   useEffect(() => {
@@ -75,6 +88,48 @@ export function ClockInOutButton({
     const interval = setInterval(updateDuration, 1000);
     return () => clearInterval(interval);
   }, [activeEntry]);
+
+  const proceedWithValidation = async (location: { lat: number; lng: number; accuracy?: number }) => {
+    // Validate geofence
+    setClockState("validating");
+    const validation = await validateClockIn.mutateAsync({
+      jobId,
+      location,
+      locationSource: "gps",
+      eventType: "clock_in",
+    });
+
+    setValidationResult(validation);
+
+    if (validation.within_geofence) {
+      // Within geofence - proceed with clock in
+      setClockState("in_range");
+      await performClockIn(location);
+    } else if (validation.enforcement_mode === "warn") {
+      // Outside but allowed with warning
+      setClockState("out_of_range_warn");
+      toast({
+        title: "Location Warning",
+        description: `You are ${validation.distance_feet} feet from the job site`,
+      });
+      await performClockIn(location);
+    } else if (validation.enforcement_mode === "strict") {
+      // Outside and blocked - show override dialog if allowed
+      setClockState("out_of_range_strict");
+      if (validation.can_override) {
+        setShowOverrideDialog(true);
+      } else {
+        toast({
+          title: "Cannot Clock In",
+          description: `You must be within ${Math.round(validation.geofence_radius_meters * 3.28084)} feet of the job site`,
+          variant: "destructive",
+        });
+      }
+    } else {
+      // Enforcement is off - proceed
+      await performClockIn(location);
+    }
+  };
 
   const handleClockInClick = async () => {
     setClockState("locating");
@@ -101,45 +156,15 @@ export function ClockInOutButton({
       };
       setCurrentLocation(location);
 
-      // Validate geofence
-      setClockState("validating");
-      const validation = await validateClockIn.mutateAsync({
-        jobId,
-        location,
-        locationSource: "gps",
-        eventType: "clock_in",
-      });
-
-      setValidationResult(validation);
-
-      if (validation.within_geofence) {
-        // Within geofence - proceed with clock in
-        setClockState("in_range");
-        await performClockIn(location);
-      } else if (validation.enforcement_mode === "warn") {
-        // Outside but allowed with warning
-        setClockState("out_of_range_warn");
-        toast({
-          title: "Location Warning",
-          description: `You are ${validation.distance_feet} feet from the job site`,
-        });
-        await performClockIn(location);
-      } else if (validation.enforcement_mode === "strict") {
-        // Outside and blocked - show override dialog if allowed
-        setClockState("out_of_range_strict");
-        if (validation.can_override) {
-          setShowOverrideDialog(true);
-        } else {
-          toast({
-            title: "Cannot Clock In",
-            description: `You must be within ${Math.round(validation.geofence_radius_meters * 3.28084)} feet of the job site`,
-            variant: "destructive",
-          });
-        }
-      } else {
-        // Enforcement is off - proceed
-        await performClockIn(location);
+      // Check GPS accuracy - warn if > 50 meters
+      if (location.accuracy && location.accuracy > 50) {
+        setPendingClockInLocation(location);
+        setClockState("accuracy_warning");
+        setShowAccuracyWarning(true);
+        return;
       }
+
+      await proceedWithValidation(location);
     } catch (error) {
       toast({
         title: "Error",
@@ -148,6 +173,37 @@ export function ClockInOutButton({
       });
       setClockState("idle");
     }
+  };
+
+  const handleAccuracyConfirm = async () => {
+    setShowAccuracyWarning(false);
+    if (pendingClockInLocation) {
+      try {
+        await proceedWithValidation(pendingClockInLocation);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "Failed to validate location",
+          variant: "destructive",
+        });
+        setClockState("idle");
+      }
+    }
+    setPendingClockInLocation(null);
+  };
+
+  const handleAccuracyRetry = () => {
+    setShowAccuracyWarning(false);
+    setPendingClockInLocation(null);
+    setClockState("idle");
+    // Trigger a fresh location request
+    handleClockInClick();
+  };
+
+  const handleAccuracyCancel = () => {
+    setShowAccuracyWarning(false);
+    setPendingClockInLocation(null);
+    setClockState("idle");
   };
 
   const performClockIn = async (location: { lat: number; lng: number; accuracy?: number }) => {
@@ -354,15 +410,48 @@ export function ClockInOutButton({
 
   // Default idle state - Clock In button
   return (
-    <Button
-      variant="default"
-      size={variant === "compact" ? "sm" : "default"}
-      onClick={handleClockInClick}
-      disabled={clockIn.isPending}
-      className={cn("gap-2", className)}
-    >
-      <Play className="h-4 w-4 fill-current" />
-      {variant === "default" && "Clock In"}
-    </Button>
+    <>
+      <Button
+        variant="default"
+        size={variant === "compact" ? "sm" : "default"}
+        onClick={handleClockInClick}
+        disabled={clockIn.isPending}
+        className={cn("gap-2", className)}
+      >
+        <Play className="h-4 w-4 fill-current" />
+        {variant === "default" && "Clock In"}
+      </Button>
+
+      {/* GPS Accuracy Warning Dialog */}
+      <AlertDialog open={showAccuracyWarning} onOpenChange={setShowAccuracyWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Poor GPS Accuracy
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Your current GPS accuracy is <span className="font-semibold">{Math.round(pendingClockInLocation?.accuracy || 0)} meters</span>, 
+                which may result in inaccurate location tracking.
+              </p>
+              <p className="text-muted-foreground text-sm">
+                For best results, ensure you have a clear view of the sky and GPS is enabled.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel onClick={handleAccuracyCancel}>Cancel</AlertDialogCancel>
+            <Button variant="outline" onClick={handleAccuracyRetry}>
+              <MapPin className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+            <AlertDialogAction onClick={handleAccuracyConfirm}>
+              Proceed Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

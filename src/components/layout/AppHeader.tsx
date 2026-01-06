@@ -11,6 +11,7 @@ import {
 import { useLocation, Link } from "react-router-dom";
 import { GlobalSearch } from "./GlobalSearch";
 import { NotificationsDropdown } from "./NotificationsDropdown";
+import { GeofenceAlertBanner } from "@/components/team/GeofenceAlertBanner";
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -20,6 +21,8 @@ const routeTitles: Record<string, string> = {
   "/invoices": "Invoices",
   "/calendar": "Calendar",
   "/settings": "Settings",
+  "/team": "Team",
+  "/routes": "Routes",
 };
 
 export function AppHeader() {
@@ -71,6 +74,7 @@ export function AppHeader() {
       </Breadcrumb>
 
       <div className="ml-auto flex items-center gap-2">
+        <GeofenceAlertBanner />
         <GlobalSearch />
         <NotificationsDropdown />
       </div>
