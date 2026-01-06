@@ -119,6 +119,21 @@ export function RequestDetailModal({
       {
         requestId: request.id,
         convertToJob: createJob,
+        scheduleData: createJob && scheduleData.date && scheduleData.time
+          ? {
+              date: scheduleData.date,
+              time: scheduleData.time,
+              durationMinutes: parseInt(scheduleData.duration, 10),
+            }
+          : undefined,
+        customerData: {
+          name: formData.customer_name,
+          phone: formData.customer_phone,
+          email: formData.customer_email,
+        },
+        address: request.address,
+        serviceType: formData.service_type,
+        description: formData.description,
       },
       {
         onSuccess: () => {

@@ -195,6 +195,24 @@ export function useJobRequestsRealtime(onUpdate?: () => void) {
   }, [profile?.business_id, queryClient, onUpdate]);
 }
 
+export interface ApproveJobRequestParams {
+  requestId: string;
+  convertToJob?: boolean;
+  scheduleData?: {
+    date: string;
+    time: string;
+    durationMinutes: number;
+  };
+  customerData?: {
+    name: string;
+    phone: string;
+    email: string;
+  };
+  address?: JobRequestAddress | null;
+  serviceType?: string;
+  description?: string;
+}
+
 /**
  * Approve a job request
  */
@@ -206,29 +224,116 @@ export function useApproveJobRequest() {
     mutationFn: async ({
       requestId,
       convertToJob = false,
-    }: {
-      requestId: string;
-      convertToJob?: boolean;
-    }) => {
-      if (!profile?.id) throw new Error("No user found");
+      scheduleData,
+      customerData,
+      address,
+      serviceType,
+      description,
+    }: ApproveJobRequestParams) => {
+      if (!profile?.id || !profile?.business_id) throw new Error("No user found");
 
+      // If converting to job, create the job first
+      let jobId: string | null = null;
+
+      if (convertToJob && scheduleData) {
+        // Generate job number
+        const { count } = await supabase
+          .from("jobs")
+          .select("*", { count: "exact", head: true })
+          .eq("business_id", profile.business_id);
+
+        const jobNumber = `JOB-${String((count || 0) + 1).padStart(4, "0")}`;
+
+        // Calculate scheduled times
+        const scheduledStart = new Date(`${scheduleData.date}T${scheduleData.time}`);
+        const scheduledEnd = new Date(scheduledStart.getTime() + scheduleData.durationMinutes * 60000);
+
+        // Get the request to check for customer_id
+        const { data: request } = await supabase
+          .from("job_requests")
+          .select("customer_id")
+          .eq("id", requestId)
+          .single();
+
+        let customerId = request?.customer_id;
+
+        // Create customer if needed
+        if (!customerId && customerData?.name) {
+          const nameParts = customerData.name.trim().split(" ");
+          const firstName = nameParts[0] || "";
+          const lastName = nameParts.slice(1).join(" ") || "";
+
+          const { data: newCustomer, error: customerError } = await supabase
+            .from("customers")
+            .insert({
+              business_id: profile.business_id,
+              first_name: firstName,
+              last_name: lastName,
+              phone: customerData.phone || null,
+              email: customerData.email || null,
+              address_line1: address?.line1 || null,
+              city: address?.city || null,
+              state: address?.state || null,
+              zip: address?.zip || null,
+            })
+            .select("id")
+            .single();
+
+          if (customerError) throw customerError;
+          customerId = newCustomer.id;
+        }
+
+        // Create the job
+        const jobTitle = [serviceType, description].filter(Boolean).join(" - ") || "New Job";
+
+        const { data: newJob, error: jobError } = await supabase
+          .from("jobs")
+          .insert({
+            business_id: profile.business_id,
+            customer_id: customerId,
+            job_number: jobNumber,
+            title: jobTitle.slice(0, 100),
+            description: description || null,
+            status: "scheduled",
+            scheduled_start: scheduledStart.toISOString(),
+            scheduled_end: scheduledEnd.toISOString(),
+            address_line1: address?.line1 || null,
+            city: address?.city || null,
+            state: address?.state || null,
+            zip: address?.zip || null,
+          })
+          .select("id")
+          .single();
+
+        if (jobError) throw jobError;
+        jobId = newJob.id;
+      }
+
+      // Update the request
       const { error } = await supabase
         .from("job_requests")
         .update({
           status: convertToJob ? "converted" : "approved",
           reviewed_by: profile.id,
           reviewed_at: new Date().toISOString(),
+          converted_to_job_id: jobId,
         })
         .eq("id", requestId);
 
       if (error) throw error;
 
-      // TODO: If convertToJob, create the job and link it
+      return { jobId };
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["job-requests"] });
       queryClient.invalidateQueries({ queryKey: ["job-requests-count"] });
-      toast.success("Request approved");
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      
+      if (variables.convertToJob && data?.jobId) {
+        toast.success("Request converted to job");
+      } else {
+        toast.success("Request approved");
+      }
     },
     onError: (error) => {
       console.error("Failed to approve request:", error);
