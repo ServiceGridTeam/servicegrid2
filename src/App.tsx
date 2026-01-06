@@ -39,7 +39,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import EmailPreferences from "./pages/EmailPreferences";
 import { Templates, TemplateEdit, TemplatePreview, Sequences, SequenceEdit, Campaigns, CampaignEdit, CampaignReport } from "./pages/marketing";
-import { PortalLogin, MagicLinkLanding, PortalDashboard } from "./pages/portal";
+import { PortalLogin, MagicLinkLanding, PortalDashboard, PortalDocuments, PortalQuoteDetail, PortalInvoiceDetail } from "./pages/portal";
 import { PortalLayout } from "./components/portal";
 
 const queryClient = new QueryClient();
@@ -57,6 +57,9 @@ const App = () => (
             <Route path="/portal/magic/:token" element={<MagicLinkLanding />} />
             <Route path="/portal" element={<PortalLayout />}>
               <Route index element={<PortalDashboard />} />
+              <Route path="documents" element={<PortalDocuments />} />
+              <Route path="quotes/:id" element={<PortalQuoteDetail />} />
+              <Route path="invoices/:id" element={<PortalInvoiceDetail />} />
             </Route>
             
             {/* Public routes (no auth required) */}

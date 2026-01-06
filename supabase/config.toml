@@ -116,3 +116,9 @@ verify_jwt = false
 
 [functions.portal-auth]
 verify_jwt = false
+
+[functions.portal-quotes]
+verify_jwt = false
+
+[functions.portal-payment-methods]
+verify_jwt = false
