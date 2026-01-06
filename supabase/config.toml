@@ -74,3 +74,6 @@ verify_jwt = false
 
 [functions.notify-team-member-joined]
 verify_jwt = false
+
+[functions.phone-integration-api]
+verify_jwt = false
