@@ -135,7 +135,7 @@ export function AppSidebar() {
           </AnimatePresence>
         </div>
       )}
-      {!collapsed && hasMultipleBusinesses && (
+      {!collapsed && (
         <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
       )}
     </div>
@@ -144,45 +144,44 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
       <SidebarHeader className="border-b border-sidebar-border p-4">
-        {hasMultipleBusinesses ? (
-          <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center w-full rounded-lg p-2 -m-2 transition-colors hover:bg-sidebar-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                {headerContent}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[240px]" sideOffset={8}>
-              {memberships.map((membership) => {
-                const memberRoleConfig = ROLE_CONFIG[membership.role];
-                const isCurrentBusiness = membership.businessId === activeBusinessId;
-                return (
-                  <DropdownMenuItem
-                    key={membership.id}
-                    onClick={() => handleSelectBusiness(membership.businessId)}
-                    className="flex items-center gap-3 py-2.5 cursor-pointer"
-                  >
-                    <Avatar className="h-8 w-8 shrink-0">
-                      <AvatarFallback className="bg-muted text-xs">
-                        {membership.businessName?.slice(0, 2).toUpperCase() || "BZ"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col flex-1 min-w-0">
-                      <span className="font-medium truncate text-sm">{membership.businessName}</span>
-                      <span className="text-xs text-muted-foreground">{memberRoleConfig?.label || membership.role}</span>
-                    </div>
-                    {isCurrentBusiness && (
-                      <Check className="h-4 w-4 text-primary shrink-0" />
-                    )}
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <div className="flex items-center w-full">
-            {headerContent}
-          </div>
-        )}
+        <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center w-full rounded-lg p-2 -m-2 transition-colors hover:bg-sidebar-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              {headerContent}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-[240px]" sideOffset={8}>
+            {memberships.map((membership) => {
+              const memberRoleConfig = ROLE_CONFIG[membership.role];
+              const isCurrentBusiness = membership.businessId === activeBusinessId;
+              return (
+                <DropdownMenuItem
+                  key={membership.id}
+                  onClick={() => handleSelectBusiness(membership.businessId)}
+                  className="flex items-center gap-3 py-2.5 cursor-pointer"
+                >
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarFallback className="bg-muted text-xs">
+                      {membership.businessName?.slice(0, 2).toUpperCase() || "BZ"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="font-medium truncate text-sm">{membership.businessName}</span>
+                    <span className="text-xs text-muted-foreground">{memberRoleConfig?.label || membership.role}</span>
+                  </div>
+                  {isCurrentBusiness && (
+                    <Check className="h-4 w-4 text-primary shrink-0" />
+                  )}
+                </DropdownMenuItem>
+              );
+            })}
+            {memberships.length <= 1 && (
+              <div className="px-2 py-1.5 text-xs text-muted-foreground border-t mt-1 pt-2">
+                You can be invited to other businesses
+              </div>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </SidebarHeader>
 
       <SidebarContent>
