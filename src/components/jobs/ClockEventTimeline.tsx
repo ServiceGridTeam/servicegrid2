@@ -329,8 +329,15 @@ function GeofenceCircle({
   return null;
 }
 
-// Chronological path connecting clock events
-function ChronologicalPath({ events }: { events: ClockEvent[] }) {
+// Helper to get color based on time gap
+function getTimeGapColor(gapMinutes: number): string {
+  if (gapMinutes < 5) return '#22c55e'; // green - quick transition
+  if (gapMinutes <= 30) return '#eab308'; // yellow - moderate delay
+  return '#ef4444'; // red - long gap
+}
+
+// Color-coded path connecting clock events with segments based on time gaps
+function ColorCodedPath({ events }: { events: ClockEvent[] }) {
   const map = useMap();
 
   useEffect(() => {
@@ -345,34 +352,70 @@ function ChronologicalPath({ events }: { events: ClockEvent[] }) {
 
     if (sortedEvents.length < 2) return;
 
-    // Create path from coordinates
-    const path = sortedEvents.map(e => ({
-      lat: e.latitude!,
-      lng: e.longitude!,
-    }));
+    const polylines: google.maps.Polyline[] = [];
 
-    const polyline = new google.maps.Polyline({
-      path,
-      strokeColor: '#6b7280', // gray-500
-      strokeOpacity: 0.6,
-      strokeWeight: 2,
-      geodesic: true,
-      icons: [{
-        icon: {
-          path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-          scale: 2,
-          strokeColor: '#6b7280',
-        },
-        offset: '50%',
-        repeat: '100px',
-      }],
-      map,
-    });
+    // Create individual segments between consecutive events
+    for (let i = 0; i < sortedEvents.length - 1; i++) {
+      const current = sortedEvents[i];
+      const next = sortedEvents[i + 1];
+      
+      // Calculate time gap in minutes
+      const gapMinutes = (
+        new Date(next.recorded_at!).getTime() - 
+        new Date(current.recorded_at!).getTime()
+      ) / (1000 * 60);
 
-    return () => polyline.setMap(null);
+      const strokeColor = getTimeGapColor(gapMinutes);
+
+      const segment = new google.maps.Polyline({
+        path: [
+          { lat: current.latitude!, lng: current.longitude! },
+          { lat: next.latitude!, lng: next.longitude! },
+        ],
+        strokeColor,
+        strokeOpacity: 0.8,
+        strokeWeight: 3,
+        geodesic: true,
+        icons: [{
+          icon: {
+            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+            scale: 2.5,
+            strokeColor,
+            fillColor: strokeColor,
+            fillOpacity: 1,
+          },
+          offset: '50%',
+        }],
+        map,
+      });
+
+      polylines.push(segment);
+    }
+
+    return () => polylines.forEach(p => p.setMap(null));
   }, [map, events]);
 
   return null;
+}
+
+// Legend for the color-coded path
+function PathLegend() {
+  return (
+    <div className="mt-2 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+      <div className="flex items-center gap-1.5">
+        <div className="w-4 h-0.5 bg-green-500 rounded" />
+        <span>&lt;5 min</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <div className="w-4 h-0.5 bg-yellow-500 rounded" />
+        <span>5-30 min</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <div className="w-4 h-0.5 bg-red-500 rounded" />
+        <span>&gt;30 min</span>
+      </div>
+    </div>
+  );
 }
 
 // Map component showing clock events
@@ -393,6 +436,23 @@ function ClockEventMap({
 
   // Filter events with valid coordinates
   const validEvents = events.filter(e => e.latitude && e.longitude);
+
+  // Sort events chronologically and create sequence lookup
+  const sortedEvents = useMemo(() => {
+    return [...validEvents]
+      .filter(e => e.recorded_at)
+      .sort((a, b) => 
+        new Date(a.recorded_at!).getTime() - new Date(b.recorded_at!).getTime()
+      );
+  }, [validEvents]);
+
+  const eventSequenceMap = useMemo(() => {
+    const seqMap: Record<string, number> = {};
+    sortedEvents.forEach((event, index) => {
+      seqMap[event.id] = index + 1;
+    });
+    return seqMap;
+  }, [sortedEvents]);
   
   if (!job?.latitude || !job?.longitude) {
     return (
@@ -414,103 +474,118 @@ function ClockEventMap({
   const jobCenter = { lat: job.latitude, lng: job.longitude };
 
   return (
-    <div className="h-[300px] border rounded-lg overflow-hidden">
-      <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
-        <GoogleMap
-          defaultCenter={jobCenter}
-          defaultZoom={17}
-          mapId="clock-event-map"
-          gestureHandling="cooperative"
-          disableDefaultUI={false}
-          zoomControl={true}
-          streetViewControl={false}
-          mapTypeControl={false}
-          fullscreenControl={false}
-        >
-          {/* Geofence Circle */}
-          <GeofenceCircle 
-            center={jobCenter} 
-            radius={effectiveRadius} 
-            isExpanded={isExpanded ?? false}
-          />
+    <div className="space-y-2">
+      <div className="h-[300px] border rounded-lg overflow-hidden relative">
+        <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
+          <GoogleMap
+            defaultCenter={jobCenter}
+            defaultZoom={17}
+            mapId="clock-event-map"
+            gestureHandling="cooperative"
+            disableDefaultUI={false}
+            zoomControl={true}
+            streetViewControl={false}
+            mapTypeControl={false}
+            fullscreenControl={false}
+          >
+            {/* Geofence Circle */}
+            <GeofenceCircle 
+              center={jobCenter} 
+              radius={effectiveRadius} 
+              isExpanded={isExpanded ?? false}
+            />
 
-          {/* Chronological Path */}
-          <ChronologicalPath events={validEvents} />
+            {/* Color-Coded Path */}
+            <ColorCodedPath events={validEvents} />
 
-          {/* Job Site Marker */}
-          <AdvancedMarker position={jobCenter}>
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground shadow-lg border-2 border-background">
-              <MapPin className="h-4 w-4" />
-            </div>
-          </AdvancedMarker>
+            {/* Job Site Marker */}
+            <AdvancedMarker position={jobCenter}>
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground shadow-lg border-2 border-background">
+                <MapPin className="h-4 w-4" />
+              </div>
+            </AdvancedMarker>
 
-          {/* Clock Event Markers */}
-          {validEvents.map((event) => {
-            const isClockIn = event.event_type === "clock_in";
-            const isViolation = !event.within_geofence;
-            const hasOverride = event.override_reason || event.override_photo_url;
+            {/* Clock Event Markers with Sequence Badges */}
+            {validEvents.map((event) => {
+              const isClockIn = event.event_type === "clock_in";
+              const isViolation = !event.within_geofence;
+              const hasOverride = event.override_reason || event.override_photo_url;
+              const sequenceNumber = eventSequenceMap[event.id];
 
-            return (
-              <AdvancedMarker
-                key={event.id}
-                position={{ lat: event.latitude!, lng: event.longitude! }}
-                onClick={() => setSelectedEvent(selectedEvent?.id === event.id ? null : event)}
-              >
-                <div 
-                  className={`
-                    flex items-center justify-center w-7 h-7 rounded-full shadow-md cursor-pointer
-                    transition-transform hover:scale-110
-                    ${isClockIn ? "bg-success" : "bg-info"}
-                    ${isViolation ? "ring-2 ring-destructive ring-offset-1" : ""}
-                    ${hasOverride ? "ring-2 ring-warning ring-offset-1" : ""}
-                  `}
+              return (
+                <AdvancedMarker
+                  key={event.id}
+                  position={{ lat: event.latitude!, lng: event.longitude! }}
+                  onClick={() => setSelectedEvent(selectedEvent?.id === event.id ? null : event)}
                 >
-                  {isClockIn ? (
-                    <LogIn className="h-3.5 w-3.5 text-success-foreground" />
-                  ) : (
-                    <LogOut className="h-3.5 w-3.5 text-info-foreground" />
-                  )}
-                </div>
-              </AdvancedMarker>
-            );
-          })}
-        </GoogleMap>
-      </APIProvider>
+                  <div className="relative">
+                    {/* Main Marker */}
+                    <div 
+                      className={`
+                        flex items-center justify-center w-7 h-7 rounded-full shadow-md cursor-pointer
+                        transition-transform hover:scale-110
+                        ${isClockIn ? "bg-success" : "bg-info"}
+                        ${isViolation ? "ring-2 ring-destructive ring-offset-1" : ""}
+                        ${hasOverride ? "ring-2 ring-warning ring-offset-1" : ""}
+                      `}
+                    >
+                      {isClockIn ? (
+                        <LogIn className="h-3.5 w-3.5 text-success-foreground" />
+                      ) : (
+                        <LogOut className="h-3.5 w-3.5 text-info-foreground" />
+                      )}
+                    </div>
+                    {/* Sequence Badge */}
+                    {sequenceNumber && (
+                      <div className="absolute -top-2 -right-2 flex items-center justify-center w-5 h-5 rounded-full bg-background border-2 border-foreground text-[10px] font-bold shadow-sm">
+                        {sequenceNumber}
+                      </div>
+                    )}
+                  </div>
+                </AdvancedMarker>
+              );
+            })}
+          </GoogleMap>
+        </APIProvider>
 
-      {/* Selected Event Info Panel */}
-      {selectedEvent && (
-        <div className="absolute bottom-2 left-2 right-2 bg-card border rounded-lg p-3 shadow-lg">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <EventTypeBadge type={selectedEvent.event_type} status={selectedEvent.status} />
-              <span className="text-xs text-muted-foreground">
-                {selectedEvent.recorded_at
-                  ? format(new Date(selectedEvent.recorded_at), "MMM d, h:mm a")
-                  : "Unknown time"}
-              </span>
+        {/* Selected Event Info Panel */}
+        {selectedEvent && (
+          <div className="absolute bottom-2 left-2 right-2 bg-card border rounded-lg p-3 shadow-lg">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <EventTypeBadge type={selectedEvent.event_type} status={selectedEvent.status} />
+                <span className="text-xs text-muted-foreground">
+                  {selectedEvent.recorded_at
+                    ? format(new Date(selectedEvent.recorded_at), "MMM d, h:mm a")
+                    : "Unknown time"}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={() => setSelectedEvent(null)}
+              >
+                <XCircle className="h-4 w-4" />
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0"
-              onClick={() => setSelectedEvent(null)}
-            >
-              <XCircle className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-            <GeofenceIndicator event={selectedEvent} />
-            {selectedEvent.distance_from_job_meters && (
-              <span>• {Math.round(selectedEvent.distance_from_job_meters)}m from job</span>
+            <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+              <GeofenceIndicator event={selectedEvent} />
+              {selectedEvent.distance_from_job_meters && (
+                <span>• {Math.round(selectedEvent.distance_from_job_meters)}m from job</span>
+              )}
+            </div>
+            {selectedEvent.override_reason && (
+              <div className="mt-1 text-xs text-warning truncate">
+                Override: {selectedEvent.override_reason}
+              </div>
             )}
           </div>
-          {selectedEvent.override_reason && (
-            <div className="mt-1 text-xs text-warning truncate">
-              Override: {selectedEvent.override_reason}
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Path Legend */}
+      <PathLegend />
     </div>
   );
 }
