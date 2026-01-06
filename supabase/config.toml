@@ -98,3 +98,6 @@ verify_jwt = false
 
 [functions.send-scheduled-campaigns]
 verify_jwt = false
+
+[functions.compute-segment-counts]
+verify_jwt = false

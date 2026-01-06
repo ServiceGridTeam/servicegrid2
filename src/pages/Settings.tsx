@@ -18,6 +18,7 @@ import { GeofenceSettingsCard } from "@/components/settings/GeofenceSettingsCard
 import { NotificationPreferencesCard } from "@/components/settings/NotificationPreferencesCard";
 import { PhoneIntegrationCard } from "@/components/settings/PhoneIntegrationCard";
 import { PhoneSettingsForm } from "@/components/settings/PhoneSettingsForm";
+import { EmailBrandingCard } from "@/components/settings/EmailBrandingCard";
 export default function Settings() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: business, isLoading: businessLoading } = useBusiness();
@@ -341,6 +342,8 @@ export default function Settings() {
               </Button>
             </CardContent>
           </Card>
+          
+          <EmailBrandingCard />
         </TabsContent>
 
         <TabsContent value="payments" className="space-y-6">
