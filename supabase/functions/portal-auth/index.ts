@@ -37,9 +37,9 @@ Deno.serve(async (req) => {
       case "generate-magic-link":
         return await handleGenerateMagicLink(supabase, body, resendApiKey);
       case "validate-magic-link":
-        return await handleValidateMagicLink(supabase, body, req);
+        return await handleValidateMagicLink(supabase, body, req, resendApiKey);
       case "login-password":
-        return await handlePasswordLogin(supabase, body, req);
+        return await handlePasswordLogin(supabase, body, req, resendApiKey);
       case "create-password":
         return await handleCreatePassword(supabase, body);
       case "validate-session":
@@ -52,6 +52,8 @@ Deno.serve(async (req) => {
         return await handleSwitchContext(supabase, body);
       case "send-invite":
         return await handleSendInvite(supabase, body, resendApiKey);
+      case "revoke-access":
+        return await handleRevokeAccess(supabase, body);
       default:
         return new Response(
           JSON.stringify({ error: "Unknown action" }),
@@ -154,7 +156,7 @@ async function handleGenerateMagicLink(
   return successResponse({ success: true, message: "Magic link sent" });
 }
 
-async function handleValidateMagicLink(supabase: any, body: ActionRequest, req: Request) {
+async function handleValidateMagicLink(supabase: any, body: ActionRequest, req: Request, resendApiKey: string | undefined) {
   const { token } = body;
   if (!token) {
     return errorResponse("Token is required", 400);
@@ -250,14 +252,38 @@ async function handleValidateMagicLink(supabase: any, body: ActionRequest, req: 
     return errorResponse("Failed to create session", 500);
   }
 
+  // Check if this is first login before updating
+  const { data: accountData } = await supabase
+    .from("customer_accounts")
+    .select("login_count")
+    .eq("id", account.id)
+    .single();
+  
+  const isFirstLogin = !accountData?.login_count || accountData.login_count === 0;
+
   // Update account last login
   await supabase
     .from("customer_accounts")
     .update({
       last_login_at: new Date().toISOString(),
-      login_count: (account.login_count || 0) + 1,
+      login_count: (accountData?.login_count || 0) + 1,
     })
     .eq("id", account.id);
+
+  // Send first login notification if applicable
+  if (isFirstLogin && invite.business_id && invite.customer_id) {
+    const customerName = invite.customers
+      ? `${invite.customers.first_name} ${invite.customers.last_name}`
+      : null;
+    
+    // Fire and forget - don't block the login response
+    sendFirstLoginNotification(supabase, resendApiKey, {
+      customerId: invite.customer_id,
+      businessId: invite.business_id,
+      customerName: customerName || "",
+      customerEmail: invite.email,
+    }).catch((err) => console.error("[portal-auth] First login notification error:", err));
+  }
 
   // Get all linked businesses
   const { data: links } = await supabase
@@ -286,7 +312,7 @@ async function handleValidateMagicLink(supabase: any, body: ActionRequest, req: 
   });
 }
 
-async function handlePasswordLogin(supabase: any, body: ActionRequest, req: Request) {
+async function handlePasswordLogin(supabase: any, body: ActionRequest, req: Request, resendApiKey: string | undefined) {
   const { email, password } = body;
   if (!email || !password) {
     return errorResponse("Email and password are required", 400);
@@ -337,6 +363,9 @@ async function handlePasswordLogin(supabase: any, body: ActionRequest, req: Requ
 
     return errorResponse("Invalid email or password", 401);
   }
+
+  // Check if this is first login before updating
+  const isFirstLogin = !account.login_count || account.login_count === 0;
 
   // Reset failed attempts on success
   await supabase
@@ -397,6 +426,17 @@ async function handlePasswordLogin(supabase: any, body: ActionRequest, req: Requ
     logoUrl: l.businesses?.logo_url,
     isPrimary: l.is_primary,
   })) || [];
+
+  // Send first login notification if applicable
+  if (isFirstLogin && primaryLink?.business_id && primaryLink?.customer_id) {
+    // Fire and forget - don't block the login response
+    sendFirstLoginNotification(supabase, resendApiKey, {
+      customerId: primaryLink.customer_id,
+      businessId: primaryLink.business_id,
+      customerName: "",
+      customerEmail: account.email,
+    }).catch((err) => console.error("[portal-auth] First login notification error:", err));
+  }
 
   return successResponse({
     sessionToken,
@@ -734,6 +774,146 @@ async function handleSendInvite(
     message: "Portal invite sent",
     email: customerEmail
   });
+}
+
+async function handleRevokeAccess(supabase: any, body: ActionRequest) {
+  const { customerId, businessId } = body;
+  
+  if (!customerId || !businessId) {
+    return errorResponse("Customer ID and Business ID are required", 400);
+  }
+
+  console.log(`[portal-auth] Revoking access for customer ${customerId} from business ${businessId}`);
+
+  // Find the customer_account_link
+  const { data: link, error: linkError } = await supabase
+    .from("customer_account_links")
+    .select("id, customer_account_id")
+    .eq("customer_id", customerId)
+    .eq("business_id", businessId)
+    .eq("status", "active")
+    .single();
+
+  if (linkError || !link) {
+    console.log("[portal-auth] No active link found:", linkError);
+    return errorResponse("No active portal access found for this customer", 404);
+  }
+
+  // Update link status to revoked
+  const { error: updateError } = await supabase
+    .from("customer_account_links")
+    .update({ status: "revoked", updated_at: new Date().toISOString() })
+    .eq("id", link.id);
+
+  if (updateError) {
+    console.error("[portal-auth] Failed to revoke link:", updateError);
+    return errorResponse("Failed to revoke access", 500);
+  }
+
+  // Revoke all active sessions for this account/business combination
+  const { error: sessionError } = await supabase
+    .from("customer_portal_sessions")
+    .update({ is_revoked: true })
+    .eq("customer_account_id", link.customer_account_id)
+    .eq("active_business_id", businessId)
+    .eq("is_revoked", false);
+
+  if (sessionError) {
+    console.warn("[portal-auth] Failed to revoke sessions:", sessionError);
+    // Don't fail the request - the link is already revoked
+  }
+
+  console.log(`[portal-auth] Successfully revoked access for customer ${customerId}`);
+  return successResponse({ success: true, message: "Portal access revoked" });
+}
+
+async function sendFirstLoginNotification(
+  supabase: any,
+  resendApiKey: string | undefined,
+  params: {
+    customerId: string;
+    businessId: string;
+    customerName: string;
+    customerEmail: string;
+  }
+) {
+  const { customerId, businessId, customerName, customerEmail } = params;
+  
+  console.log(`[portal-auth] Sending first login notification for ${customerEmail}`);
+
+  // Fetch business details
+  const { data: business } = await supabase
+    .from("businesses")
+    .select("name, email")
+    .eq("id", businessId)
+    .single();
+
+  if (!business) {
+    console.warn("[portal-auth] Business not found for notification");
+    return;
+  }
+
+  // Get business team members (profiles linked to this business)
+  const { data: members } = await supabase
+    .from("business_memberships")
+    .select("user_id, profiles(id, email)")
+    .eq("business_id", businessId)
+    .eq("status", "active");
+
+  // Create in-app notifications for team
+  if (members && members.length > 0) {
+    const notifications = members.map((member: any) => ({
+      user_id: member.user_id,
+      business_id: businessId,
+      type: "portal",
+      title: `${customerName || customerEmail} logged into the portal`,
+      message: `Your customer has successfully accessed their portal for the first time.`,
+      data: { customerId, customerEmail },
+    }));
+
+    const { error: notifError } = await supabase
+      .from("notifications")
+      .insert(notifications);
+
+    if (notifError) {
+      console.error("[portal-auth] Failed to create notifications:", notifError);
+    }
+  }
+
+  // Send email notification to business
+  if (resendApiKey && business.email) {
+    try {
+      const { Resend } = await import("https://esm.sh/resend@2.0.0");
+      const resend = new Resend(resendApiKey);
+      const baseUrl = Deno.env.get("SUPABASE_URL")?.replace(".supabase.co", ".lovable.app");
+      
+      await resend.emails.send({
+        from: "ServiceGrid <noreply@resend.dev>",
+        to: [business.email],
+        subject: `${customerName || customerEmail} just logged into their portal`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>🎉 New Portal Login</h2>
+            <p>Great news! <strong>${customerName || "A customer"}</strong> (${customerEmail}) has successfully logged into their customer portal for the first time.</p>
+            <p>They now have access to:</p>
+            <ul>
+              <li>View and approve quotes</li>
+              <li>Pay invoices online</li>
+              <li>Request service appointments</li>
+              <li>Track job progress</li>
+            </ul>
+            <a href="${baseUrl}/customers/${customerId}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              View Customer
+            </a>
+            <p style="color: #666; font-size: 14px;">— ${business.name || "ServiceGrid"}</p>
+          </div>
+        `,
+      });
+      console.log(`[portal-auth] First login notification email sent to ${business.email}`);
+    } catch (emailError) {
+      console.error("[portal-auth] Failed to send first login email:", emailError);
+    }
+  }
 }
 
 function successResponse(data: any) {

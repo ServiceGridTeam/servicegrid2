@@ -7,7 +7,8 @@ export type NotificationType =
   | "job" 
   | "team" 
   | "geofence"
-  | "timesheet";
+  | "timesheet"
+  | "portal";
 
 export interface CreateNotificationParams {
   userId: string;
@@ -28,6 +29,7 @@ const TYPE_TO_PREF: Record<NotificationType, string> = {
   team: "inapp_team_activity",
   geofence: "inapp_geofence_alerts",
   timesheet: "inapp_timesheet_activity",
+  portal: "inapp_portal_activity",
 };
 
 export async function createNotification(
