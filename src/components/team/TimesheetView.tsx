@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -11,11 +12,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTimeEntriesForDateRange, TimeEntryWithDetails } from "@/hooks/useTimeEntries";
-import { useTeamMembers } from "@/hooks/useTeamManagement";
+import { useTeamMembers, useCanManageTeam } from "@/hooks/useTeamManagement";
 import { useOvertimeSettings } from "@/hooks/useOvertimeSettings";
 import { calculateWeeklyOvertime, formatMinutesToHoursDecimal } from "@/hooks/useOvertimeCalculations";
 import { OvertimeBadge } from "./OvertimeBadge";
-import { ChevronLeft, ChevronRight, Download, Clock } from "lucide-react";
+import { TimesheetSubmissionCard } from "./TimesheetSubmissionCard";
+import { ChevronLeft, ChevronRight, Download, Clock, User, Users } from "lucide-react";
 import {
   format,
   startOfWeek,
@@ -36,7 +38,9 @@ function getInitials(firstName: string | null, lastName: string | null): string 
 export function TimesheetView() {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 0 }));
   const [selectedMemberId, setSelectedMemberId] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"my" | "team">("my");
   
+  const { data: canManage } = useCanManageTeam();
   const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
   
@@ -158,6 +162,26 @@ export function TimesheetView() {
 
   return (
     <div className="space-y-6">
+      {/* View Mode Tabs */}
+      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "my" | "team")} className="w-full">
+        <TabsList>
+          <TabsTrigger value="my" className="gap-2">
+            <User className="h-4 w-4" />
+            My Timesheet
+          </TabsTrigger>
+          {canManage && (
+            <TabsTrigger value="team" className="gap-2">
+              <Users className="h-4 w-4" />
+              Team View
+            </TabsTrigger>
+          )}
+        </TabsList>
+
+        <TabsContent value="my" className="mt-6">
+          <TimesheetSubmissionCard />
+        </TabsContent>
+
+        <TabsContent value="team" className="mt-6 space-y-6">
       {/* Controls */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex items-center gap-2">
@@ -358,6 +382,8 @@ export function TimesheetView() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
