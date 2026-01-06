@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LeadScoreBadge } from "./LeadScoreBadge";
 import { DeleteCustomerDialog } from "./DeleteCustomerDialog";
+import { SendPortalInviteDialog } from "./SendPortalInviteDialog";
 import { Customer, useQualifyLead } from "@/hooks/useCustomers";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import {
@@ -42,6 +43,7 @@ import {
   Mail,
   Phone,
   ExternalLink,
+  Send,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -74,6 +76,10 @@ export function CustomerTable({
   const qualifyLead = useQualifyLead();
   const { activeBusinessId } = useBusinessContext();
   const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    customer: Customer | null;
+  }>({ open: false, customer: null });
+  const [inviteDialog, setInviteDialog] = useState<{
     open: boolean;
     customer: Customer | null;
   }>({ open: false, customer: null });
@@ -279,6 +285,15 @@ export function CustomerTable({
                           <ExternalLink className="mr-2 h-4 w-4" />
                           Preview Portal
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setInviteDialog({ open: true, customer });
+                          }}
+                        >
+                          <Send className="mr-2 h-4 w-4" />
+                          Send Portal Invite
+                        </DropdownMenuItem>
                         {customer.lead_status !== "qualified" &&
                           customer.lead_status !== "converted" && (
                             <DropdownMenuItem
@@ -339,6 +354,20 @@ export function CustomerTable({
           open={deleteDialog.open}
           onOpenChange={(open) =>
             setDeleteDialog({ open, customer: open ? deleteDialog.customer : null })
+          }
+        />
+      )}
+
+      {/* Portal Invite Dialog */}
+      {inviteDialog.customer && (
+        <SendPortalInviteDialog
+          customerId={inviteDialog.customer.id}
+          customerName={`${inviteDialog.customer.first_name} ${inviteDialog.customer.last_name}`}
+          customerEmail={inviteDialog.customer.email}
+          businessId={activeBusinessId || ""}
+          open={inviteDialog.open}
+          onOpenChange={(open) =>
+            setInviteDialog({ open, customer: open ? inviteDialog.customer : null })
           }
         />
       )}
