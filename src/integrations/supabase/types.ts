@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      audience_segments: {
+        Row: {
+          business_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          estimated_count: number | null
+          filter_config: Json
+          id: string
+          is_dynamic: boolean | null
+          last_calculated_at: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          estimated_count?: number | null
+          filter_config?: Json
+          id?: string
+          is_dynamic?: boolean | null
+          last_calculated_at?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          estimated_count?: number | null
+          filter_config?: Json
+          id?: string
+          is_dynamic?: boolean | null
+          last_calculated_at?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audience_segments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_rules: {
         Row: {
           action_config: Json | null
@@ -148,6 +198,103 @@ export type Database = {
         }
         Relationships: []
       }
+      campaigns: {
+        Row: {
+          body_html: string
+          body_text: string | null
+          bounced_count: number | null
+          business_id: string
+          clicked_count: number | null
+          complained_count: number | null
+          created_at: string
+          created_by: string | null
+          delivered_count: number | null
+          id: string
+          name: string
+          opened_count: number | null
+          scheduled_at: string | null
+          segment_id: string | null
+          sent_at: string | null
+          sent_count: number | null
+          status: string
+          subject: string
+          template_id: string | null
+          total_recipients: number | null
+          unsubscribed_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          body_html: string
+          body_text?: string | null
+          bounced_count?: number | null
+          business_id: string
+          clicked_count?: number | null
+          complained_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          delivered_count?: number | null
+          id?: string
+          name: string
+          opened_count?: number | null
+          scheduled_at?: string | null
+          segment_id?: string | null
+          sent_at?: string | null
+          sent_count?: number | null
+          status?: string
+          subject: string
+          template_id?: string | null
+          total_recipients?: number | null
+          unsubscribed_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          body_text?: string | null
+          bounced_count?: number | null
+          business_id?: string
+          clicked_count?: number | null
+          complained_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          delivered_count?: number | null
+          id?: string
+          name?: string
+          opened_count?: number | null
+          scheduled_at?: string | null
+          segment_id?: string | null
+          sent_at?: string | null
+          sent_count?: number | null
+          status?: string
+          subject?: string
+          template_id?: string | null
+          total_recipients?: number | null
+          unsubscribed_count?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_campaigns_segment"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "audience_segments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clock_events: {
         Row: {
           accuracy_meters: number | null
@@ -230,8 +377,13 @@ export type Database = {
           company_name: string | null
           created_at: string
           email: string | null
+          email_engagement_score: number | null
+          email_status: string | null
+          email_verified: boolean | null
           first_name: string
           id: string
+          last_email_at: string | null
+          last_email_opened_at: string | null
           last_name: string
           latitude: number | null
           lead_score: number | null
@@ -260,8 +412,13 @@ export type Database = {
           company_name?: string | null
           created_at?: string
           email?: string | null
+          email_engagement_score?: number | null
+          email_status?: string | null
+          email_verified?: boolean | null
           first_name: string
           id?: string
+          last_email_at?: string | null
+          last_email_opened_at?: string | null
           last_name: string
           latitude?: number | null
           lead_score?: number | null
@@ -290,8 +447,13 @@ export type Database = {
           company_name?: string | null
           created_at?: string
           email?: string | null
+          email_engagement_score?: number | null
+          email_status?: string | null
+          email_verified?: boolean | null
           first_name?: string
           id?: string
+          last_email_at?: string | null
+          last_email_opened_at?: string | null
           last_name?: string
           latitude?: number | null
           lead_score?: number | null
@@ -396,6 +558,66 @@ export type Database = {
           },
         ]
       }
+      email_preferences: {
+        Row: {
+          business_id: string
+          created_at: string
+          customer_id: string
+          id: string
+          preference_token: string
+          resubscribed_at: string | null
+          subscribed_marketing: boolean | null
+          subscribed_sequences: boolean | null
+          subscribed_transactional: boolean | null
+          unsubscribe_reason: string | null
+          unsubscribed_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          preference_token?: string
+          resubscribed_at?: string | null
+          subscribed_marketing?: boolean | null
+          subscribed_sequences?: boolean | null
+          subscribed_transactional?: boolean | null
+          unsubscribe_reason?: string | null
+          unsubscribed_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          preference_token?: string
+          resubscribed_at?: string | null
+          subscribed_marketing?: boolean | null
+          subscribed_sequences?: boolean | null
+          subscribed_transactional?: boolean | null
+          unsubscribe_reason?: string | null
+          unsubscribed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_preferences_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_preferences_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_queue: {
         Row: {
           body: string
@@ -445,6 +667,252 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "email_queue_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_sends: {
+        Row: {
+          bounced_at: string | null
+          business_id: string
+          campaign_id: string | null
+          click_count: number | null
+          clicked_at: string | null
+          clicked_links: Json | null
+          complained_at: string | null
+          created_at: string
+          customer_id: string | null
+          delivered_at: string | null
+          email_type: string
+          enrollment_id: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          open_count: number | null
+          opened_at: string | null
+          resend_id: string | null
+          sent_at: string | null
+          sequence_id: string | null
+          status: string
+          step_id: string | null
+          subject: string
+          template_id: string | null
+          to_email: string
+          to_name: string | null
+          unsubscribed_at: string | null
+        }
+        Insert: {
+          bounced_at?: string | null
+          business_id: string
+          campaign_id?: string | null
+          click_count?: number | null
+          clicked_at?: string | null
+          clicked_links?: Json | null
+          complained_at?: string | null
+          created_at?: string
+          customer_id?: string | null
+          delivered_at?: string | null
+          email_type?: string
+          enrollment_id?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          open_count?: number | null
+          opened_at?: string | null
+          resend_id?: string | null
+          sent_at?: string | null
+          sequence_id?: string | null
+          status?: string
+          step_id?: string | null
+          subject: string
+          template_id?: string | null
+          to_email: string
+          to_name?: string | null
+          unsubscribed_at?: string | null
+        }
+        Update: {
+          bounced_at?: string | null
+          business_id?: string
+          campaign_id?: string | null
+          click_count?: number | null
+          clicked_at?: string | null
+          clicked_links?: Json | null
+          complained_at?: string | null
+          created_at?: string
+          customer_id?: string | null
+          delivered_at?: string | null
+          email_type?: string
+          enrollment_id?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          open_count?: number | null
+          opened_at?: string | null
+          resend_id?: string | null
+          sent_at?: string | null
+          sequence_id?: string | null
+          status?: string
+          step_id?: string | null
+          subject?: string
+          template_id?: string | null
+          to_email?: string
+          to_name?: string | null
+          unsubscribed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sends_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "sequence_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "email_sequences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "sequence_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_sequences: {
+        Row: {
+          business_id: string
+          completed_count: number | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          enrollment_count: number | null
+          id: string
+          name: string
+          status: string
+          trigger_config: Json | null
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          completed_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          enrollment_count?: number | null
+          id?: string
+          name: string
+          status?: string
+          trigger_config?: Json | null
+          trigger_type?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          completed_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          enrollment_count?: number | null
+          id?: string
+          name?: string
+          status?: string
+          trigger_config?: Json | null
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sequences_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_templates: {
+        Row: {
+          body_html: string
+          body_text: string | null
+          business_id: string
+          category: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          subject: string
+          updated_at: string
+          variables: Json | null
+        }
+        Insert: {
+          body_html: string
+          body_text?: string | null
+          business_id: string
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          subject: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Update: {
+          body_html?: string
+          body_text?: string | null
+          business_id?: string
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          subject?: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
@@ -1707,6 +2175,149 @@ export type Database = {
           waypoints?: Json
         }
         Relationships: []
+      }
+      sequence_enrollments: {
+        Row: {
+          business_id: string
+          completed_at: string | null
+          created_at: string
+          current_step: number
+          customer_id: string
+          enrolled_at: string
+          exit_reason: string | null
+          id: string
+          metadata: Json | null
+          next_email_at: string | null
+          paused_at: string | null
+          sequence_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number
+          customer_id: string
+          enrolled_at?: string
+          exit_reason?: string | null
+          id?: string
+          metadata?: Json | null
+          next_email_at?: string | null
+          paused_at?: string | null
+          sequence_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number
+          customer_id?: string
+          enrolled_at?: string
+          exit_reason?: string | null
+          id?: string
+          metadata?: Json | null
+          next_email_at?: string | null
+          paused_at?: string | null
+          sequence_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sequence_enrollments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sequence_enrollments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sequence_enrollments_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "email_sequences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sequence_steps: {
+        Row: {
+          body_override_html: string | null
+          business_id: string
+          created_at: string
+          delay_days: number
+          delay_hours: number
+          id: string
+          is_active: boolean | null
+          send_conditions: Json | null
+          sequence_id: string
+          step_order: number
+          subject_override: string | null
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          body_override_html?: string | null
+          business_id: string
+          created_at?: string
+          delay_days?: number
+          delay_hours?: number
+          id?: string
+          is_active?: boolean | null
+          send_conditions?: Json | null
+          sequence_id: string
+          step_order: number
+          subject_override?: string | null
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body_override_html?: string | null
+          business_id?: string
+          created_at?: string
+          delay_days?: number
+          delay_hours?: number
+          id?: string
+          is_active?: boolean | null
+          send_conditions?: Json | null
+          sequence_id?: string
+          step_order?: number
+          subject_override?: string | null
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sequence_steps_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sequence_steps_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "email_sequences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sequence_steps_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_availability: {
         Row: {
