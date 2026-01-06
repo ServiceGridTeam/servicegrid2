@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBusiness } from "./useBusiness";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 
 export type TimeEntry = Tables<"time_entries">;
@@ -379,6 +380,178 @@ export function useDeleteTimeEntry() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["time-entries"] });
+    },
+  });
+}
+
+// Create manual time entry
+export function useCreateManualTimeEntry() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { data: business } = useBusiness();
+  
+  return useMutation({
+    mutationFn: async (params: {
+      jobId: string;
+      clockIn: string;
+      clockOut: string;
+      entryType?: string;
+      notes?: string;
+      reason: string;
+    }) => {
+      if (!user?.id || !business?.id) throw new Error("Not authenticated");
+      
+      const clockInDate = new Date(params.clockIn);
+      const clockOutDate = new Date(params.clockOut);
+      const durationMinutes = Math.floor(
+        (clockOutDate.getTime() - clockInDate.getTime()) / 60000
+      );
+      
+      const { data, error } = await supabase
+        .from("time_entries")
+        .insert({
+          job_id: params.jobId,
+          business_id: business.id,
+          user_id: user.id,
+          clock_in: params.clockIn,
+          clock_out: params.clockOut,
+          duration_minutes: durationMinutes,
+          entry_type: params.entryType || "work",
+          notes: params.notes,
+          is_manual: true,
+          manual_entry_reason: params.reason,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Log the creation as an edit
+      await supabase.from("time_entry_edits").insert([{
+        time_entry_id: data.id,
+        business_id: business.id,
+        edited_by: user.id,
+        edit_reason: params.reason,
+        previous_values: {},
+        new_values: {
+          clock_in: params.clockIn,
+          clock_out: params.clockOut,
+          entry_type: params.entryType || "work",
+          is_manual: true,
+        },
+      }]);
+      
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["time-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+    },
+  });
+}
+
+// Edit time entry with audit logging
+export function useEditTimeEntry() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { data: business } = useBusiness();
+  
+  return useMutation({
+    mutationFn: async (params: {
+      id: string;
+      clockIn?: string;
+      clockOut?: string;
+      notes?: string;
+      entryType?: string;
+      reason: string;
+    }) => {
+      if (!user?.id || !business?.id) throw new Error("Not authenticated");
+      
+      // Get original entry for audit
+      const { data: originalEntry, error: fetchError } = await supabase
+        .from("time_entries")
+        .select("*")
+        .eq("id", params.id)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      const updates: Record<string, unknown> = {
+        edited_at: new Date().toISOString(),
+        edited_by: user.id,
+      };
+      
+      const previousValues: Record<string, unknown> = {};
+      const newValues: Record<string, unknown> = {};
+      
+      if (params.clockIn && params.clockIn !== originalEntry.clock_in) {
+        previousValues.clock_in = originalEntry.clock_in;
+        newValues.clock_in = params.clockIn;
+        updates.clock_in = params.clockIn;
+      }
+      
+      if (params.clockOut && params.clockOut !== originalEntry.clock_out) {
+        previousValues.clock_out = originalEntry.clock_out;
+        newValues.clock_out = params.clockOut;
+        updates.clock_out = params.clockOut;
+      }
+      
+      if (params.notes !== undefined && params.notes !== originalEntry.notes) {
+        previousValues.notes = originalEntry.notes;
+        newValues.notes = params.notes;
+        updates.notes = params.notes;
+      }
+      
+      if (params.entryType && params.entryType !== originalEntry.entry_type) {
+        previousValues.entry_type = originalEntry.entry_type;
+        newValues.entry_type = params.entryType;
+        updates.entry_type = params.entryType;
+      }
+      
+      // Recalculate duration if times changed
+      if (updates.clock_in || updates.clock_out) {
+        const clockIn = new Date((updates.clock_in as string) || originalEntry.clock_in);
+        const clockOut = updates.clock_out 
+          ? new Date(updates.clock_out as string)
+          : originalEntry.clock_out 
+            ? new Date(originalEntry.clock_out) 
+            : null;
+        
+        if (clockOut) {
+          updates.duration_minutes = Math.floor(
+            (clockOut.getTime() - clockIn.getTime()) / 60000
+          );
+        }
+      }
+      
+      // Update the entry
+      const { data, error } = await supabase
+        .from("time_entries")
+        .update(updates)
+        .eq("id", params.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Log the edit
+      if (Object.keys(previousValues).length > 0) {
+        await supabase.from("time_entry_edits").insert([{
+          time_entry_id: params.id,
+          business_id: business.id,
+          edited_by: user.id,
+          edit_reason: params.reason,
+          previous_values: previousValues as unknown as Record<string, string | null>,
+          new_values: newValues as unknown as Record<string, string | null>,
+        }]);
+      }
+      
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["time-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["time-entry-edits"] });
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
     },
   });
 }
