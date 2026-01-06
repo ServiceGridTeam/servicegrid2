@@ -62,3 +62,15 @@ verify_jwt = true
 
 [functions.send-delay-notification]
 verify_jwt = false
+
+[functions.notify-quote-approved]
+verify_jwt = false
+
+[functions.notify-job-assigned]
+verify_jwt = false
+
+[functions.notify-job-status-changed]
+verify_jwt = false
+
+[functions.notify-team-member-joined]
+verify_jwt = false
