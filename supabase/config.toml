@@ -101,3 +101,9 @@ verify_jwt = false
 
 [functions.compute-segment-counts]
 verify_jwt = false
+
+[functions.generate-pay-periods]
+verify_jwt = true
+
+[functions.export-payroll]
+verify_jwt = true

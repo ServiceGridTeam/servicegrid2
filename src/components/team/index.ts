@@ -1,4 +1,6 @@
 export { TeamDashboard } from "./TeamDashboard";
+export { PayPeriodSettings } from "./PayPeriodSettings";
+export { PayrollExportDialog } from "./PayrollExportDialog";
 export { TimesheetView } from "./TimesheetView";
 export { TimeEntriesTable } from "./TimeEntriesTable";
 export { OvertimeBadge } from "./OvertimeBadge";

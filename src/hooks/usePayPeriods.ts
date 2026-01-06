@@ -2,8 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBusiness } from "./useBusiness";
-import type { Tables, TablesInsert } from "@/integrations/supabase/types";
-import { startOfWeek, endOfWeek, addWeeks, addDays, format } from "date-fns";
+import { format } from "date-fns";
+import type { Tables } from "@/integrations/supabase/types";
 
 export type PayPeriod = Tables<"pay_periods">;
 
@@ -74,10 +74,9 @@ export function usePayPeriod(payPeriodId: string | undefined) {
   });
 }
 
-// Generate pay period(s)
+// Generate pay period(s) via edge function
 export function useGeneratePayPeriod() {
   const queryClient = useQueryClient();
-  const { data: business } = useBusiness();
   
   return useMutation({
     mutationFn: async (params: {
@@ -85,70 +84,16 @@ export function useGeneratePayPeriod() {
       startDate?: Date;
       count?: number;
     }) => {
-      if (!business?.id) throw new Error("No business found");
-      
-      const periodType = params.periodType || "weekly";
-      const count = params.count || 1;
-      const periods: TablesInsert<"pay_periods">[] = [];
-      
-      // Find the last pay period to continue from
-      const { data: lastPeriod } = await supabase
-        .from("pay_periods")
-        .select("end_date")
-        .eq("business_id", business.id)
-        .order("end_date", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      
-      let startDate = params.startDate 
-        ? new Date(params.startDate)
-        : lastPeriod 
-          ? addDays(new Date(lastPeriod.end_date), 1)
-          : startOfWeek(new Date(), { weekStartsOn: 0 });
-      
-      for (let i = 0; i < count; i++) {
-        let endDate: Date;
-        
-        switch (periodType) {
-          case "weekly":
-            endDate = addDays(startDate, 6);
-            break;
-          case "biweekly":
-            endDate = addDays(startDate, 13);
-            break;
-          case "semimonthly":
-            // 1-15 or 16-end of month
-            if (startDate.getDate() <= 15) {
-              endDate = new Date(startDate.getFullYear(), startDate.getMonth(), 15);
-            } else {
-              endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
-            }
-            break;
-          case "monthly":
-            endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
-            break;
-          default:
-            endDate = addDays(startDate, 6);
-        }
-        
-        periods.push({
-          business_id: business.id,
-          period_type: periodType,
-          start_date: format(startDate, "yyyy-MM-dd"),
-          end_date: format(endDate, "yyyy-MM-dd"),
-          status: "open",
-        });
-        
-        startDate = addDays(endDate, 1);
-      }
-      
-      const { data, error } = await supabase
-        .from("pay_periods")
-        .insert(periods)
-        .select();
+      const { data, error } = await supabase.functions.invoke("generate-pay-periods", {
+        body: {
+          periodType: params.periodType || "weekly",
+          startDate: params.startDate?.toISOString().split("T")[0],
+          count: params.count || 1,
+        },
+      });
       
       if (error) throw error;
-      return data;
+      return data.periods;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pay-periods"] });
