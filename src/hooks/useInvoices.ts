@@ -21,6 +21,7 @@ export type InvoiceWithDetails = Invoice & {
 interface UseInvoicesOptions {
   search?: string;
   status?: string;
+  customerId?: string;
 }
 
 export function useInvoices(options?: UseInvoicesOptions) {
@@ -34,6 +35,10 @@ export function useInvoices(options?: UseInvoicesOptions) {
           customer:customers(first_name, last_name, email, phone)
         `)
         .order("created_at", { ascending: false });
+
+      if (options?.customerId) {
+        query = query.eq("customer_id", options.customerId);
+      }
 
       if (options?.search) {
         query = query.or(

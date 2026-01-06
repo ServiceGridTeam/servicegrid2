@@ -14,11 +14,12 @@ export type QuoteWithDetails = QuoteWithCustomer & {
 interface UseQuotesOptions {
   search?: string;
   status?: string;
+  customerId?: string;
 }
 
 export function useQuotes(options?: UseQuotesOptions) {
   return useQuery({
-    queryKey: ["quotes", options?.search, options?.status],
+    queryKey: ["quotes", options?.search, options?.status, options?.customerId],
     queryFn: async () => {
       let query = supabase
         .from("quotes")
@@ -27,6 +28,10 @@ export function useQuotes(options?: UseQuotesOptions) {
           customer:customers(*)
         `)
         .order("created_at", { ascending: false });
+
+      if (options?.customerId) {
+        query = query.eq("customer_id", options.customerId);
+      }
 
       if (options?.search) {
         query = query.or(`quote_number.ilike.%${options.search}%,title.ilike.%${options.search}%`);

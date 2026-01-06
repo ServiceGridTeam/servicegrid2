@@ -12,10 +12,18 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { LeadScoreBadge } from "@/components/customers/LeadScoreBadge";
 import { DeleteCustomerDialog } from "@/components/customers/DeleteCustomerDialog";
+import { CustomerInvoiceTable } from "@/components/customers/CustomerInvoiceTable";
+import { QuoteTable } from "@/components/quotes/QuoteTable";
+import { JobTable } from "@/components/jobs/JobTable";
+import { JobDetailSheet } from "@/components/jobs/JobDetailSheet";
+import { JobFormDialog } from "@/components/jobs/JobFormDialog";
 import { useCustomer, useQualifyLead } from "@/hooks/useCustomers";
+import { useQuotes } from "@/hooks/useQuotes";
+import { useJobs, type JobWithCustomer } from "@/hooks/useJobs";
+import { useInvoices } from "@/hooks/useInvoices";
 import {
   ArrowLeft,
   Pencil,
@@ -41,6 +49,15 @@ export default function CustomerDetail() {
   const { data: customer, isLoading } = useCustomer(id);
   const qualifyLead = useQualifyLead();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  
+  // Fetch related data
+  const { data: quotes, isLoading: quotesLoading } = useQuotes({ customerId: id });
+  const { data: jobs, isLoading: jobsLoading } = useJobs({ customerId: id });
+  const { data: invoices, isLoading: invoicesLoading } = useInvoices({ customerId: id });
+  
+  // Job interaction state
+  const [selectedJob, setSelectedJob] = useState<JobWithCustomer | null>(null);
+  const [editJob, setEditJob] = useState<JobWithCustomer | null>(null);
 
   if (isLoading) {
     return (
@@ -186,13 +203,42 @@ export default function CustomerDetail() {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="quotes">Quotes</TabsTrigger>
-          <TabsTrigger value="jobs">Jobs</TabsTrigger>
-          <TabsTrigger value="invoices">Invoices</TabsTrigger>
+          <TabsTrigger value="quotes">
+            Quotes {quotes?.length ? `(${quotes.length})` : ""}
+          </TabsTrigger>
+          <TabsTrigger value="jobs">
+            Jobs {jobs?.length ? `(${jobs.length})` : ""}
+          </TabsTrigger>
+          <TabsTrigger value="invoices">
+            Invoices {invoices?.length ? `(${invoices.length})` : ""}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
+            {/* Activity Summary */}
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle className="text-lg">Activity Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-2xl font-bold">{quotes?.length ?? 0}</p>
+                    <p className="text-sm text-muted-foreground">Quotes</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{jobs?.length ?? 0}</p>
+                    <p className="text-sm text-muted-foreground">Jobs</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{invoices?.length ?? 0}</p>
+                    <p className="text-sm text-muted-foreground">Invoices</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Contact Information */}
             <Card>
               <CardHeader>
@@ -345,57 +391,91 @@ export default function CustomerDetail() {
         </TabsContent>
 
         <TabsContent value="quotes">
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="font-semibold text-lg mb-1">No quotes yet</h3>
-              <p className="text-muted-foreground mb-4 max-w-sm">
-                Create your first quote for this customer.
-              </p>
-              <Button asChild>
-                <Link to={`/quotes/new?customer=${customer.id}`}>
-                  <FileText className="mr-2 h-4 w-4" />
-                  Create Quote
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+          {quotesLoading ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : quotes && quotes.length > 0 ? (
+            <QuoteTable quotes={quotes} isLoading={false} />
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="font-semibold text-lg mb-1">No quotes yet</h3>
+                <p className="text-muted-foreground mb-4 max-w-sm">
+                  Create your first quote for this customer.
+                </p>
+                <Button asChild>
+                  <Link to={`/quotes/new?customer=${customer.id}`}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Create Quote
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="jobs">
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="font-semibold text-lg mb-1">No jobs yet</h3>
-              <p className="text-muted-foreground mb-4 max-w-sm">
-                Schedule your first job for this customer.
-              </p>
-              <Button asChild>
-                <Link to={`/jobs/new?customer=${customer.id}`}>
-                  <Briefcase className="mr-2 h-4 w-4" />
-                  Create Job
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+          {jobsLoading ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : jobs && jobs.length > 0 ? (
+            <JobTable
+              jobs={jobs}
+              onViewJob={(job) => setSelectedJob(job)}
+              onEditJob={(job) => setEditJob(job)}
+            />
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="font-semibold text-lg mb-1">No jobs yet</h3>
+                <p className="text-muted-foreground mb-4 max-w-sm">
+                  Schedule your first job for this customer.
+                </p>
+                <Button asChild>
+                  <Link to={`/jobs/new?customer=${customer.id}`}>
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Create Job
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="invoices">
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <Receipt className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="font-semibold text-lg mb-1">No invoices yet</h3>
-              <p className="text-muted-foreground mb-4 max-w-sm">
-                Create your first invoice for this customer.
-              </p>
-              <Button asChild>
-                <Link to={`/invoices/new?customer=${customer.id}`}>
-                  <Receipt className="mr-2 h-4 w-4" />
-                  Create Invoice
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+          {invoicesLoading ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : invoices && invoices.length > 0 ? (
+            <CustomerInvoiceTable invoices={invoices} />
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <Receipt className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="font-semibold text-lg mb-1">No invoices yet</h3>
+                <p className="text-muted-foreground mb-4 max-w-sm">
+                  Create your first invoice for this customer.
+                </p>
+                <Button asChild>
+                  <Link to={`/invoices/new?customer=${customer.id}`}>
+                    <Receipt className="mr-2 h-4 w-4" />
+                    Create Invoice
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 
@@ -406,6 +486,24 @@ export default function CustomerDetail() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onSuccess={() => navigate("/customers")}
+      />
+
+      {/* Job Detail Sheet */}
+      <JobDetailSheet
+        job={selectedJob}
+        open={!!selectedJob}
+        onOpenChange={(open) => !open && setSelectedJob(null)}
+        onEdit={(job) => {
+          setSelectedJob(null);
+          setEditJob(job);
+        }}
+      />
+
+      {/* Job Edit Dialog */}
+      <JobFormDialog
+        job={editJob}
+        open={!!editJob}
+        onOpenChange={(open) => !open && setEditJob(null)}
       />
     </div>
   );
