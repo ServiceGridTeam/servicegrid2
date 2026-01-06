@@ -64,7 +64,7 @@ export function TeamMemberRow({
   const handleRoleChange = async (newRole: AppRole) => {
     setIsUpdating(true);
     try {
-      await updateRole.mutateAsync({ userId: member.id, newRole });
+      await updateRole.mutateAsync({ membershipId: member.membershipId, newRole });
       toast({ title: "Role updated successfully" });
     } catch (error: any) {
       toast({
@@ -79,7 +79,7 @@ export function TeamMemberRow({
 
   const handleRemove = async () => {
     try {
-      await removeMember.mutateAsync(member.id);
+      await removeMember.mutateAsync(member.membershipId);
       toast({ title: "Team member removed" });
     } catch (error: any) {
       toast({

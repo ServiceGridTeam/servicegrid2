@@ -1,4 +1,6 @@
+import { useMemo, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
@@ -36,6 +38,16 @@ export function AppSidebar() {
 
   const totalPendingCount = (pendingRequestsCount || 0) + (pendingModificationsCount || 0);
 
+  // Track previous role for animation key
+  const prevRoleRef = useRef(activeRole);
+  const navKey = useMemo(() => {
+    if (activeRole !== prevRoleRef.current) {
+      prevRoleRef.current = activeRole;
+      return `nav-${activeRole}-${Date.now()}`;
+    }
+    return `nav-${activeRole}`;
+  }, [activeRole]);
+
   const isActive = (path: string) => {
     // Handle dashboard/root path specially
     if (path === "/") {
@@ -56,6 +68,23 @@ export function AppSidebar() {
 
   const roleConfig = activeRole ? ROLE_CONFIG[activeRole] : null;
 
+  // Animation variants for staggered nav items
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.03,
+        delayChildren: 0.05,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, x: -10 },
+    visible: { opacity: 1, x: 0 },
+  };
+
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
       <SidebarHeader className="border-b border-sidebar-border p-4">
@@ -65,61 +94,90 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div className="flex flex-col overflow-hidden">
-              <span className="font-semibold text-sidebar-foreground truncate tracking-tight">
-                {activeBusinessName || "ServiceGrid"}
-              </span>
-              {roleConfig && (
-                <span className="text-xs text-muted-foreground truncate">
-                  {roleConfig.label}
-                </span>
-              )}
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={activeBusinessName || "default"}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className="font-semibold text-sidebar-foreground truncate tracking-tight"
+                >
+                  {activeBusinessName || "ServiceGrid"}
+                </motion.span>
+              </AnimatePresence>
+              <AnimatePresence mode="wait">
+                {roleConfig && (
+                  <motion.span
+                    key={activeRole}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.15 }}
+                    className="text-xs text-muted-foreground truncate"
+                  >
+                    {roleConfig.label}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </div>
           )}
         </div>
       </SidebarHeader>
 
       <SidebarContent>
-        {navGroups.map((group) => (
-          <SidebarGroup key={group.label}>
-            <SidebarGroupLabel className="text-muted-foreground text-xs tracking-wide uppercase">
-              {collapsed ? "" : group.label}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive(item.url)}
-                      tooltip={item.title}
-                      className={isActive(item.url)
-                        ? "bg-foreground/10 text-foreground border-l-2 border-foreground"
-                        : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                      }
-                    >
-                      <NavLink
-                        to={item.url === "/" ? "/dashboard" : item.url}
-                        className="flex items-center gap-3"
-                        activeClassName=""
-                      >
-                        <item.icon className={`h-4 w-4 shrink-0 ${isActive(item.url) ? "text-foreground" : ""}`} />
-                        {!collapsed && <span>{item.title}</span>}
-                        {!collapsed && item.url === "/requests" && totalPendingCount > 0 && (
-                          <Badge variant="destructive" className="ml-auto h-5 min-w-5 px-1 text-xs">
-                            {totalPendingCount > 99 ? "99+" : totalPendingCount}
-                          </Badge>
-                        )}
-                        {!collapsed && isActive(item.url) && item.url !== "/requests" && (
-                          <ChevronRight className="ml-auto h-4 w-4 text-foreground" />
-                        )}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={navKey}
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+          >
+            {navGroups.map((group) => (
+              <SidebarGroup key={group.label}>
+                <SidebarGroupLabel className="text-muted-foreground text-xs tracking-wide uppercase">
+                  {collapsed ? "" : group.label}
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {group.items.map((item, index) => (
+                      <motion.div key={item.title} variants={itemVariants}>
+                        <SidebarMenuItem>
+                          <SidebarMenuButton
+                            asChild
+                            isActive={isActive(item.url)}
+                            tooltip={item.title}
+                            className={isActive(item.url)
+                              ? "bg-foreground/10 text-foreground border-l-2 border-foreground"
+                              : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                            }
+                          >
+                            <NavLink
+                              to={item.url === "/" ? "/dashboard" : item.url}
+                              className="flex items-center gap-3"
+                              activeClassName=""
+                            >
+                              <item.icon className={`h-4 w-4 shrink-0 ${isActive(item.url) ? "text-foreground" : ""}`} />
+                              {!collapsed && <span>{item.title}</span>}
+                              {!collapsed && item.url === "/requests" && totalPendingCount > 0 && (
+                                <Badge variant="destructive" className="ml-auto h-5 min-w-5 px-1 text-xs">
+                                  {totalPendingCount > 99 ? "99+" : totalPendingCount}
+                                </Badge>
+                              )}
+                              {!collapsed && isActive(item.url) && item.url !== "/requests" && (
+                                <ChevronRight className="ml-auto h-4 w-4 text-foreground" />
+                              )}
+                            </NavLink>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      </motion.div>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))}
+          </motion.div>
+        </AnimatePresence>
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-3">

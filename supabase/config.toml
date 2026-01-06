@@ -110,3 +110,6 @@ verify_jwt = true
 
 [functions.notify-timesheet-event]
 verify_jwt = true
+
+[functions.membership-management]
+verify_jwt = false
