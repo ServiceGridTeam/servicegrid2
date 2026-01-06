@@ -78,7 +78,7 @@ export function PhoneIntegrationLogs({ integrationId, open, onOpenChange }: Phon
   const [page, setPage] = useState(0);
   const pageSize = 25;
 
-  const { data: logs, isLoading, refetch, isFetching } = usePhoneIntegrationLogs(integrationId, 500);
+  const { data: logs, isLoading, refetch, isFetching, isConnected } = usePhoneIntegrationLogs(integrationId, 500);
   const { data: stats } = usePhoneIntegrationStats(integrationId);
 
   // Filter logs
@@ -156,6 +156,13 @@ export function PhoneIntegrationLogs({ integrationId, open, onOpenChange }: Phon
             >
               <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
             </Button>
+
+            {isConnected && (
+              <span className="flex items-center gap-1.5 text-xs text-green-600">
+                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                Live
+              </span>
+            )}
 
             <span className="text-sm text-muted-foreground ml-auto">
               {filteredLogs.length} logs

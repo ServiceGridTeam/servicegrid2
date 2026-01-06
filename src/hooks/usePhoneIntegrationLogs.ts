@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "./useProfile";
 
@@ -25,10 +26,13 @@ export interface LogStats {
 }
 
 /**
- * Fetch API logs for a phone integration
+ * Fetch API logs for a phone integration with realtime updates
  */
 export function usePhoneIntegrationLogs(integrationId: string | undefined, limit = 100) {
-  return useQuery({
+  const queryClient = useQueryClient();
+  const [isConnected, setIsConnected] = useState(false);
+
+  const query = useQuery({
     queryKey: ["phone-integration-logs", integrationId, limit],
     queryFn: async () => {
       if (!integrationId) return [];
@@ -44,8 +48,48 @@ export function usePhoneIntegrationLogs(integrationId: string | undefined, limit
       return (data || []) as PhoneIntegrationLog[];
     },
     enabled: !!integrationId,
-    refetchInterval: 30000, // Refresh every 30 seconds
   });
+
+  // Subscribe to realtime inserts
+  useEffect(() => {
+    if (!integrationId) return;
+
+    const channel = supabase
+      .channel(`phone-logs-${integrationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "phone_integration_logs",
+          filter: `integration_id=eq.${integrationId}`,
+        },
+        (payload) => {
+          // Add new log to the top of the list
+          queryClient.setQueryData(
+            ["phone-integration-logs", integrationId, limit],
+            (oldData: PhoneIntegrationLog[] | undefined) => {
+              if (!oldData) return [payload.new as PhoneIntegrationLog];
+              // Keep only latest 'limit' entries
+              return [payload.new as PhoneIntegrationLog, ...oldData].slice(0, limit);
+            }
+          );
+          // Also invalidate stats to recalculate
+          queryClient.invalidateQueries({
+            queryKey: ["phone-integration-stats", integrationId],
+          });
+        }
+      )
+      .subscribe((status) => {
+        setIsConnected(status === "SUBSCRIBED");
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [integrationId, limit, queryClient]);
+
+  return { ...query, isConnected };
 }
 
 /**
