@@ -12,7 +12,6 @@ import { useLocation, Link } from "react-router-dom";
 import { GlobalSearch } from "./GlobalSearch";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import { GeofenceAlertBanner } from "@/components/team/GeofenceAlertBanner";
-import { BusinessSwitcher } from "./BusinessSwitcher";
 
 const routeTitles: Record<string, string> = {
   "/": "Dashboard",
@@ -53,8 +52,6 @@ export function AppHeader() {
     <header className="flex h-14 shrink-0 items-center gap-4 border-b bg-background px-4">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="h-6" />
-      
-      <BusinessSwitcher />
 
       <Breadcrumb className="hidden md:flex">
         <BreadcrumbList>
