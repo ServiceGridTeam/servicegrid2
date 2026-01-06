@@ -26,6 +26,7 @@ import RoutesPage from "./pages/Routes";
 import Payments from "./pages/Payments";
 import Team from "./pages/Team";
 import Settings from "./pages/Settings";
+import Requests from "./pages/Requests";
 import NotFound from "./pages/NotFound";
 import PublicQuote from "./pages/PublicQuote";
 import PublicInvoice from "./pages/PublicInvoice";
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="/quotes/:id" element={<QuoteDetail />} />
               <Route path="/quotes/:id/edit" element={<QuoteEdit />} />
               <Route path="/jobs" element={<Jobs />} />
+              <Route path="/requests" element={<Requests />} />
               <Route path="/invoices" element={<Invoices />} />
               <Route path="/invoices/new" element={<InvoiceNew />} />
               <Route path="/invoices/:id" element={<InvoiceDetail />} />
