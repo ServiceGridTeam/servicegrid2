@@ -22,10 +22,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useTimeEntriesForJob, useDeleteTimeEntry, TimeEntry } from "@/hooks/useTimeEntries";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { Trash2 } from "lucide-react";
+import { Trash2, MapPin } from "lucide-react";
 
 interface TimeEntriesTableProps {
   jobId: string;
@@ -99,6 +105,7 @@ export function TimeEntriesTable({ jobId }: TimeEntriesTableProps) {
               <TableHead>Date</TableHead>
               <TableHead>Time</TableHead>
               <TableHead>Duration</TableHead>
+              <TableHead>GPS</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -136,6 +143,32 @@ export function TimeEntriesTable({ jobId }: TimeEntriesTableProps) {
                   <Badge variant="secondary" className="font-mono">
                     {formatDuration(entry.duration_minutes)}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  <TooltipProvider>
+                    {entry.clock_in_latitude && entry.clock_in_longitude ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center justify-center">
+                            <MapPin className="h-4 w-4 text-green-500" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div className="text-xs space-y-1">
+                            <p>Clock In: {Number(entry.clock_in_latitude).toFixed(6)}, {Number(entry.clock_in_longitude).toFixed(6)}</p>
+                            {entry.clock_out_latitude && entry.clock_out_longitude && (
+                              <p>Clock Out: {Number(entry.clock_out_latitude).toFixed(6)}, {Number(entry.clock_out_longitude).toFixed(6)}</p>
+                            )}
+                            {entry.location_accuracy && (
+                              <p className="text-muted-foreground">Accuracy: ±{Math.round(Number(entry.location_accuracy))}m</p>
+                            )}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TooltipProvider>
                 </TableCell>
                 <TableCell>
                   <Button

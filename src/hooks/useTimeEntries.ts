@@ -223,6 +223,12 @@ export function useClockIn() {
       businessId: string;
       entryType?: string;
       notes?: string;
+      // GPS coordinates
+      clockInLatitude?: number;
+      clockInLongitude?: number;
+      locationAccuracy?: number;
+      // Link to clock_events
+      clockInEventId?: string;
     }) => {
       if (!user?.id) throw new Error("Not authenticated");
       
@@ -234,6 +240,10 @@ export function useClockIn() {
           user_id: user.id,
           entry_type: params.entryType || "work",
           notes: params.notes,
+          clock_in_latitude: params.clockInLatitude,
+          clock_in_longitude: params.clockInLongitude,
+          location_accuracy: params.locationAccuracy,
+          clock_in_event_id: params.clockInEventId,
         })
         .select()
         .single();
@@ -256,6 +266,12 @@ export function useClockOut() {
     mutationFn: async (params: { 
       entryId: string;
       notes?: string;
+      // GPS coordinates
+      clockOutLatitude?: number;
+      clockOutLongitude?: number;
+      locationAccuracy?: number;
+      // Link to clock_events
+      clockOutEventId?: string;
     }) => {
       // First get the entry to calculate duration
       const { data: entry, error: fetchError } = await supabase
@@ -276,6 +292,9 @@ export function useClockOut() {
           clock_out: clockOut.toISOString(),
           duration_minutes: durationMinutes,
           notes: params.notes,
+          clock_out_latitude: params.clockOutLatitude,
+          clock_out_longitude: params.clockOutLongitude,
+          clock_out_event_id: params.clockOutEventId,
         })
         .eq("id", params.entryId)
         .select()
