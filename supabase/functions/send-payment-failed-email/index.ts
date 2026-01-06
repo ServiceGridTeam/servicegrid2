@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { notifyBusinessTeam } from "../_shared/notifications.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -210,6 +211,14 @@ Deno.serve(async (req) => {
     }
 
     console.log("Payment failed email sent successfully to:", customer.email);
+
+    // Create in-app notification for team
+    await notifyBusinessTeam(supabase, business.id, {
+      type: "payment",
+      title: "Payment Failed",
+      message: `Payment failed for invoice ${invoice.invoice_number}: ${failure_reason || "Unknown reason"}`,
+      data: { invoiceId: invoice_id, customerId: customer.id },
+    });
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

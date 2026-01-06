@@ -15,6 +15,7 @@ import { Loader2, User, Building2, Bell, CreditCard, CheckCircle, AlertCircle, E
 import { TeamManagement } from "@/components/settings/TeamManagement";
 import { GoogleMapsVerificationCard } from "@/components/settings/GoogleMapsVerificationCard";
 import { GeofenceSettingsCard } from "@/components/settings/GeofenceSettingsCard";
+import { NotificationPreferencesCard } from "@/components/settings/NotificationPreferencesCard";
 export default function Settings() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: business, isLoading: businessLoading } = useBusiness();
@@ -459,19 +460,7 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>
-                Choose how you want to be notified
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Notification settings coming soon.
-              </p>
-            </CardContent>
-          </Card>
+          <NotificationPreferencesCard />
         </TabsContent>
       </Tabs>
     </div>
