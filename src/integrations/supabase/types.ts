@@ -528,6 +528,456 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_account_links: {
+        Row: {
+          business_id: string
+          created_at: string
+          customer_account_id: string
+          customer_id: string
+          id: string
+          is_primary: boolean
+          linked_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          customer_account_id: string
+          customer_id: string
+          id?: string
+          is_primary?: boolean
+          linked_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          customer_account_id?: string
+          customer_id?: string
+          id?: string
+          is_primary?: boolean
+          linked_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_account_links_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_account_links_customer_account_id_fkey"
+            columns: ["customer_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_account_links_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_accounts: {
+        Row: {
+          auth_method: string
+          created_at: string
+          email: string
+          email_verified: boolean
+          email_verified_at: string | null
+          failed_login_attempts: number
+          id: string
+          last_login_at: string | null
+          locked_until: string | null
+          login_count: number
+          password_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          auth_method?: string
+          created_at?: string
+          email: string
+          email_verified?: boolean
+          email_verified_at?: string | null
+          failed_login_attempts?: number
+          id?: string
+          last_login_at?: string | null
+          locked_until?: string | null
+          login_count?: number
+          password_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auth_method?: string
+          created_at?: string
+          email?: string
+          email_verified?: boolean
+          email_verified_at?: string | null
+          failed_login_attempts?: number
+          id?: string
+          last_login_at?: string | null
+          locked_until?: string | null
+          login_count?: number
+          password_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customer_feedback: {
+        Row: {
+          business_id: string
+          comment: string | null
+          created_at: string
+          customer_id: string
+          id: string
+          is_public: boolean
+          job_id: string | null
+          quality_rating: number | null
+          rating: number
+          technician_rating: number | null
+          timeliness_rating: number | null
+        }
+        Insert: {
+          business_id: string
+          comment?: string | null
+          created_at?: string
+          customer_id: string
+          id?: string
+          is_public?: boolean
+          job_id?: string | null
+          quality_rating?: number | null
+          rating: number
+          technician_rating?: number | null
+          timeliness_rating?: number | null
+        }
+        Update: {
+          business_id?: string
+          comment?: string | null
+          created_at?: string
+          customer_id?: string
+          id?: string
+          is_public?: boolean
+          job_id?: string | null
+          quality_rating?: number | null
+          rating?: number
+          technician_rating?: number | null
+          timeliness_rating?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_feedback_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_feedback_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_feedback_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_payment_methods: {
+        Row: {
+          brand: string | null
+          business_id: string
+          created_at: string
+          customer_account_id: string
+          exp_month: number | null
+          exp_year: number | null
+          id: string
+          is_default: boolean
+          last4: string | null
+          stripe_customer_id: string | null
+          stripe_payment_method_id: string
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          business_id: string
+          created_at?: string
+          customer_account_id: string
+          exp_month?: number | null
+          exp_year?: number | null
+          id?: string
+          is_default?: boolean
+          last4?: string | null
+          stripe_customer_id?: string | null
+          stripe_payment_method_id: string
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          business_id?: string
+          created_at?: string
+          customer_account_id?: string
+          exp_month?: number | null
+          exp_year?: number | null
+          id?: string
+          is_default?: boolean
+          last4?: string | null
+          stripe_customer_id?: string | null
+          stripe_payment_method_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_payment_methods_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_payment_methods_customer_account_id_fkey"
+            columns: ["customer_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_portal_invites: {
+        Row: {
+          accepted_at: string | null
+          business_id: string
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          email: string
+          expires_at: string
+          id: string
+          invite_token: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          email: string
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_portal_invites_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_portal_invites_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_portal_sessions: {
+        Row: {
+          active_business_id: string | null
+          active_customer_id: string | null
+          created_at: string
+          customer_account_id: string
+          expires_at: string
+          id: string
+          ip_address: unknown
+          is_revoked: boolean
+          last_active_at: string
+          token: string
+          user_agent: string | null
+        }
+        Insert: {
+          active_business_id?: string | null
+          active_customer_id?: string | null
+          created_at?: string
+          customer_account_id: string
+          expires_at: string
+          id?: string
+          ip_address?: unknown
+          is_revoked?: boolean
+          last_active_at?: string
+          token?: string
+          user_agent?: string | null
+        }
+        Update: {
+          active_business_id?: string | null
+          active_customer_id?: string | null
+          created_at?: string
+          customer_account_id?: string
+          expires_at?: string
+          id?: string
+          ip_address?: unknown
+          is_revoked?: boolean
+          last_active_at?: string
+          token?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_portal_sessions_active_business_id_fkey"
+            columns: ["active_business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_portal_sessions_active_customer_id_fkey"
+            columns: ["active_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_portal_sessions_customer_account_id_fkey"
+            columns: ["customer_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_service_requests: {
+        Row: {
+          business_id: string
+          converted_to_job_id: string | null
+          converted_to_quote_id: string | null
+          created_at: string
+          customer_account_id: string | null
+          customer_id: string
+          decline_reason: string | null
+          description: string
+          id: string
+          photo_urls: string[] | null
+          preferred_dates: Json | null
+          preferred_times: Json | null
+          request_number: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          service_type: string | null
+          status: string
+          updated_at: string
+          urgency: string
+        }
+        Insert: {
+          business_id: string
+          converted_to_job_id?: string | null
+          converted_to_quote_id?: string | null
+          created_at?: string
+          customer_account_id?: string | null
+          customer_id: string
+          decline_reason?: string | null
+          description: string
+          id?: string
+          photo_urls?: string[] | null
+          preferred_dates?: Json | null
+          preferred_times?: Json | null
+          request_number: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_type?: string | null
+          status?: string
+          updated_at?: string
+          urgency?: string
+        }
+        Update: {
+          business_id?: string
+          converted_to_job_id?: string | null
+          converted_to_quote_id?: string | null
+          created_at?: string
+          customer_account_id?: string | null
+          customer_id?: string
+          decline_reason?: string | null
+          description?: string
+          id?: string
+          photo_urls?: string[] | null
+          preferred_dates?: Json | null
+          preferred_times?: Json | null
+          request_number?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_type?: string | null
+          status?: string
+          updated_at?: string
+          urgency?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_service_requests_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_service_requests_converted_to_job_id_fkey"
+            columns: ["converted_to_job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_service_requests_converted_to_quote_id_fkey"
+            columns: ["converted_to_quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_service_requests_customer_account_id_fkey"
+            columns: ["customer_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_service_requests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address_line1: string | null
@@ -546,18 +996,23 @@ export type Database = {
           last_email_at: string | null
           last_email_opened_at: string | null
           last_name: string
+          last_portal_access: string | null
           latitude: number | null
           lead_score: number | null
           lead_status: string | null
           longitude: number | null
           notes: string | null
           phone: string | null
+          portal_enabled: boolean | null
+          portal_notification_prefs: Json | null
           preferred_contact_method: string | null
+          preferred_contact_time: string | null
           preferred_days: Json | null
           preferred_schedule_days: string[] | null
           preferred_schedule_time: string | null
           preferred_time_window: Json | null
           scheduling_notes: string | null
+          sms_opted_in: boolean | null
           source: string | null
           state: string | null
           tags: string[] | null
@@ -581,18 +1036,23 @@ export type Database = {
           last_email_at?: string | null
           last_email_opened_at?: string | null
           last_name: string
+          last_portal_access?: string | null
           latitude?: number | null
           lead_score?: number | null
           lead_status?: string | null
           longitude?: number | null
           notes?: string | null
           phone?: string | null
+          portal_enabled?: boolean | null
+          portal_notification_prefs?: Json | null
           preferred_contact_method?: string | null
+          preferred_contact_time?: string | null
           preferred_days?: Json | null
           preferred_schedule_days?: string[] | null
           preferred_schedule_time?: string | null
           preferred_time_window?: Json | null
           scheduling_notes?: string | null
+          sms_opted_in?: boolean | null
           source?: string | null
           state?: string | null
           tags?: string[] | null
@@ -616,18 +1076,23 @@ export type Database = {
           last_email_at?: string | null
           last_email_opened_at?: string | null
           last_name?: string
+          last_portal_access?: string | null
           latitude?: number | null
           lead_score?: number | null
           lead_status?: string | null
           longitude?: number | null
           notes?: string | null
           phone?: string | null
+          portal_enabled?: boolean | null
+          portal_notification_prefs?: Json | null
           preferred_contact_method?: string | null
+          preferred_contact_time?: string | null
           preferred_days?: Json | null
           preferred_schedule_days?: string[] | null
           preferred_schedule_time?: string | null
           preferred_time_window?: Json | null
           scheduling_notes?: string | null
+          sms_opted_in?: boolean | null
           source?: string | null
           state?: string | null
           tags?: string[] | null
@@ -1285,6 +1750,7 @@ export type Database = {
           business_id: string
           created_at: string
           customer_id: string
+          customer_viewed_at: string | null
           discount_amount: number | null
           due_date: string | null
           id: string
@@ -1303,6 +1769,7 @@ export type Database = {
           tax_rate: number | null
           total: number | null
           updated_at: string
+          view_count: number | null
         }
         Insert: {
           amount_paid?: number | null
@@ -1310,6 +1777,7 @@ export type Database = {
           business_id: string
           created_at?: string
           customer_id: string
+          customer_viewed_at?: string | null
           discount_amount?: number | null
           due_date?: string | null
           id?: string
@@ -1328,6 +1796,7 @@ export type Database = {
           tax_rate?: number | null
           total?: number | null
           updated_at?: string
+          view_count?: number | null
         }
         Update: {
           amount_paid?: number | null
@@ -1335,6 +1804,7 @@ export type Database = {
           business_id?: string
           created_at?: string
           customer_id?: string
+          customer_viewed_at?: string | null
           discount_amount?: number | null
           due_date?: string | null
           id?: string
@@ -1353,6 +1823,7 @@ export type Database = {
           tax_rate?: number | null
           total?: number | null
           updated_at?: string
+          view_count?: number | null
         }
         Relationships: [
           {
@@ -1637,10 +2108,14 @@ export type Database = {
           clock_out_time: string | null
           created_at: string
           customer_id: string
+          customer_photos: string[] | null
+          customer_visible_notes: string | null
           description: string | null
           drive_time_from_previous: number | null
           estimated_arrival: string | null
           estimated_duration_minutes: number | null
+          feedback_received_at: string | null
+          feedback_requested_at: string | null
           geofence_enforcement: string | null
           geofence_expanded_radius_meters: number | null
           geofence_expanded_until: string | null
@@ -1658,6 +2133,7 @@ export type Database = {
           route_sequence: number | null
           scheduled_end: string | null
           scheduled_start: string | null
+          service_request_id: string | null
           state: string | null
           status: string | null
           title: string
@@ -1691,10 +2167,14 @@ export type Database = {
           clock_out_time?: string | null
           created_at?: string
           customer_id: string
+          customer_photos?: string[] | null
+          customer_visible_notes?: string | null
           description?: string | null
           drive_time_from_previous?: number | null
           estimated_arrival?: string | null
           estimated_duration_minutes?: number | null
+          feedback_received_at?: string | null
+          feedback_requested_at?: string | null
           geofence_enforcement?: string | null
           geofence_expanded_radius_meters?: number | null
           geofence_expanded_until?: string | null
@@ -1712,6 +2192,7 @@ export type Database = {
           route_sequence?: number | null
           scheduled_end?: string | null
           scheduled_start?: string | null
+          service_request_id?: string | null
           state?: string | null
           status?: string | null
           title: string
@@ -1745,10 +2226,14 @@ export type Database = {
           clock_out_time?: string | null
           created_at?: string
           customer_id?: string
+          customer_photos?: string[] | null
+          customer_visible_notes?: string | null
           description?: string | null
           drive_time_from_previous?: number | null
           estimated_arrival?: string | null
           estimated_duration_minutes?: number | null
+          feedback_received_at?: string | null
+          feedback_requested_at?: string | null
           geofence_enforcement?: string | null
           geofence_expanded_radius_meters?: number | null
           geofence_expanded_until?: string | null
@@ -1766,6 +2251,7 @@ export type Database = {
           route_sequence?: number | null
           scheduled_end?: string | null
           scheduled_start?: string | null
+          service_request_id?: string | null
           state?: string | null
           status?: string | null
           title?: string
@@ -1810,6 +2296,13 @@ export type Database = {
             columns: ["quote_id"]
             isOneToOne: false
             referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_service_request_id_fkey"
+            columns: ["service_request_id"]
+            isOneToOne: false
+            referencedRelation: "customer_service_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -2259,6 +2752,141 @@ export type Database = {
           },
         ]
       }
+      portal_activity_log: {
+        Row: {
+          action: string
+          business_id: string | null
+          created_at: string
+          customer_account_id: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json | null
+          session_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          business_id?: string | null
+          created_at?: string
+          customer_account_id?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          session_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          business_id?: string | null
+          created_at?: string
+          customer_account_id?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          session_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_activity_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_activity_log_customer_account_id_fkey"
+            columns: ["customer_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_activity_log_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "customer_portal_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portal_settings: {
+        Row: {
+          allow_feedback: boolean
+          allow_invoice_payment: boolean
+          allow_quote_approval: boolean
+          allow_reschedule_requests: boolean
+          allow_service_requests: boolean
+          business_id: string
+          created_at: string
+          id: string
+          is_enabled: boolean
+          logo_url: string | null
+          magic_link_expiry_minutes: number
+          primary_color: string | null
+          require_password_after_first_login: boolean
+          session_duration_hours: number
+          show_job_eta: boolean
+          show_technician_info: boolean
+          updated_at: string
+          welcome_message: string | null
+        }
+        Insert: {
+          allow_feedback?: boolean
+          allow_invoice_payment?: boolean
+          allow_quote_approval?: boolean
+          allow_reschedule_requests?: boolean
+          allow_service_requests?: boolean
+          business_id: string
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          logo_url?: string | null
+          magic_link_expiry_minutes?: number
+          primary_color?: string | null
+          require_password_after_first_login?: boolean
+          session_duration_hours?: number
+          show_job_eta?: boolean
+          show_technician_info?: boolean
+          updated_at?: string
+          welcome_message?: string | null
+        }
+        Update: {
+          allow_feedback?: boolean
+          allow_invoice_payment?: boolean
+          allow_quote_approval?: boolean
+          allow_reschedule_requests?: boolean
+          allow_service_requests?: boolean
+          business_id?: string
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          logo_url?: string | null
+          magic_link_expiry_minutes?: number
+          primary_color?: string | null
+          require_password_after_first_login?: boolean
+          session_duration_hours?: number
+          show_job_eta?: boolean
+          show_technician_info?: boolean
+          updated_at?: string
+          welcome_message?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_settings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           active_business_id: string | null
@@ -2398,8 +3026,11 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           business_id: string
+          change_request_notes: string | null
+          change_requested_at: string | null
           created_at: string
           customer_id: string
+          customer_viewed_at: string | null
           discount_amount: number | null
           id: string
           internal_notes: string | null
@@ -2422,8 +3053,11 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           business_id: string
+          change_request_notes?: string | null
+          change_requested_at?: string | null
           created_at?: string
           customer_id: string
+          customer_viewed_at?: string | null
           discount_amount?: number | null
           id?: string
           internal_notes?: string | null
@@ -2446,8 +3080,11 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           business_id?: string
+          change_request_notes?: string | null
+          change_requested_at?: string | null
           created_at?: string
           customer_id?: string
+          customer_viewed_at?: string | null
           discount_amount?: number | null
           id?: string
           internal_notes?: string | null
@@ -3315,6 +3952,18 @@ export type Database = {
         Args: { p_entry_id: string }
         Returns: number
       }
+      generate_service_request_number: {
+        Args: { bus_id: string }
+        Returns: string
+      }
+      get_customer_account_businesses: {
+        Args: { account_id: string }
+        Returns: {
+          business_id: string
+          customer_id: string
+          is_primary: boolean
+        }[]
+      }
       get_user_business_id: { Args: never; Returns: string }
       get_user_business_ids: { Args: { p_user_id?: string }; Returns: string[] }
       get_user_role_in_business: {
@@ -3373,6 +4022,10 @@ export type Database = {
       validate_geofence: {
         Args: { p_job_id: string; p_worker_lat: number; p_worker_lng: number }
         Returns: Json
+      }
+      validate_portal_session: {
+        Args: { session_token: string }
+        Returns: string
       }
     }
     Enums: {
