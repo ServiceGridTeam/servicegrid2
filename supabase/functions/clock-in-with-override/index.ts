@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { notifyBusinessTeam } from "../_shared/notifications.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -171,6 +172,27 @@ Deno.serve(async (req) => {
       })
       .select()
       .single();
+
+    // Notify business team about the override
+    const workerName = profile.first_name && profile.last_name 
+      ? `${profile.first_name} ${profile.last_name}`.trim()
+      : "A worker";
+    const eventLabel = eventType === "clock_in" ? "in" : "out";
+    const distanceFeet = Math.round(distanceMeters * 3.28084);
+    
+    await notifyBusinessTeam(supabase, profile.business_id, {
+      type: "geofence",
+      title: "Geofence Override",
+      message: `${workerName} clocked ${eventLabel} with override (${distanceFeet}ft from site)`,
+      data: {
+        jobId,
+        clockEventId: clockEvent.id,
+        alertId: alert?.id,
+        distance: distanceMeters,
+        reason,
+        userId: user.id,
+      },
+    });
 
     // Create or update time_entry to link with clock_event
     let timeEntryId: string | null = null;

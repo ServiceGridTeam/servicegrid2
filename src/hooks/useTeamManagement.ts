@@ -338,11 +338,27 @@ export function useAcceptInvite() {
       });
 
       if (error) throw error;
-      return data;
+      return data as { success: boolean; business_id: string; role: string };
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       queryClient.invalidateQueries({ queryKey: ["business"] });
+
+      // Notify team about new member
+      if (data?.success && data.business_id) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          await supabase.functions.invoke("notify-team-member-joined", {
+            body: {
+              userId: user?.id,
+              businessId: data.business_id,
+              role: data.role,
+            },
+          });
+        } catch (err) {
+          console.error("Failed to send team member joined notification:", err);
+        }
+      }
     },
   });
 }

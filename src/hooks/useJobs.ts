@@ -182,6 +182,17 @@ export function useUpdateJob() {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: TablesUpdate<"jobs"> & { id: string }) => {
+      // Get current job status to detect status changes
+      let oldStatus: string | null = null;
+      if ("status" in updates) {
+        const { data: currentJob } = await supabase
+          .from("jobs")
+          .select("status")
+          .eq("id", id)
+          .single();
+        oldStatus = currentJob?.status || null;
+      }
+
       const { data, error } = await supabase
         .from("jobs")
         .update(updates)
@@ -207,11 +218,33 @@ export function useUpdateJob() {
         }).catch((err) => console.error("Failed to geocode updated job:", err));
       }
 
-      return data;
+      // Return status change info for notification
+      return { 
+        ...data, 
+        statusChanged: oldStatus !== null && oldStatus !== data.status,
+        oldStatus,
+      };
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
       queryClient.invalidateQueries({ queryKey: ["jobs", data.id] });
+
+      // Send status change notification if status changed
+      if (data.statusChanged && data.oldStatus && data.status) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          await supabase.functions.invoke("notify-job-status-changed", {
+            body: {
+              jobId: data.id,
+              oldStatus: data.oldStatus,
+              newStatus: data.status,
+              changedByUserId: user?.id,
+            },
+          });
+        } catch (err) {
+          console.error("Failed to send job status notification:", err);
+        }
+      }
     },
   });
 }

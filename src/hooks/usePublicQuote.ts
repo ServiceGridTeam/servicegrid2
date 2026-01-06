@@ -89,10 +89,19 @@ export function useApproveQuote() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["public-quote"] });
       queryClient.invalidateQueries({ queryKey: ["quote", data.id] });
       queryClient.invalidateQueries({ queryKey: ["quotes"] });
+
+      // Trigger notification for quote approval
+      try {
+        await supabase.functions.invoke("notify-quote-approved", {
+          body: { quoteId: data.id },
+        });
+      } catch (err) {
+        console.error("Failed to send quote approved notification:", err);
+      }
     },
   });
 }

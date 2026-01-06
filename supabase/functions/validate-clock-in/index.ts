@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { notifyBusinessTeam } from "../_shared/notifications.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,10 +52,10 @@ Deno.serve(async (req) => {
 
     console.log(`Validating ${eventType} for job ${jobId} at ${location.lat}, ${location.lng}`);
 
-    // Get user's business
+    // Get user's profile with name
     const { data: profile } = await supabase
       .from("profiles")
-      .select("business_id")
+      .select("business_id, first_name, last_name")
       .eq("id", user.id)
       .single();
 
@@ -64,6 +65,10 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const workerName = profile.first_name && profile.last_name 
+      ? `${profile.first_name} ${profile.last_name}`.trim()
+      : "A worker";
 
     // Validate geofence using database function
     const { data: validation, error: validationError } = await supabase.rpc(
@@ -144,6 +149,21 @@ Deno.serve(async (req) => {
       });
 
       console.log(`Created geofence alert: ${alertType} at ${validation.distance_meters}m`);
+
+      // Notify business team about geofence breach
+      const eventLabel = eventType === "clock_in" ? "in" : "out";
+      const distanceFeet = Math.round(validation.distance_meters * 3.28084);
+      await notifyBusinessTeam(supabase, profile.business_id, {
+        type: "geofence",
+        title: "Geofence Alert",
+        message: `${workerName} clocked ${eventLabel} ${distanceFeet}ft from job site`,
+        data: {
+          jobId,
+          clockEventId: clockEvent.id,
+          distance: validation.distance_meters,
+          userId: user.id,
+        },
+      });
     }
 
     // Build response message
