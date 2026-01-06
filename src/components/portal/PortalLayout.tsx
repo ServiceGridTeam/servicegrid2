@@ -1,12 +1,17 @@
 import { Outlet, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePortalSession } from '@/hooks/usePortalSession';
+import { usePortalRealtime } from '@/hooks/usePortalRealtime';
 import { PortalHeader } from './PortalHeader';
 import { PortalNav } from './PortalNav';
+import { PortalErrorBoundary } from './PortalErrorBoundary';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function PortalLayout() {
   const { isAuthenticated, isLoading, businesses, activeBusinessId } = usePortalSession();
+  
+  // Enable real-time subscriptions for the portal
+  usePortalRealtime();
 
   // Show skeleton while validating session
   if (isLoading) {
@@ -48,17 +53,19 @@ export function PortalLayout() {
       <PortalNav />
       
       <main className="flex-1 container mx-auto px-4 py-6">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeBusinessId}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-          >
-            <Outlet />
-          </motion.div>
-        </AnimatePresence>
+        <PortalErrorBoundary>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeBusinessId}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
+        </PortalErrorBoundary>
       </main>
 
       <footer className="border-t border-border bg-card py-4">
