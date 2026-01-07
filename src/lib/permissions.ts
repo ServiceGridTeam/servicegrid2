@@ -90,4 +90,9 @@ export const BUSINESS_SCOPED_QUERY_KEYS = [
   'email-sequences',
   'job-requests',
   'job-modification-requests',
+  'reviews',
+  'review-requests',
+  'review-config',
+  'review-request-stats',
+  'technician-leaderboard',
 ] as const;
