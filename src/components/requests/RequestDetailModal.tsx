@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Phone, Globe, Store, User, MapPin, Calendar, Clock } from "lucide-react";
+import { Phone, Globe, Store, User, MapPin, Calendar, Clock, Mail } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -27,6 +27,7 @@ import {
   useUpdateJobRequest,
   useApproveJobRequest,
 } from "@/hooks/useJobRequests";
+import { Link } from "react-router-dom";
 
 interface RequestDetailModalProps {
   request: JobRequest | null;
@@ -35,16 +36,18 @@ interface RequestDetailModalProps {
   onReject: () => void;
 }
 
-const sourceIcons = {
+const sourceIcons: Record<string, typeof Phone> = {
   phone: Phone,
   web: Globe,
   "walk-in": Store,
+  email: Mail,
 };
 
-const sourceLabels = {
+const sourceLabels: Record<string, string> = {
   phone: "Phone",
   web: "Web",
   "walk-in": "Walk-in",
+  email: "Email",
 };
 
 const urgencyOptions: { value: JobRequestUrgency; label: string }[] = [
@@ -333,22 +336,31 @@ export function RequestDetailModal({
           </div>
 
           {/* Source Info */}
-          {request.source_metadata && Object.keys(request.source_metadata).length > 0 && (
+          {(request.source_metadata && Object.keys(request.source_metadata).length > 0) || request.source === "email" ? (
             <>
               <Separator />
               <div>
                 <h3 className="text-sm font-medium mb-3">Source Information</h3>
                 <div className="text-sm text-muted-foreground space-y-1">
-                  {request.source_metadata.handled_by && (
+                  {request.source_metadata?.handled_by && (
                     <p>Handled by: {String(request.source_metadata.handled_by)}</p>
                   )}
-                  {request.source_metadata.call_duration && (
+                  {request.source_metadata?.call_duration && (
                     <p>Call duration: {String(request.source_metadata.call_duration)}</p>
+                  )}
+                  {request.source === "email" && request.source_metadata?.source_email_id && (
+                    <Link
+                      to={`/inbox?email=${request.source_metadata.source_email_id}`}
+                      className="text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      <Mail className="h-3 w-3" />
+                      View source email
+                    </Link>
                   )}
                 </div>
               </div>
             </>
-          )}
+          ) : null}
 
           {/* Scheduling Section (for approval) */}
           {isPending && showSchedule && (
