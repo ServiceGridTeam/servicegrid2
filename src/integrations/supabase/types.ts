@@ -1190,6 +1190,83 @@ export type Database = {
           },
         ]
       }
+      email_connections: {
+        Row: {
+          auto_acknowledge: boolean
+          auto_create_requests: boolean
+          business_id: string
+          classification_threshold: number
+          connection_health: string
+          created_at: string
+          email_address: string
+          encrypted_access_token: string
+          encrypted_refresh_token: string
+          id: string
+          is_active: boolean
+          last_error_at: string | null
+          last_error_message: string | null
+          last_sync_at: string | null
+          last_sync_message_id: string | null
+          poll_interval_seconds: number
+          provider: string
+          sync_errors_count: number
+          token_expires_at: string
+          updated_at: string
+        }
+        Insert: {
+          auto_acknowledge?: boolean
+          auto_create_requests?: boolean
+          business_id: string
+          classification_threshold?: number
+          connection_health?: string
+          created_at?: string
+          email_address: string
+          encrypted_access_token: string
+          encrypted_refresh_token: string
+          id?: string
+          is_active?: boolean
+          last_error_at?: string | null
+          last_error_message?: string | null
+          last_sync_at?: string | null
+          last_sync_message_id?: string | null
+          poll_interval_seconds?: number
+          provider?: string
+          sync_errors_count?: number
+          token_expires_at: string
+          updated_at?: string
+        }
+        Update: {
+          auto_acknowledge?: boolean
+          auto_create_requests?: boolean
+          business_id?: string
+          classification_threshold?: number
+          connection_health?: string
+          created_at?: string
+          email_address?: string
+          encrypted_access_token?: string
+          encrypted_refresh_token?: string
+          id?: string
+          is_active?: boolean
+          last_error_at?: string | null
+          last_error_message?: string | null
+          last_sync_at?: string | null
+          last_sync_message_id?: string | null
+          poll_interval_seconds?: number
+          provider?: string
+          sync_errors_count?: number
+          token_expires_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_connections_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_preferences: {
         Row: {
           business_id: string
@@ -1302,6 +1379,122 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_reply_templates: {
+        Row: {
+          body_html: string | null
+          body_text: string
+          business_id: string
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          subject: string
+          updated_at: string
+          use_for_auto_acknowledge: boolean
+          variables: Json | null
+        }
+        Insert: {
+          body_html?: string | null
+          body_text: string
+          business_id: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          subject: string
+          updated_at?: string
+          use_for_auto_acknowledge?: boolean
+          variables?: Json | null
+        }
+        Update: {
+          body_html?: string | null
+          body_text?: string
+          business_id?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          subject?: string
+          updated_at?: string
+          use_for_auto_acknowledge?: boolean
+          variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_reply_templates_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_rules: {
+        Row: {
+          action: string
+          action_config: Json | null
+          business_id: string
+          conditions: Json
+          connection_id: string | null
+          created_at: string
+          created_from_correction: boolean
+          id: string
+          is_active: boolean
+          last_matched_at: string | null
+          name: string
+          priority: number
+          times_matched: number
+          updated_at: string
+        }
+        Insert: {
+          action?: string
+          action_config?: Json | null
+          business_id: string
+          conditions?: Json
+          connection_id?: string | null
+          created_at?: string
+          created_from_correction?: boolean
+          id?: string
+          is_active?: boolean
+          last_matched_at?: string | null
+          name: string
+          priority?: number
+          times_matched?: number
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          action_config?: Json | null
+          business_id?: string
+          conditions?: Json
+          connection_id?: string | null
+          created_at?: string
+          created_from_correction?: boolean
+          id?: string
+          is_active?: boolean
+          last_matched_at?: string | null
+          name?: string
+          priority?: number
+          times_matched?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_rules_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_rules_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "email_connections"
             referencedColumns: ["id"]
           },
         ]
@@ -1708,6 +1901,125 @@ export type Database = {
           },
         ]
       }
+      inbound_emails: {
+        Row: {
+          ai_extracted_data: Json | null
+          attachments: Json | null
+          body_html: string | null
+          body_text: string | null
+          business_id: string
+          classification: string | null
+          classification_confidence: number | null
+          classification_stage: string
+          classification_tier: string | null
+          classified_at: string | null
+          connection_id: string
+          content_hash: string
+          created_at: string
+          duplicate_of_id: string | null
+          from_address: string
+          from_name: string | null
+          id: string
+          is_duplicate: boolean
+          job_request_id: string | null
+          provider_message_id: string
+          raw_headers: Json | null
+          received_at: string
+          status: string
+          subject: string | null
+          thread_id: string | null
+          to_address: string
+          updated_at: string
+        }
+        Insert: {
+          ai_extracted_data?: Json | null
+          attachments?: Json | null
+          body_html?: string | null
+          body_text?: string | null
+          business_id: string
+          classification?: string | null
+          classification_confidence?: number | null
+          classification_stage?: string
+          classification_tier?: string | null
+          classified_at?: string | null
+          connection_id: string
+          content_hash: string
+          created_at?: string
+          duplicate_of_id?: string | null
+          from_address: string
+          from_name?: string | null
+          id?: string
+          is_duplicate?: boolean
+          job_request_id?: string | null
+          provider_message_id: string
+          raw_headers?: Json | null
+          received_at: string
+          status?: string
+          subject?: string | null
+          thread_id?: string | null
+          to_address: string
+          updated_at?: string
+        }
+        Update: {
+          ai_extracted_data?: Json | null
+          attachments?: Json | null
+          body_html?: string | null
+          body_text?: string | null
+          business_id?: string
+          classification?: string | null
+          classification_confidence?: number | null
+          classification_stage?: string
+          classification_tier?: string | null
+          classified_at?: string | null
+          connection_id?: string
+          content_hash?: string
+          created_at?: string
+          duplicate_of_id?: string | null
+          from_address?: string
+          from_name?: string | null
+          id?: string
+          is_duplicate?: boolean
+          job_request_id?: string | null
+          provider_message_id?: string
+          raw_headers?: Json | null
+          received_at?: string
+          status?: string
+          subject?: string | null
+          thread_id?: string | null
+          to_address?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbound_emails_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_emails_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "email_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_emails_duplicate_of_id_fkey"
+            columns: ["duplicate_of_id"]
+            isOneToOne: false
+            referencedRelation: "inbound_emails"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbound_emails_job_request_id_fkey"
+            columns: ["job_request_id"]
+            isOneToOne: false
+            referencedRelation: "job_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_items: {
         Row: {
           created_at: string
@@ -2004,6 +2316,8 @@ export type Database = {
           reviewed_by: string | null
           service_type: string | null
           source: string
+          source_email_id: string | null
+          source_email_thread_id: string | null
           source_metadata: Json | null
           status: string
           updated_at: string | null
@@ -2029,6 +2343,8 @@ export type Database = {
           reviewed_by?: string | null
           service_type?: string | null
           source: string
+          source_email_id?: string | null
+          source_email_thread_id?: string | null
           source_metadata?: Json | null
           status?: string
           updated_at?: string | null
@@ -2054,6 +2370,8 @@ export type Database = {
           reviewed_by?: string | null
           service_type?: string | null
           source?: string
+          source_email_id?: string | null
+          source_email_thread_id?: string | null
           source_metadata?: Json | null
           status?: string
           updated_at?: string | null
@@ -4034,6 +4352,19 @@ export type Database = {
       calculate_time_entry_labor_cost: {
         Args: { p_entry_id: string }
         Returns: number
+      }
+      check_email_duplicate: {
+        Args: {
+          p_connection_id: string
+          p_content_hash: string
+          p_from_address: string
+          p_thread_id: string
+        }
+        Returns: {
+          duplicate_of_id: string
+          is_duplicate: boolean
+          reason: string
+        }[]
       }
       generate_service_request_number: {
         Args: { bus_id: string }
