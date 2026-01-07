@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { useInboundEmails, useFilteredEmails, useEmailRealtimeUpdates, useUnprocessedEmailCount, useClassifyEmail, useCreateRequestFromEmail, useMarkEmailAsSpam, EmailFilters } from "@/hooks/useInboundEmails";
+import { useInboundEmails, useFilteredEmails, useEmailRealtimeUpdates, useUnprocessedEmailCount, useClassifyEmail, useMarkEmailAsSpam, EmailFilters, InboundEmail } from "@/hooks/useInboundEmails";
 import { EmailRow } from "@/components/email/EmailRow";
+import { ThreadView } from "@/components/email/ThreadView";
+import { RequestPreviewModal } from "@/components/email/RequestPreviewModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,12 +22,13 @@ import { useTriggerEmailSync } from "@/hooks/useEmailConnections";
 export default function Inbox() {
   const [filters, setFilters] = useState<EmailFilters>({});
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedEmail, setSelectedEmail] = useState<InboundEmail | null>(null);
+  const [showRequestPreview, setShowRequestPreview] = useState(false);
   
   const { data: emails, isLoading } = useInboundEmails(filters);
   const { data: unprocessedCount } = useUnprocessedEmailCount();
   const filteredEmails = useFilteredEmails(emails || [], searchTerm);
   const classifyEmail = useClassifyEmail();
-  const createRequest = useCreateRequestFromEmail();
   const { markAsSpam } = useMarkEmailAsSpam();
   const triggerSync = useTriggerEmailSync();
   
@@ -43,16 +46,25 @@ export default function Inbox() {
     classifyEmail.mutate(emailId);
   };
 
-  const handleConvertToRequest = (emailId: string) => {
-    createRequest.mutate({ emailId });
-  };
-
   const handleMarkAsSpam = (emailId: string) => {
     markAsSpam.mutate(emailId);
   };
 
   const handleSync = () => {
     triggerSync.mutate(undefined);
+  };
+
+  const handleViewEmail = (email: InboundEmail) => {
+    setSelectedEmail(email);
+  };
+
+  const handleConvertToRequest = () => {
+    setShowRequestPreview(true);
+  };
+
+  const handleRequestSuccess = () => {
+    setShowRequestPreview(false);
+    setSelectedEmail(null);
   };
 
   if (isLoading) {
@@ -195,15 +207,42 @@ export default function Inbox() {
             <EmailRow
               key={email.id}
               email={email}
-              onSelect={() => {}}
-              onView={() => {}}
-              onConvert={() => handleConvertToRequest(email.id)}
+              onSelect={() => handleViewEmail(email)}
+              onView={() => handleViewEmail(email)}
+              onConvert={() => {
+                setSelectedEmail(email);
+                setShowRequestPreview(true);
+              }}
               onMarkSpam={() => handleMarkAsSpam(email.id)}
               onReclassify={() => handleReclassify(email.id)}
             />
           ))}
         </div>
       )}
+
+      {/* Thread View Sheet */}
+      <ThreadView
+        email={selectedEmail}
+        open={!!selectedEmail && !showRequestPreview}
+        onOpenChange={(open) => !open && setSelectedEmail(null)}
+        onConvertToRequest={handleConvertToRequest}
+        onReclassify={() => selectedEmail && handleReclassify(selectedEmail.id)}
+        onMarkAsSpam={() => {
+          if (selectedEmail) {
+            handleMarkAsSpam(selectedEmail.id);
+            setSelectedEmail(null);
+          }
+        }}
+        isReclassifying={classifyEmail.isPending}
+      />
+
+      {/* Request Preview Modal */}
+      <RequestPreviewModal
+        email={selectedEmail}
+        open={showRequestPreview}
+        onOpenChange={setShowRequestPreview}
+        onSuccess={handleRequestSuccess}
+      />
     </div>
   );
 }

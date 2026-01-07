@@ -253,6 +253,73 @@ Deno.serve(async (req) => {
 
   try {
     // =====================
+    // POST /lookup-customer-by-email
+    // =====================
+    if (method === "POST" && path === "/lookup-customer-by-email") {
+      if (!hasPermission(permissions!, "lookup_customer")) {
+        return await createErrorResponse("PERMISSION_DENIED", "Missing lookup_customer permission", 403);
+      }
+
+      const body = await req.json();
+      const { email } = body;
+
+      if (!email) {
+        return await createErrorResponse("VALIDATION_ERROR", "Email address required", 400);
+      }
+
+      console.log(`[lookup-customer-by-email] Searching for email: ${email}`);
+
+      // Search customers with case-insensitive email match
+      const { data: customers, error: custError } = await supabase
+        .from("customers")
+        .select("id, first_name, last_name, email, phone, address_line1, city, state, zip")
+        .eq("business_id", businessId)
+        .ilike("email", email);
+
+      if (custError) {
+        console.error("[lookup-customer-by-email] Query error:", custError);
+        return await createErrorResponse("INTERNAL_ERROR", "Failed to search customers", 500);
+      }
+
+      const customer = customers?.[0];
+
+      if (!customer) {
+        return await createResponse({ found: false }, 200, "SUCCESS", { found: false });
+      }
+
+      // Get active jobs for this customer
+      const { data: activeJobs } = await supabase
+        .from("jobs")
+        .select("id, job_number, title, status, scheduled_start, scheduled_end, address_line1, city, state, zip")
+        .eq("customer_id", customer.id)
+        .in("status", ["scheduled", "in_progress", "on_hold"])
+        .order("scheduled_start", { ascending: true });
+
+      // Format customer name and address
+      const customerName = `${customer.first_name || ""} ${customer.last_name || ""}`.trim();
+      const customerAddress = [customer.address_line1, customer.city, customer.state, customer.zip]
+        .filter(Boolean)
+        .join(", ");
+
+      return await createResponse({
+        found: true,
+        customer: {
+          id: customer.id,
+          name: customerName,
+          first_name: customer.first_name,
+          last_name: customer.last_name,
+          email: customer.email,
+          phone: customer.phone,
+          address: customerAddress,
+        },
+        active_jobs: (activeJobs || []).map((job: any) => ({
+          ...job,
+          address: [job.address_line1, job.city, job.state, job.zip].filter(Boolean).join(", "),
+        })),
+      }, 200, "SUCCESS", { found: true, active_jobs_count: activeJobs?.length || 0 });
+    }
+
+    // =====================
     // POST /lookup-customer
     // =====================
     if (method === "POST" && path === "/lookup-customer") {

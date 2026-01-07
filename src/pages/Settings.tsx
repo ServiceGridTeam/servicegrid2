@@ -19,7 +19,9 @@ import { NotificationPreferencesCard } from "@/components/settings/NotificationP
 import { PhoneIntegrationCard } from "@/components/settings/PhoneIntegrationCard";
 import { PhoneSettingsForm } from "@/components/settings/PhoneSettingsForm";
 import { EmailBrandingCard } from "@/components/settings/EmailBrandingCard";
-import { EmailConnectionCard } from "@/components/email/EmailConnectionCard";
+import { EmailConnectionCard, EmailRulesManager } from "@/components/email";
+import { useEmailConnections } from "@/hooks/useEmailConnections";
+
 export default function Settings() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: business, isLoading: businessLoading } = useBusiness();
@@ -472,6 +474,10 @@ export default function Settings() {
             </p>
           </div>
           <EmailConnectionCard />
+          
+          <div className="mt-4">
+            <EmailRulesManager />
+          </div>
           
           <div className="mt-6">
             <h2 className="text-lg font-semibold mb-1">Field Operations</h2>
