@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusinessContext } from "./useBusinessContext";
 import { toast } from "sonner";
+import type { Json } from "@/integrations/supabase/types";
 
 export type RuleAction = "classify" | "spam" | "ignore" | "auto_reply";
 export type ConditionOperator = "contains" | "not_contains" | "equals" | "starts_with" | "ends_with";
@@ -31,30 +32,29 @@ export interface EmailRule {
 }
 
 export function useEmailRules() {
-  const { activeBusiness } = useBusinessContext();
-  const businessId = activeBusiness?.id;
+  const { activeBusinessId } = useBusinessContext();
 
   return useQuery({
-    queryKey: ["email-rules", businessId],
+    queryKey: ["email-rules", activeBusinessId],
     queryFn: async () => {
-      if (!businessId) return [];
+      if (!activeBusinessId) return [];
 
       const { data, error } = await supabase
         .from("email_rules")
         .select("*")
-        .eq("business_id", businessId)
+        .eq("business_id", activeBusinessId)
         .order("priority", { ascending: false });
 
       if (error) throw error;
-      return data as EmailRule[];
+      return (data as unknown) as EmailRule[];
     },
-    enabled: !!businessId,
+    enabled: !!activeBusinessId,
   });
 }
 
 export function useCreateEmailRule() {
   const queryClient = useQueryClient();
-  const { activeBusiness } = useBusinessContext();
+  const { activeBusinessId } = useBusinessContext();
 
   return useMutation({
     mutationFn: async (params: {
@@ -65,7 +65,7 @@ export function useCreateEmailRule() {
       priority?: number;
       createdFromCorrection?: boolean;
     }) => {
-      if (!activeBusiness?.id) {
+      if (!activeBusinessId) {
         throw new Error("No active business");
       }
 
@@ -73,23 +73,25 @@ export function useCreateEmailRule() {
       const { data: existingRules } = await supabase
         .from("email_rules")
         .select("priority")
-        .eq("business_id", activeBusiness.id)
+        .eq("business_id", activeBusinessId)
         .order("priority", { ascending: false })
         .limit(1);
 
       const maxPriority = existingRules?.[0]?.priority || 0;
 
+      const insertData = {
+        business_id: activeBusinessId,
+        connection_id: params.connectionId || null,
+        name: params.name,
+        conditions: params.conditions as unknown as Json,
+        action: params.action,
+        priority: params.priority ?? maxPriority + 1,
+        created_from_correction: params.createdFromCorrection || false,
+      };
+
       const { data, error } = await supabase
         .from("email_rules")
-        .insert({
-          business_id: activeBusiness.id,
-          connection_id: params.connectionId || null,
-          name: params.name,
-          conditions: params.conditions,
-          action: params.action,
-          priority: params.priority ?? maxPriority + 1,
-          created_from_correction: params.createdFromCorrection || false,
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -114,12 +116,20 @@ export function useUpdateEmailRule() {
       ruleId: string;
       updates: Partial<Pick<EmailRule, "name" | "conditions" | "action" | "priority" | "is_active">>;
     }) => {
+      const updatePayload: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+      if (params.updates.name !== undefined) updatePayload.name = params.updates.name;
+      if (params.updates.action !== undefined) updatePayload.action = params.updates.action;
+      if (params.updates.priority !== undefined) updatePayload.priority = params.updates.priority;
+      if (params.updates.is_active !== undefined) updatePayload.is_active = params.updates.is_active;
+      if (params.updates.conditions !== undefined) {
+        updatePayload.conditions = params.updates.conditions as unknown as Record<string, unknown>;
+      }
+
       const { data, error } = await supabase
         .from("email_rules")
-        .update({
-          ...params.updates,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq("id", params.ruleId)
         .select()
         .single();

@@ -53,8 +53,8 @@ export interface EmailFilters {
 }
 
 export function useInboundEmails(filters: EmailFilters = {}) {
-  const { activeBusiness } = useBusinessContext();
-  const businessId = activeBusiness?.id;
+  const { activeBusinessId } = useBusinessContext();
+  const businessId = activeBusinessId;
 
   return useQuery({
     queryKey: ["inbound-emails", businessId, filters],
@@ -135,10 +135,10 @@ export function useFilteredEmails(emails: InboundEmail[], searchTerm: string) {
 // Realtime subscription for classification stage updates
 export function useEmailRealtimeUpdates() {
   const queryClient = useQueryClient();
-  const { activeBusiness } = useBusinessContext();
+  const { activeBusinessId } = useBusinessContext();
 
   useEffect(() => {
-    if (!activeBusiness?.id) return;
+    if (!activeBusinessId) return;
 
     const channel = supabase
       .channel("inbound-emails-changes")
@@ -148,7 +148,7 @@ export function useEmailRealtimeUpdates() {
           event: "*",
           schema: "public",
           table: "inbound_emails",
-          filter: `business_id=eq.${activeBusiness.id}`,
+          filter: `business_id=eq.${activeBusinessId}`,
         },
         (payload) => {
           // Invalidate queries to refresh data
@@ -166,12 +166,12 @@ export function useEmailRealtimeUpdates() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeBusiness?.id, queryClient]);
+  }, [activeBusinessId, queryClient]);
 }
 
 export function useUnprocessedEmailCount() {
-  const { activeBusiness } = useBusinessContext();
-  const businessId = activeBusiness?.id;
+  const { activeBusinessId } = useBusinessContext();
+  const businessId = activeBusinessId;
 
   return useQuery({
     queryKey: ["unprocessed-email-count", businessId],
