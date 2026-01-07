@@ -79,6 +79,7 @@ export function RequestFilters({ filters, onFiltersChange }: RequestFiltersProps
         <SelectContent>
           <SelectItem value="all">All Sources</SelectItem>
           <SelectItem value="phone">Phone</SelectItem>
+          <SelectItem value="email">Email</SelectItem>
           <SelectItem value="web">Web</SelectItem>
           <SelectItem value="walk-in">Walk-in</SelectItem>
         </SelectContent>

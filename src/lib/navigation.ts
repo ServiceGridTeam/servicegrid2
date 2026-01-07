@@ -81,6 +81,12 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
     minRole: 'admin',
   },
   {
+    title: 'Inbox',
+    url: '/inbox',
+    icon: Mail,
+    minRole: 'admin',
+  },
+  {
     title: 'Team',
     url: '/team',
     icon: UserCog,

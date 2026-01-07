@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Building2, Bell, CreditCard, CheckCircle, AlertCircle, ExternalLink, Users, Puzzle } from "lucide-react";
+import { Loader2, User, Building2, Bell, CreditCard, CheckCircle, AlertCircle, ExternalLink, Users, Puzzle, Mail } from "lucide-react";
 import { TeamManagement } from "@/components/settings/TeamManagement";
 import { GoogleMapsVerificationCard } from "@/components/settings/GoogleMapsVerificationCard";
 import { GeofenceSettingsCard } from "@/components/settings/GeofenceSettingsCard";
@@ -19,6 +19,7 @@ import { NotificationPreferencesCard } from "@/components/settings/NotificationP
 import { PhoneIntegrationCard } from "@/components/settings/PhoneIntegrationCard";
 import { PhoneSettingsForm } from "@/components/settings/PhoneSettingsForm";
 import { EmailBrandingCard } from "@/components/settings/EmailBrandingCard";
+import { EmailConnectionCard } from "@/components/email/EmailConnectionCard";
 export default function Settings() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: business, isLoading: businessLoading } = useBusiness();
@@ -463,6 +464,14 @@ export default function Settings() {
           </div>
           <PhoneIntegrationCard />
           <PhoneSettingsForm />
+          
+          <div className="mt-6">
+            <h2 className="text-lg font-semibold mb-1">Email Integration</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Connect Gmail to automatically create job requests from customer emails
+            </p>
+          </div>
+          <EmailConnectionCard />
           
           <div className="mt-6">
             <h2 className="text-lg font-semibold mb-1">Field Operations</h2>
