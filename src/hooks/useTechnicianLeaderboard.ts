@@ -25,8 +25,8 @@ export interface TechnicianStats {
 }
 
 export function useTechnicianLeaderboard() {
-  const { activeBusiness } = useBusinessContext();
-  const businessId = activeBusiness?.id;
+  const { activeBusinessId } = useBusinessContext();
+  const businessId = activeBusinessId;
 
   return useQuery({
     queryKey: ['technician-leaderboard', businessId],
@@ -55,8 +55,8 @@ export function useTechnicianLeaderboard() {
 }
 
 export function useTechnicianStats(profileId: string | null) {
-  const { activeBusiness } = useBusinessContext();
-  const businessId = activeBusiness?.id;
+  const { activeBusinessId } = useBusinessContext();
+  const businessId = activeBusinessId;
 
   return useQuery({
     queryKey: ['technician-stats', businessId, profileId],

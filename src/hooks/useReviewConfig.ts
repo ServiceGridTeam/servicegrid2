@@ -67,8 +67,8 @@ function setCachedConfig(businessId: string, config: ReviewConfig) {
 
 export function useReviewConfig() {
   const queryClient = useQueryClient();
-  const { activeBusiness } = useBusinessContext();
-  const businessId = activeBusiness?.id;
+  const { activeBusinessId } = useBusinessContext();
+  const businessId = activeBusinessId;
 
   const query = useQuery({
     queryKey: ['review-config', businessId],

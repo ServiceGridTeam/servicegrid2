@@ -41,7 +41,7 @@ export interface Review {
   } | null;
   job?: {
     title: string;
-    completed_at: string | null;
+    actual_end: string | null;
   } | null;
   technician?: {
     first_name: string | null;
@@ -60,8 +60,8 @@ export interface ReviewFilters {
 
 export function useReviews(filters: ReviewFilters = {}) {
   const queryClient = useQueryClient();
-  const { activeBusiness } = useBusinessContext();
-  const businessId = activeBusiness?.id;
+  const { activeBusinessId } = useBusinessContext();
+  const businessId = activeBusinessId;
 
   const query = useQuery({
     queryKey: ['reviews', businessId, filters],
@@ -73,7 +73,7 @@ export function useReviews(filters: ReviewFilters = {}) {
         .select(`
           *,
           customer:customers(first_name, last_name, email),
-          job:jobs(title, completed_at),
+          job:jobs(title, actual_end),
           technician:profiles!reviews_assigned_technician_id_fkey(first_name, last_name)
         `)
         .eq('business_id', businessId)
@@ -154,8 +154,8 @@ export function useReviews(filters: ReviewFilters = {}) {
 }
 
 export function useReview(reviewId: string | null) {
-  const { activeBusiness } = useBusinessContext();
-  const businessId = activeBusiness?.id;
+  const { activeBusinessId } = useBusinessContext();
+  const businessId = activeBusinessId;
 
   return useQuery({
     queryKey: ['review', reviewId],
@@ -167,7 +167,7 @@ export function useReview(reviewId: string | null) {
         .select(`
           *,
           customer:customers(first_name, last_name, email),
-          job:jobs(title, completed_at, description),
+          job:jobs(title, actual_end, description),
           technician:profiles!reviews_assigned_technician_id_fkey(first_name, last_name)
         `)
         .eq('id', reviewId)
