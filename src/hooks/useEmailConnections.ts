@@ -23,8 +23,8 @@ export interface EmailConnection {
 }
 
 export function useEmailConnections() {
-  const { activeBusiness } = useBusinessContext();
-  const businessId = activeBusiness?.id;
+  const { activeBusinessId } = useBusinessContext();
+  const businessId = activeBusinessId;
 
   return useQuery({
     queryKey: ["email-connections", businessId],
@@ -65,18 +65,18 @@ export function useEmailConnection(connectionId: string | undefined) {
 
 export function useConnectGmail() {
   const queryClient = useQueryClient();
-  const { activeBusiness } = useBusinessContext();
+  const { activeBusinessId } = useBusinessContext();
 
   return useMutation({
     mutationFn: async (params: { code: string; redirectUri: string }) => {
-      if (!activeBusiness?.id) {
+      if (!activeBusinessId) {
         throw new Error("No active business");
       }
 
       const { data, error } = await supabase.functions.invoke("email-oauth-callback", {
         body: {
           code: params.code,
-          business_id: activeBusiness.id,
+          business_id: activeBusinessId,
           redirect_uri: params.redirectUri,
         },
       });
