@@ -36,7 +36,7 @@ export interface ReviewRequest {
   } | null;
   job?: {
     title: string;
-    completed_at: string | null;
+    actual_end: string | null;
   } | null;
 }
 
@@ -48,8 +48,8 @@ export interface ReviewRequestFilters {
 }
 
 export function useReviewRequests(filters: ReviewRequestFilters = {}) {
-  const { activeBusiness } = useBusinessContext();
-  const businessId = activeBusiness?.id;
+  const { activeBusinessId } = useBusinessContext();
+  const businessId = activeBusinessId;
 
   return useQuery({
     queryKey: ['review-requests', businessId, filters],
@@ -61,7 +61,7 @@ export function useReviewRequests(filters: ReviewRequestFilters = {}) {
         .select(`
           *,
           customer:customers(first_name, last_name, email, phone),
-          job:jobs(title, completed_at)
+          job:jobs(title, actual_end)
         `)
         .eq('business_id', businessId)
         .order('scheduled_send_at', { ascending: false });
@@ -147,8 +147,8 @@ export function useResendReviewRequest() {
 }
 
 export function useReviewRequestStats() {
-  const { activeBusiness } = useBusinessContext();
-  const businessId = activeBusiness?.id;
+  const { activeBusinessId } = useBusinessContext();
+  const businessId = activeBusinessId;
 
   return useQuery({
     queryKey: ['review-request-stats', businessId],
