@@ -6,7 +6,7 @@ import { useEffect } from "react";
 
 export type JobRequestStatus = 'pending' | 'reviewing' | 'approved' | 'rejected' | 'converted';
 export type JobRequestUrgency = 'routine' | 'soon' | 'urgent' | 'emergency';
-export type JobRequestSource = 'phone' | 'web' | 'walk-in';
+export type JobRequestSource = 'phone' | 'web' | 'walk-in' | 'email';
 
 export interface JobRequestAddress {
   line1?: string;

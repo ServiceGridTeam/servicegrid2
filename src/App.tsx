@@ -27,6 +27,8 @@ import Payments from "./pages/Payments";
 import Team from "./pages/Team";
 import Settings from "./pages/Settings";
 import Requests from "./pages/Requests";
+import Inbox from "./pages/Inbox";
+import OAuthCallback from "./pages/OAuthCallback";
 import NotFound from "./pages/NotFound";
 import PublicQuote from "./pages/PublicQuote";
 import PublicInvoice from "./pages/PublicInvoice";
@@ -88,6 +90,7 @@ const App = () => (
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/email-preferences/:token" element={<EmailPreferences />} />
+            <Route path="/oauth/gmail/callback" element={<OAuthCallback />} />
             
             {/* Auth routes */}
             <Route path="/auth" element={<Auth />} />
@@ -107,6 +110,7 @@ const App = () => (
               <Route path="/quotes/:id/edit" element={<QuoteEdit />} />
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/requests" element={<Requests />} />
+              <Route path="/inbox" element={<Inbox />} />
               <Route path="/invoices" element={<Invoices />} />
               <Route path="/invoices/new" element={<InvoiceNew />} />
               <Route path="/invoices/:id" element={<InvoiceDetail />} />
