@@ -988,6 +988,7 @@ export type Database = {
         Row: {
           address_line1: string | null
           address_line2: string | null
+          average_rating_given: number | null
           avoid_days: Json | null
           business_id: string
           city: string | null
@@ -1003,6 +1004,7 @@ export type Database = {
           last_email_opened_at: string | null
           last_name: string
           last_portal_access: string | null
+          last_review_request_at: string | null
           latitude: number | null
           lead_score: number | null
           lead_status: string | null
@@ -1014,20 +1016,25 @@ export type Database = {
           preferred_contact_method: string | null
           preferred_contact_time: string | null
           preferred_days: Json | null
+          preferred_review_channel: string | null
           preferred_schedule_days: string[] | null
           preferred_schedule_time: string | null
           preferred_time_window: Json | null
+          review_opt_out: boolean
+          review_opt_out_at: string | null
           scheduling_notes: string | null
           sms_opted_in: boolean | null
           source: string | null
           state: string | null
           tags: string[] | null
+          total_reviews_given: number
           updated_at: string
           zip: string | null
         }
         Insert: {
           address_line1?: string | null
           address_line2?: string | null
+          average_rating_given?: number | null
           avoid_days?: Json | null
           business_id: string
           city?: string | null
@@ -1043,6 +1050,7 @@ export type Database = {
           last_email_opened_at?: string | null
           last_name: string
           last_portal_access?: string | null
+          last_review_request_at?: string | null
           latitude?: number | null
           lead_score?: number | null
           lead_status?: string | null
@@ -1054,20 +1062,25 @@ export type Database = {
           preferred_contact_method?: string | null
           preferred_contact_time?: string | null
           preferred_days?: Json | null
+          preferred_review_channel?: string | null
           preferred_schedule_days?: string[] | null
           preferred_schedule_time?: string | null
           preferred_time_window?: Json | null
+          review_opt_out?: boolean
+          review_opt_out_at?: string | null
           scheduling_notes?: string | null
           sms_opted_in?: boolean | null
           source?: string | null
           state?: string | null
           tags?: string[] | null
+          total_reviews_given?: number
           updated_at?: string
           zip?: string | null
         }
         Update: {
           address_line1?: string | null
           address_line2?: string | null
+          average_rating_given?: number | null
           avoid_days?: Json | null
           business_id?: string
           city?: string | null
@@ -1083,6 +1096,7 @@ export type Database = {
           last_email_opened_at?: string | null
           last_name?: string
           last_portal_access?: string | null
+          last_review_request_at?: string | null
           latitude?: number | null
           lead_score?: number | null
           lead_status?: string | null
@@ -1094,14 +1108,18 @@ export type Database = {
           preferred_contact_method?: string | null
           preferred_contact_time?: string | null
           preferred_days?: Json | null
+          preferred_review_channel?: string | null
           preferred_schedule_days?: string[] | null
           preferred_schedule_time?: string | null
           preferred_time_window?: Json | null
+          review_opt_out?: boolean
+          review_opt_out_at?: string | null
           scheduling_notes?: string | null
           sms_opted_in?: boolean | null
           source?: string | null
           state?: string | null
           tags?: string[] | null
+          total_reviews_given?: number
           updated_at?: string
           zip?: string | null
         }
@@ -1815,6 +1833,74 @@ export type Database = {
           },
         ]
       }
+      external_reviews: {
+        Row: {
+          author_image_url: string | null
+          author_name: string | null
+          business_id: string
+          created_at: string
+          external_id: string
+          id: string
+          is_responded: boolean
+          platform: string
+          rating: number
+          responded_at: string | null
+          response_text: string | null
+          review_text: string | null
+          review_url: string | null
+          reviewed_at: string
+          sentiment: string | null
+          synced_at: string
+          updated_at: string
+        }
+        Insert: {
+          author_image_url?: string | null
+          author_name?: string | null
+          business_id: string
+          created_at?: string
+          external_id: string
+          id?: string
+          is_responded?: boolean
+          platform: string
+          rating: number
+          responded_at?: string | null
+          response_text?: string | null
+          review_text?: string | null
+          review_url?: string | null
+          reviewed_at: string
+          sentiment?: string | null
+          synced_at?: string
+          updated_at?: string
+        }
+        Update: {
+          author_image_url?: string | null
+          author_name?: string | null
+          business_id?: string
+          created_at?: string
+          external_id?: string
+          id?: string
+          is_responded?: boolean
+          platform?: string
+          rating?: number
+          responded_at?: string | null
+          response_text?: string | null
+          review_text?: string | null
+          review_url?: string | null
+          reviewed_at?: string
+          sentiment?: string | null
+          synced_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_reviews_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       geocode_cache: {
         Row: {
           address: string
@@ -2453,6 +2539,10 @@ export type Database = {
           notes: string | null
           priority: string | null
           quote_id: string | null
+          review_completed_at: string | null
+          review_id: string | null
+          review_request_id: string | null
+          review_requested_at: string | null
           route_plan_id: string | null
           route_sequence: number | null
           scheduled_end: string | null
@@ -2512,6 +2602,10 @@ export type Database = {
           notes?: string | null
           priority?: string | null
           quote_id?: string | null
+          review_completed_at?: string | null
+          review_id?: string | null
+          review_request_id?: string | null
+          review_requested_at?: string | null
           route_plan_id?: string | null
           route_sequence?: number | null
           scheduled_end?: string | null
@@ -2571,6 +2665,10 @@ export type Database = {
           notes?: string | null
           priority?: string | null
           quote_id?: string | null
+          review_completed_at?: string | null
+          review_id?: string | null
+          review_request_id?: string | null
+          review_requested_at?: string | null
           route_plan_id?: string | null
           route_sequence?: number | null
           scheduled_end?: string | null
@@ -2620,6 +2718,20 @@ export type Database = {
             columns: ["quote_id"]
             isOneToOne: false
             referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_review_request_id_fkey"
+            columns: ["review_request_id"]
+            isOneToOne: false
+            referencedRelation: "review_requests"
             referencedColumns: ["id"]
           },
           {
@@ -3521,6 +3633,369 @@ export type Database = {
           },
         ]
       }
+      review_configs: {
+        Row: {
+          auto_request_enabled: boolean
+          average_rating: number | null
+          business_id: string
+          cooldown_days: number
+          created_at: string
+          delay_minutes: number
+          detractor_threshold: number
+          facebook_page_id: string | null
+          facebook_review_url: string | null
+          google_place_id: string | null
+          google_review_url: string | null
+          id: string
+          max_reminders: number
+          minimum_job_value: number | null
+          promoter_threshold: number
+          reminder_delay_hours: number
+          reminder_enabled: boolean
+          request_channel: string
+          response_rate: number | null
+          send_on_weekends: boolean
+          send_window_end: string
+          send_window_start: string
+          sms_enabled: boolean
+          sms_sender_name: string | null
+          timezone: string
+          total_requests_sent: number
+          total_reviews_received: number
+          updated_at: string
+          yelp_business_id: string | null
+          yelp_review_url: string | null
+        }
+        Insert: {
+          auto_request_enabled?: boolean
+          average_rating?: number | null
+          business_id: string
+          cooldown_days?: number
+          created_at?: string
+          delay_minutes?: number
+          detractor_threshold?: number
+          facebook_page_id?: string | null
+          facebook_review_url?: string | null
+          google_place_id?: string | null
+          google_review_url?: string | null
+          id?: string
+          max_reminders?: number
+          minimum_job_value?: number | null
+          promoter_threshold?: number
+          reminder_delay_hours?: number
+          reminder_enabled?: boolean
+          request_channel?: string
+          response_rate?: number | null
+          send_on_weekends?: boolean
+          send_window_end?: string
+          send_window_start?: string
+          sms_enabled?: boolean
+          sms_sender_name?: string | null
+          timezone?: string
+          total_requests_sent?: number
+          total_reviews_received?: number
+          updated_at?: string
+          yelp_business_id?: string | null
+          yelp_review_url?: string | null
+        }
+        Update: {
+          auto_request_enabled?: boolean
+          average_rating?: number | null
+          business_id?: string
+          cooldown_days?: number
+          created_at?: string
+          delay_minutes?: number
+          detractor_threshold?: number
+          facebook_page_id?: string | null
+          facebook_review_url?: string | null
+          google_place_id?: string | null
+          google_review_url?: string | null
+          id?: string
+          max_reminders?: number
+          minimum_job_value?: number | null
+          promoter_threshold?: number
+          reminder_delay_hours?: number
+          reminder_enabled?: boolean
+          request_channel?: string
+          response_rate?: number | null
+          send_on_weekends?: boolean
+          send_window_end?: string
+          send_window_start?: string
+          sms_enabled?: boolean
+          sms_sender_name?: string | null
+          timezone?: string
+          total_requests_sent?: number
+          total_reviews_received?: number
+          updated_at?: string
+          yelp_business_id?: string | null
+          yelp_review_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_configs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_requests: {
+        Row: {
+          actual_sent_at: string | null
+          assigned_technician_id: string | null
+          business_id: string
+          channel: string
+          clicked_at: string | null
+          completed_at: string | null
+          created_at: string
+          customer_id: string
+          delivered_at: string | null
+          error_message: string | null
+          id: string
+          job_id: string
+          last_reminder_at: string | null
+          message_id: string | null
+          next_reminder_at: string | null
+          opened_at: string | null
+          reminder_count: number
+          retry_count: number
+          review_id: string | null
+          scheduled_send_at: string
+          status: string
+          token: string
+          token_expires_at: string
+          updated_at: string
+        }
+        Insert: {
+          actual_sent_at?: string | null
+          assigned_technician_id?: string | null
+          business_id: string
+          channel?: string
+          clicked_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          customer_id: string
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          job_id: string
+          last_reminder_at?: string | null
+          message_id?: string | null
+          next_reminder_at?: string | null
+          opened_at?: string | null
+          reminder_count?: number
+          retry_count?: number
+          review_id?: string | null
+          scheduled_send_at: string
+          status?: string
+          token?: string
+          token_expires_at?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_sent_at?: string | null
+          assigned_technician_id?: string | null
+          business_id?: string
+          channel?: string
+          clicked_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          customer_id?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          job_id?: string
+          last_reminder_at?: string | null
+          message_id?: string | null
+          next_reminder_at?: string | null
+          opened_at?: string | null
+          reminder_count?: number
+          retry_count?: number
+          review_id?: string | null
+          scheduled_send_at?: string
+          status?: string
+          token?: string
+          token_expires_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_review_requests_review"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_requests_assigned_technician_id_fkey"
+            columns: ["assigned_technician_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_requests_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_requests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_requests_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reviews: {
+        Row: {
+          assigned_technician_id: string | null
+          business_id: string
+          created_at: string
+          customer_id: string | null
+          display_approved: boolean
+          display_name: string | null
+          external_review_id: string | null
+          external_review_url: string | null
+          feedback_key_phrases: Json | null
+          feedback_sentiment: string | null
+          feedback_text: string | null
+          id: string
+          is_featured: boolean
+          is_public: boolean
+          job_id: string | null
+          nps_score: number | null
+          platform: string | null
+          quality_rating: number | null
+          rating: number
+          responded_at: string | null
+          responded_by: string | null
+          response_suggested: string | null
+          response_text: string | null
+          review_request_id: string | null
+          source: string
+          technician_rating: number | null
+          timeliness_rating: number | null
+          updated_at: string
+          value_rating: number | null
+        }
+        Insert: {
+          assigned_technician_id?: string | null
+          business_id: string
+          created_at?: string
+          customer_id?: string | null
+          display_approved?: boolean
+          display_name?: string | null
+          external_review_id?: string | null
+          external_review_url?: string | null
+          feedback_key_phrases?: Json | null
+          feedback_sentiment?: string | null
+          feedback_text?: string | null
+          id?: string
+          is_featured?: boolean
+          is_public?: boolean
+          job_id?: string | null
+          nps_score?: number | null
+          platform?: string | null
+          quality_rating?: number | null
+          rating: number
+          responded_at?: string | null
+          responded_by?: string | null
+          response_suggested?: string | null
+          response_text?: string | null
+          review_request_id?: string | null
+          source?: string
+          technician_rating?: number | null
+          timeliness_rating?: number | null
+          updated_at?: string
+          value_rating?: number | null
+        }
+        Update: {
+          assigned_technician_id?: string | null
+          business_id?: string
+          created_at?: string
+          customer_id?: string | null
+          display_approved?: boolean
+          display_name?: string | null
+          external_review_id?: string | null
+          external_review_url?: string | null
+          feedback_key_phrases?: Json | null
+          feedback_sentiment?: string | null
+          feedback_text?: string | null
+          id?: string
+          is_featured?: boolean
+          is_public?: boolean
+          job_id?: string | null
+          nps_score?: number | null
+          platform?: string | null
+          quality_rating?: number | null
+          rating?: number
+          responded_at?: string | null
+          responded_by?: string | null
+          response_suggested?: string | null
+          response_text?: string | null
+          review_request_id?: string | null
+          source?: string
+          technician_rating?: number | null
+          timeliness_rating?: number | null
+          updated_at?: string
+          value_rating?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_assigned_technician_id_fkey"
+            columns: ["assigned_technician_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_responded_by_fkey"
+            columns: ["responded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_review_request_id_fkey"
+            columns: ["review_request_id"]
+            isOneToOne: false
+            referencedRelation: "review_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       route_directions_cache: {
         Row: {
           cached_at: string | null
@@ -3847,6 +4322,78 @@ export type Database = {
           {
             foreignKeyName: "team_invites_invited_by_fkey"
             columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      technician_review_stats: {
+        Row: {
+          average_rating: number | null
+          business_id: string
+          created_at: string
+          five_star_count: number
+          four_star_count: number
+          id: string
+          last_review_at: string | null
+          mentions_count: number
+          one_star_count: number
+          profile_id: string
+          rank_in_business: number | null
+          three_star_count: number
+          total_reviews: number
+          trend_7d: number | null
+          two_star_count: number
+          updated_at: string
+        }
+        Insert: {
+          average_rating?: number | null
+          business_id: string
+          created_at?: string
+          five_star_count?: number
+          four_star_count?: number
+          id?: string
+          last_review_at?: string | null
+          mentions_count?: number
+          one_star_count?: number
+          profile_id: string
+          rank_in_business?: number | null
+          three_star_count?: number
+          total_reviews?: number
+          trend_7d?: number | null
+          two_star_count?: number
+          updated_at?: string
+        }
+        Update: {
+          average_rating?: number | null
+          business_id?: string
+          created_at?: string
+          five_star_count?: number
+          four_star_count?: number
+          id?: string
+          last_review_at?: string | null
+          mentions_count?: number
+          one_star_count?: number
+          profile_id?: string
+          rank_in_business?: number | null
+          three_star_count?: number
+          total_reviews?: number
+          trend_7d?: number | null
+          two_star_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technician_review_stats_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "technician_review_stats_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
