@@ -16,6 +16,7 @@ import {
   GitBranch,
   Megaphone,
   Inbox,
+  Star,
   LucideIcon,
 } from 'lucide-react';
 import type { AppRole } from './permissions';
@@ -96,6 +97,12 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
     title: 'Routes',
     url: '/routes',
     icon: Route,
+    minRole: 'admin',
+  },
+  {
+    title: 'Reviews',
+    url: '/reviews',
+    icon: Star,
     minRole: 'admin',
   },
 ];
