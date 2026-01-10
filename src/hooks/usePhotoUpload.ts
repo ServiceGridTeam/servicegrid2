@@ -14,10 +14,13 @@ export interface UploadingPhoto {
   progress: number;
   error: string | null;
   isQueued?: boolean; // True if stored in IndexedDB for offline upload
+  scanStatus?: 'pending' | 'scanning' | 'clean' | 'rejected'; // For customer uploads with quarantine flow
+  uploadId?: string; // customer_media_uploads record ID
 }
 
 const MAX_PHOTOS = 5;
-
+const SCAN_POLL_INTERVAL = 1000; // 1 second
+const SCAN_TIMEOUT = 30000; // 30 seconds
 export function usePhotoUpload(jobId?: string) {
   const [photos, setPhotos] = useState<UploadingPhoto[]>([]);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -160,7 +163,71 @@ export function usePhotoUpload(jobId?: string) {
   const isUploading = photos.some(p => p.progress > 0 && p.progress < 100);
   const hasErrors = photos.some(p => p.error);
   const hasQueued = photos.some(p => p.isQueued);
+  const isScanning = photos.some(p => p.scanStatus === 'scanning' || p.scanStatus === 'pending');
   const canAddMore = photos.length < MAX_PHOTOS;
+
+  // Poll for scan status on photos that are scanning
+  useEffect(() => {
+    const scanningPhotos = photos.filter(p => p.uploadId && (p.scanStatus === 'scanning' || p.scanStatus === 'pending'));
+    if (scanningPhotos.length === 0) return;
+
+    const pollScanStatus = async () => {
+      for (const photo of scanningPhotos) {
+        if (!photo.uploadId) continue;
+
+        try {
+          const { data, error } = await supabase
+            .from('customer_media_uploads')
+            .select('scan_status, rejection_reason, storage_path, storage_bucket')
+            .eq('id', photo.uploadId)
+            .single();
+
+          if (error) {
+            console.error('Failed to check scan status:', error);
+            continue;
+          }
+
+          if (data.scan_status === 'clean') {
+            const { data: urlData } = supabase.storage
+              .from(data.storage_bucket)
+              .getPublicUrl(data.storage_path);
+
+            setPhotos(prev => prev.map(p =>
+              p.id === photo.id
+                ? { ...p, scanStatus: 'clean', serverUrl: urlData.publicUrl, progress: 100 }
+                : p
+            ));
+          } else if (data.scan_status === 'rejected') {
+            setPhotos(prev => prev.map(p =>
+              p.id === photo.id
+                ? { ...p, scanStatus: 'rejected', error: data.rejection_reason || 'File rejected', progress: 0 }
+                : p
+            ));
+          }
+        } catch (err) {
+          console.error('Error polling scan status:', err);
+        }
+      }
+    };
+
+    const intervalId = setInterval(pollScanStatus, SCAN_POLL_INTERVAL);
+    
+    // Set up timeout for scanning photos
+    const timeoutIds = scanningPhotos.map(photo => {
+      return setTimeout(() => {
+        setPhotos(prev => prev.map(p =>
+          p.id === photo.id && (p.scanStatus === 'scanning' || p.scanStatus === 'pending')
+            ? { ...p, scanStatus: 'rejected', error: 'Scan timeout', progress: 0 }
+            : p
+        ));
+      }, SCAN_TIMEOUT);
+    });
+
+    return () => {
+      clearInterval(intervalId);
+      timeoutIds.forEach(id => clearTimeout(id));
+    };
+  }, [photos]);
 
   const clear = useCallback(() => {
     photos.forEach(p => {
@@ -169,15 +236,37 @@ export function usePhotoUpload(jobId?: string) {
     setPhotos([]);
   }, [photos]);
 
+  // Method to add a photo with quarantine flow (for customer uploads)
+  const addPhotoWithQuarantine = useCallback((
+    photoId: string,
+    file: File,
+    localUrl: string,
+    uploadId: string
+  ) => {
+    const newPhoto: UploadingPhoto = {
+      id: photoId,
+      file,
+      localUrl,
+      serverUrl: null,
+      progress: 50,
+      error: null,
+      scanStatus: 'scanning',
+      uploadId,
+    };
+    setPhotos(prev => [...prev, newPhoto].slice(0, MAX_PHOTOS));
+  }, []);
+
   return {
     photos,
     addPhotos,
+    addPhotoWithQuarantine,
     removePhoto,
     retryUpload,
     getUrls,
     isUploading,
     hasErrors,
     hasQueued,
+    isScanning,
     canAddMore,
     clear,
     maxPhotos: MAX_PHOTOS,

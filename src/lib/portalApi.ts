@@ -424,7 +424,119 @@ export async function submitServiceRequest(
   });
 }
 
+export interface CustomerUploadResult {
+  uploadId: string;
+  localUrl: string;
+  storagePath: string;
+  status: 'pending' | 'scanning' | 'clean' | 'rejected';
+}
+
 export async function uploadServiceRequestPhoto(
+  file: File,
+  businessId: string,
+  customerId?: string,
+  customerAccountId?: string
+): Promise<PortalApiResponse<CustomerUploadResult>> {
+  try {
+    const token = getPortalSessionToken();
+    if (!token) {
+      return {
+        data: null,
+        error: { code: 'NO_SESSION', message: 'No active session' },
+      };
+    }
+
+    // Check rate limit first
+    const rateLimitResponse = await callEdgeFunction<{ allowed: boolean; limits?: Record<string, unknown> }>(
+      'check-upload-rate-limit',
+      {
+        session_token: token,
+        business_id: businessId,
+      }
+    );
+
+    if (rateLimitResponse.error || !rateLimitResponse.data?.allowed) {
+      return {
+        data: null,
+        error: { 
+          code: 'RATE_LIMITED', 
+          message: 'Too many uploads. Please try again later.' 
+        },
+      };
+    }
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `service-requests/${fileName}`;
+
+    // Upload to quarantine bucket first
+    const { error: uploadError } = await supabase.storage
+      .from('customer-uploads-quarantine')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    // Create customer_media_uploads record with pending status
+    const { data: uploadRecord, error: insertError } = await supabase
+      .from('customer_media_uploads')
+      .insert({
+        business_id: businessId,
+        customer_id: customerId || null,
+        customer_account_id: customerAccountId || null,
+        storage_bucket: 'customer-uploads-quarantine',
+        storage_path: filePath,
+        original_filename: file.name,
+        mime_type: file.type,
+        file_size_bytes: file.size,
+        scan_status: 'pending',
+      })
+      .select('id')
+      .single();
+
+    if (insertError || !uploadRecord) {
+      console.error('Failed to create upload record:', insertError);
+      // Clean up uploaded file
+      await supabase.storage
+        .from('customer-uploads-quarantine')
+        .remove([filePath]);
+      throw new Error('Failed to create upload record');
+    }
+
+    // Trigger scan edge function (fire and forget)
+    supabase.functions.invoke('scan-customer-upload', {
+      body: {
+        upload_id: uploadRecord.id,
+        storage_path: filePath,
+      },
+    }).catch(err => {
+      console.error('Failed to trigger scan:', err);
+    });
+
+    // Return immediately with local preview URL
+    const localUrl = URL.createObjectURL(file);
+
+    return {
+      data: {
+        uploadId: uploadRecord.id,
+        localUrl,
+        storagePath: filePath,
+        status: 'scanning',
+      },
+      error: null,
+    };
+  } catch (err) {
+    return {
+      data: null,
+      error: {
+        code: 'UPLOAD_ERROR',
+        message: err instanceof Error ? err.message : 'Upload failed',
+      },
+    };
+  }
+}
+
+// Legacy function for backward compatibility
+export async function uploadServiceRequestPhotoSimple(
   file: File
 ): Promise<PortalApiResponse<{ url: string }>> {
   try {

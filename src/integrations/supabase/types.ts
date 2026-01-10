@@ -5056,6 +5056,33 @@ export type Database = {
         }
         Relationships: []
       }
+      upload_rate_limits: {
+        Row: {
+          count: number | null
+          created_at: string | null
+          id: string
+          identifier: string
+          identifier_type: string
+          window_start: string | null
+        }
+        Insert: {
+          count?: number | null
+          created_at?: string | null
+          id?: string
+          identifier: string
+          identifier_type: string
+          window_start?: string | null
+        }
+        Update: {
+          count?: number | null
+          created_at?: string | null
+          id?: string
+          identifier?: string
+          identifier_type?: string
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -5185,6 +5212,7 @@ export type Database = {
           reason: string
         }[]
       }
+      cleanup_expired_rate_limits: { Args: never; Returns: undefined }
       generate_service_request_number: {
         Args: { bus_id: string }
         Returns: string
