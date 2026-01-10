@@ -22,6 +22,20 @@ interface UploadResult {
   thumbnailUrl: string | null;
 }
 
+// Optimistic entry type for cache
+interface OptimisticMediaEntry {
+  id: string;
+  url: string;
+  thumbnail_url_md: string | null;
+  status: 'uploading';
+  category: MediaCategory;
+  media_type: 'photo' | 'video';
+  created_at: string;
+  description: string | null;
+  is_cover_photo: boolean;
+  duration_seconds: number | null;
+}
+
 export function useUploadPhoto() {
   const queryClient = useQueryClient();
   const { activeBusinessId } = useBusinessContext();
@@ -168,19 +182,63 @@ export function useUploadPhoto() {
         thumbnailUrl: null, // Will be populated by edge function
       };
     },
-    onMutate: async ({ jobId }) => {
+    onMutate: async ({ jobId, file, category = 'general', durationSeconds }) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['job-media', jobId] });
       await queryClient.cancelQueries({ queryKey: ['jobs'] });
+
+      // Snapshot previous value
+      const previousMedia = queryClient.getQueryData(['job-media', jobId]);
+
+      // Determine media type
+      const mediaType = file.type.startsWith('video/') ? 'video' : 'photo';
+
+      // Create optimistic entry with local URL
+      const optimisticEntry: OptimisticMediaEntry = {
+        id: `optimistic-${crypto.randomUUID()}`,
+        url: URL.createObjectURL(file),
+        thumbnail_url_md: null,
+        status: 'uploading',
+        category,
+        media_type: mediaType,
+        created_at: new Date().toISOString(),
+        description: null,
+        is_cover_photo: false,
+        duration_seconds: durationSeconds || null,
+      };
+
+      // Optimistically add to cache
+      queryClient.setQueryData(['job-media', jobId], (old: unknown[] | undefined) => {
+        return [...(old || []), optimisticEntry];
+      });
+
+      return { previousMedia, optimisticEntry };
     },
-    onSuccess: (result, { jobId }) => {
+    onSuccess: (result, { jobId }, context) => {
+      // Remove optimistic entry and let query refetch with real data
+      if (context?.optimisticEntry) {
+        // Revoke the object URL
+        URL.revokeObjectURL(context.optimisticEntry.url);
+      }
+      
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['job-media', jobId] });
       queryClient.invalidateQueries({ queryKey: ['jobs'] });
       toast.success('Photo uploaded successfully');
     },
-    onError: (error) => {
+    onError: (error, { jobId }, context) => {
       console.error('Upload failed:', error);
+      
+      // Rollback to previous state
+      if (context?.previousMedia !== undefined) {
+        queryClient.setQueryData(['job-media', jobId], context.previousMedia);
+      }
+      
+      // Revoke object URL if created
+      if (context?.optimisticEntry) {
+        URL.revokeObjectURL(context.optimisticEntry.url);
+      }
+      
       toast.error('Failed to upload photo');
     },
   });
