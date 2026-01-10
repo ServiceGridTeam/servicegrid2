@@ -17,6 +17,7 @@ import {
   Trash2,
   Save,
   Loader2,
+  Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -37,7 +38,9 @@ interface AnnotationToolbarProps {
   onRedo: () => void;
   onClear: () => void;
   onSave: () => void;
+  onExport?: () => void;
   isSaving: boolean;
+  isExporting?: boolean;
   disabled?: boolean;
 }
 
@@ -65,7 +68,9 @@ export function AnnotationToolbar({
   onRedo,
   onClear,
   onSave,
+  onExport,
   isSaving,
+  isExporting = false,
   disabled = false,
 }: AnnotationToolbarProps) {
   return (
@@ -187,6 +192,23 @@ export function AnnotationToolbar({
           )}
           Save
         </Button>
+        {onExport && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 gap-2"
+            onClick={onExport}
+            disabled={isExporting || disabled}
+            title="Export as image"
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            Export
+          </Button>
+        )}
       </div>
     </div>
   );
