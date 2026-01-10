@@ -169,4 +169,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.render-annotation]
-verify_jwt = true
+verify_jwt = false
+
+[functions.process-render-queue]
+verify_jwt = false

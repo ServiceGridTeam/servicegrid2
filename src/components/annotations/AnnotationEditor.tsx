@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { useAnnotationLock } from '@/hooks/useAnnotationLock';
 import { useSaveAnnotation, useAnnotation } from '@/hooks/useAnnotations';
 import { usePhotoWatcher } from '@/hooks/usePhotoWatcher';
+import { useExportAnnotation } from '@/hooks/useExportAnnotation';
 import { AnnotationToolbar } from './AnnotationToolbar';
 import { AnnotationHistoryPanel } from './AnnotationHistoryPanel';
 import { 
@@ -80,6 +81,13 @@ export function AnnotationEditor({
 
   // Save mutation
   const saveAnnotation = useSaveAnnotation();
+
+  // Export functionality
+  const { exportAnnotation, downloadRendered, isExporting } = useExportAnnotation({
+    onSuccess: (url) => {
+      downloadRendered(url, `annotated-${mediaId}.svg`);
+    },
+  });
 
   // Photo watcher for deletion detection
   usePhotoWatcher(mediaId, {
@@ -305,6 +313,21 @@ export function AnnotationEditor({
 
     return () => clearTimeout(timer);
   }, [hasUnsavedChanges, readOnly, lockState.isOwnLock, handleSave]);
+
+  // Handle export - save first if needed, then export
+  const handleExport = useCallback(async () => {
+    if (!existingAnnotation?.id) {
+      toast.error('Please save annotation first');
+      return;
+    }
+
+    // Save if there are unsaved changes
+    if (hasUnsavedChanges) {
+      await handleSave();
+    }
+
+    await exportAnnotation(existingAnnotation.id);
+  }, [existingAnnotation?.id, hasUnsavedChanges, handleSave, exportAnnotation]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -894,7 +917,9 @@ export function AnnotationEditor({
               onRedo={redo}
               onClear={clearAll}
               onSave={handleSave}
+              onExport={existingAnnotation?.id ? handleExport : undefined}
               isSaving={isSaving}
+              isExporting={isExporting}
               disabled={!isEditable}
             />
           )}
