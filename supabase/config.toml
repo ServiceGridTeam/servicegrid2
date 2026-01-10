@@ -167,3 +167,6 @@ verify_jwt = false
 
 [functions.convert-customer-uploads]
 verify_jwt = false
+
+[functions.render-annotation]
+verify_jwt = true
