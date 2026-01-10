@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Star, Trash2, Loader2, ImageOff } from "lucide-react";
+import { Star, Trash2, Loader2, ImageOff, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { useJobMedia, useSetCoverPhoto, type MediaCategory, type JobMedia } from "@/hooks/useJobMedia";
 import { useDeletePhoto } from "@/hooks/useDeletePhoto";
 import { useToast } from "@/hooks/use-toast";
 import { PhotoLightbox } from "./PhotoLightbox";
+import { formatDuration } from "@/lib/videoUtils";
 
 interface PhotoGridProps {
   jobId: string;
@@ -158,13 +160,39 @@ export function PhotoGrid({ jobId, onPhotoCountChange }: PhotoGridProps) {
               )}
               onClick={() => openLightbox(item, index)}
             >
-              {/* Thumbnail */}
-              <img
-                src={item.thumbnail_url_md || item.url}
-                alt={item.description || "Job photo"}
-                className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                loading="lazy"
-              />
+              {/* Thumbnail - show video thumbnail or image */}
+              {item.media_type === "video" ? (
+                <div className="w-full h-full relative">
+                  <img
+                    src={item.thumbnail_url_md || item.url}
+                    alt={item.description || "Job video"}
+                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  {/* Video play icon overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-full bg-black/50 flex items-center justify-center">
+                      <Play className="h-5 w-5 text-white fill-white" />
+                    </div>
+                  </div>
+                  {/* Duration badge */}
+                  {item.duration_seconds && (
+                    <Badge 
+                      variant="secondary" 
+                      className="absolute bottom-1 right-1 text-[10px] px-1.5 py-0.5 bg-black/70 text-white border-0"
+                    >
+                      {formatDuration(item.duration_seconds)}
+                    </Badge>
+                  )}
+                </div>
+              ) : (
+                <img
+                  src={item.thumbnail_url_md || item.url}
+                  alt={item.description || "Job photo"}
+                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  loading="lazy"
+                />
+              )}
 
               {/* Processing overlay */}
               {item.status === "processing" && (
@@ -180,29 +208,33 @@ export function PhotoGrid({ jobId, onPhotoCountChange }: PhotoGridProps) {
                 </div>
               )}
 
-              {/* Category badge */}
-              <div className="absolute bottom-1 left-1">
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-background/80 text-foreground capitalize">
-                  {item.category}
-                </span>
-              </div>
+              {/* Category badge - only show for images (videos already have duration badge) */}
+              {item.media_type !== "video" && (
+                <div className="absolute bottom-1 left-1">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-background/80 text-foreground capitalize">
+                    {item.category}
+                  </span>
+                </div>
+              )}
 
               {/* Hover actions */}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                <Button
-                  size="icon"
-                  variant="secondary"
-                  className="h-8 w-8"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSetCover(item.id);
-                  }}
-                >
-                  <Star className={cn(
-                    "h-4 w-4",
-                    item.is_cover_photo && "fill-yellow-400 text-yellow-400"
-                  )} />
-                </Button>
+                {item.media_type !== "video" && (
+                  <Button
+                    size="icon"
+                    variant="secondary"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSetCover(item.id);
+                    }}
+                  >
+                    <Star className={cn(
+                      "h-4 w-4",
+                      item.is_cover_photo && "fill-yellow-400 text-yellow-400"
+                    )} />
+                  </Button>
+                )}
                 <Button
                   size="icon"
                   variant="secondary"

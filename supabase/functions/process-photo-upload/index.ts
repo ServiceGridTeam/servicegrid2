@@ -188,13 +188,50 @@ Deno.serve(async (req) => {
     
     console.log(`process-photo-upload: Downloaded ${uint8Array.length} bytes`);
 
+    // For videos, we skip thumbnail generation and dimension extraction
+    // Video thumbnails are generated client-side before upload
+    if (isVideo) {
+      console.log('process-photo-upload: Video file detected, skipping image processing');
+      
+      // Compute content hash for duplicate detection
+      const contentHash = await computeContentHash(uint8Array);
+      console.log(`process-photo-upload: Content hash: ${contentHash.substring(0, 16)}...`);
+
+      // Update job_media record - mark as ready
+      const { error: updateError } = await supabaseAdmin
+        .from('job_media')
+        .update({
+          content_hash: contentHash,
+          status: 'ready',
+          processing_error: null,
+        })
+        .eq('id', media_id);
+
+      if (updateError) {
+        console.error('process-photo-upload: Failed to update video record', updateError);
+        throw updateError;
+      }
+
+      console.log('process-photo-upload: Successfully processed video');
+      return new Response(
+        JSON.stringify({
+          success: true,
+          media_id,
+          isVideo: true,
+          contentHash: contentHash.substring(0, 16),
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    }
+
     // Extract image dimensions
     let dimensions: { width: number; height: number } | null = null;
-    if (!isVideo) {
-      dimensions = await getImageDimensions(uint8Array, mimeType);
-      if (dimensions) {
-        console.log(`process-photo-upload: Image dimensions ${dimensions.width}x${dimensions.height}`);
-      }
+    dimensions = await getImageDimensions(uint8Array, mimeType);
+    if (dimensions) {
+      console.log(`process-photo-upload: Image dimensions ${dimensions.width}x${dimensions.height}`);
     }
 
     // Generate thumbnails

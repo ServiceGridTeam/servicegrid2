@@ -1,11 +1,12 @@
 import { useRef, useState } from "react";
-import { Camera, ChevronDown, ImagePlus, CloudOff, Loader2, RefreshCw } from "lucide-react";
+import { Camera, ChevronDown, ImagePlus, CloudOff, Loader2, RefreshCw, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useUploadPhoto } from "@/hooks/useUploadPhoto";
@@ -14,6 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import type { MediaCategory } from "@/hooks/useJobMedia";
 import { cn } from "@/lib/utils";
 import { isHeicFile } from "@/lib/heicConverter";
+import { VideoRecordButton } from "./VideoRecordButton";
+import { isVideoRecordingSupported } from "@/lib/videoUtils";
 
 interface PhotoCaptureButtonProps {
   jobId: string;
@@ -47,9 +50,49 @@ export function PhotoCaptureButton({
   const [isConverting, setIsConverting] = useState(false);
   const uploadPhoto = useUploadPhoto();
   const { status: queueStatus, isOnline, queueUpload } = useUploadQueue();
+  const supportsVideoRecording = isVideoRecordingSupported();
 
   // Combined pending count from props and queue
   const totalPending = pendingCount + queueStatus.pendingCount + queueStatus.uploadingCount;
+
+  const handleVideoRecorded = async (file: File, _thumbnailBlob: Blob, durationSeconds: number) => {
+    onUploadStart?.();
+    setIsUploading(true);
+
+    try {
+      if (isOnline) {
+        await uploadPhoto.mutateAsync({
+          file,
+          jobId,
+          category: selectedCategory,
+          durationSeconds,
+        });
+      } else {
+        const result = await queueUpload({
+          file,
+          jobId,
+          category: selectedCategory,
+        });
+        
+        if (result.success) {
+          toast({
+            title: "Video queued",
+            description: "Video will upload when you're back online",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Video upload failed:", error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload video",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+      onUploadComplete?.();
+    }
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -125,6 +168,7 @@ export function PhotoCaptureButton({
     fileInputRef.current?.click();
   };
 
+  // Floating variant - show video button alongside
   if (variant === "floating") {
     return (
       <>
@@ -137,6 +181,16 @@ export function PhotoCaptureButton({
           className="hidden"
           onChange={handleFileChange}
         />
+        
+        {/* Video record button - positioned above camera button */}
+        {supportsVideoRecording && isOnline && (
+          <div className="fixed bottom-24 right-6 z-50">
+            <VideoRecordButton
+              onVideoRecorded={handleVideoRecorded}
+              disabled={isUploading || isConverting}
+            />
+          </div>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -187,7 +241,7 @@ export function PhotoCaptureButton({
   }
 
   return (
-    <>
+    <div className="flex items-center gap-2">
       <input
         ref={fileInputRef}
         type="file"
@@ -197,6 +251,15 @@ export function PhotoCaptureButton({
         className="hidden"
         onChange={handleFileChange}
       />
+      
+      {/* Video recording button for default variant */}
+      {supportsVideoRecording && isOnline && (
+        <VideoRecordButton
+          onVideoRecorded={handleVideoRecorded}
+          disabled={isUploading || isConverting}
+        />
+      )}
+      
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button 
@@ -238,6 +301,6 @@ export function PhotoCaptureButton({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
-    </>
+    </div>
   );
 }

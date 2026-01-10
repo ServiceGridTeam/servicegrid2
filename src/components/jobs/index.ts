@@ -18,5 +18,6 @@ export { JobLaborCard } from "./JobLaborCard";
 export { PhotoCaptureButton } from "./PhotoCaptureButton";
 export { PhotoGrid } from "./PhotoGrid";
 export { PhotoLightbox } from "./PhotoLightbox";
+export { VideoRecordButton } from "./VideoRecordButton";
 export { MediaGalleryPreview } from "./MediaGalleryPreview";
 export { GPSAccuracyIndicator } from "./GPSAccuracyIndicator";
