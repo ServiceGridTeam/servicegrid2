@@ -5,11 +5,9 @@
 
 export { useArrowTool } from './useArrowTool';
 export { useTextTool } from './useTextTool';
-
-// TODO: Add remaining tools
-// export { useLineTool } from './useLineTool';
-// export { useRectTool } from './useRectTool';
-// export { useCircleTool } from './useCircleTool';
-// export { useFreehandTool } from './useFreehandTool';
-// export { useMeasurementTool } from './useMeasurementTool';
-// export { useSelectTool } from './useSelectTool';
+export { useLineTool } from './useLineTool';
+export { useRectTool } from './useRectTool';
+export { useCircleTool } from './useCircleTool';
+export { useFreehandTool } from './useFreehandTool';
+export { useMeasurementTool, formatMeasurement } from './useMeasurementTool';
+export { useSelectTool } from './useSelectTool';
