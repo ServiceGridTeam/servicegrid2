@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { Star, Trash2, Loader2, ImageOff, Play, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { useDeletePhoto } from "@/hooks/useDeletePhoto";
 import { useToast } from "@/hooks/use-toast";
 import { PhotoLightbox } from "./PhotoLightbox";
 import { formatDuration } from "@/lib/videoUtils";
+import { decodeBlurhash } from "@/lib/thumbnailGenerator";
 import {
   DndContext,
   closestCenter,
@@ -40,6 +41,7 @@ interface PhotoGridProps {
 type ExtendedMediaStatus = MediaStatus | 'uploading';
 interface MediaItem extends Omit<JobMedia, 'status'> {
   status: ExtendedMediaStatus;
+  blurhash?: string | null;
 }
 
 const CATEGORY_TABS: { value: MediaCategory | "all"; label: string }[] = [
@@ -52,6 +54,28 @@ const CATEGORY_TABS: { value: MediaCategory | "all"; label: string }[] = [
   { value: "materials", label: "Materials" },
   { value: "general", label: "General" },
 ];
+
+// Blurhash placeholder component
+function BlurhashPlaceholder({ hash, className }: { hash: string; className?: string }) {
+  const [dataUrl, setDataUrl] = useState<string>('');
+  
+  useEffect(() => {
+    if (hash) {
+      decodeBlurhash(hash, 32, 32).then(setDataUrl);
+    }
+  }, [hash]);
+  
+  if (!dataUrl) return null;
+  
+  return (
+    <img
+      src={dataUrl}
+      alt=""
+      className={cn("absolute inset-0 w-full h-full object-cover", className)}
+      style={{ filter: 'blur(20px)', transform: 'scale(1.2)' }}
+    />
+  );
+}
 
 // Sortable Photo Item Component
 function SortablePhotoItem({
@@ -114,17 +138,22 @@ function SortablePhotoItem({
         </div>
       )}
 
+      {/* Blurhash placeholder - show while image loads */}
+      {item.blurhash && (
+        <BlurhashPlaceholder hash={item.blurhash} />
+      )}
+      
       {/* Thumbnail - show video thumbnail or image */}
       {item.media_type === "video" ? (
         <div className="w-full h-full relative">
           <img
             src={item.thumbnail_url_md || item.url}
             alt={item.description || "Job video"}
-            className="w-full h-full object-cover transition-transform group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform group-hover:scale-105 relative z-[1]"
             loading="lazy"
           />
           {/* Video play icon overlay */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[2]">
             <div className="h-10 w-10 rounded-full bg-black/50 flex items-center justify-center">
               <Play className="h-5 w-5 text-white fill-white" />
             </div>
@@ -133,7 +162,7 @@ function SortablePhotoItem({
           {item.duration_seconds && (
             <Badge 
               variant="secondary" 
-              className="absolute bottom-1 right-1 text-[10px] px-1.5 py-0.5 bg-black/70 text-white border-0"
+              className="absolute bottom-1 right-1 text-[10px] px-1.5 py-0.5 bg-black/70 text-white border-0 z-[2]"
             >
               {formatDuration(item.duration_seconds)}
             </Badge>
@@ -143,8 +172,13 @@ function SortablePhotoItem({
         <img
           src={item.thumbnail_url_md || item.url}
           alt={item.description || "Job photo"}
-          className="w-full h-full object-cover transition-transform group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform group-hover:scale-105 relative z-[1]"
           loading="lazy"
+          onLoad={(e) => {
+            // Fade in when loaded
+            (e.target as HTMLImageElement).style.opacity = '1';
+          }}
+          style={{ opacity: item.blurhash ? 0 : 1, transition: 'opacity 300ms ease-in-out' }}
         />
       )}
 
