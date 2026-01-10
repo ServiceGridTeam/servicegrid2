@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect } from "react";
-import { Camera, ChevronDown, ImagePlus, CloudOff, Loader2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { Camera, ChevronDown, ImagePlus, CloudOff, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ import { useUploadQueue } from "@/hooks/useUploadQueue";
 import { useToast } from "@/hooks/use-toast";
 import type { MediaCategory } from "@/hooks/useJobMedia";
 import { cn } from "@/lib/utils";
+import { isHeicFile } from "@/lib/heicConverter";
 
 interface PhotoCaptureButtonProps {
   jobId: string;
@@ -43,6 +44,7 @@ export function PhotoCaptureButton({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedCategory, setSelectedCategory] = useState<MediaCategory>("general");
   const [isUploading, setIsUploading] = useState(false);
+  const [isConverting, setIsConverting] = useState(false);
   const uploadPhoto = useUploadPhoto();
   const { status: queueStatus, isOnline, queueUpload } = useUploadQueue();
 
@@ -58,13 +60,27 @@ export function PhotoCaptureButton({
 
     for (const file of Array.from(files)) {
       try {
+        // Check if HEIC conversion is needed and show converting state
+        const needsConversion = await isHeicFile(file);
+        if (needsConversion) {
+          setIsConverting(true);
+          toast({
+            title: "Converting photo...",
+            description: "Converting HEIC format for compatibility",
+          });
+        }
+
         if (isOnline) {
-          // Direct upload when online
+          // Direct upload when online (HEIC conversion happens in hook)
           await uploadPhoto.mutateAsync({
             file,
             jobId,
             category: selectedCategory,
           });
+          
+          if (needsConversion) {
+            setIsConverting(false);
+          }
         } else {
           // Queue for later when offline
           const result = await queueUpload({
@@ -79,9 +95,14 @@ export function PhotoCaptureButton({
               description: `${file.name} will upload when you're back online`,
             });
           }
+          
+          if (needsConversion) {
+            setIsConverting(false);
+          }
         }
       } catch (error) {
         console.error("Upload failed:", error);
+        setIsConverting(false);
         toast({
           title: "Upload failed",
           description: `Failed to upload ${file.name}`,
@@ -124,9 +145,11 @@ export function PhotoCaptureButton({
                 "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50",
                 !isOnline && "bg-muted"
               )}
-              disabled={isUploading}
+              disabled={isUploading || isConverting}
             >
-              {isUploading ? (
+              {isConverting ? (
+                <RefreshCw className="h-6 w-6 animate-spin" />
+              ) : isUploading ? (
                 <Loader2 className="h-6 w-6 animate-spin" />
               ) : !isOnline ? (
                 <CloudOff className="h-6 w-6" />
@@ -179,16 +202,18 @@ export function PhotoCaptureButton({
           <Button 
             variant="outline" 
             className={cn("gap-2", !isOnline && "border-muted-foreground/50")}
-            disabled={isUploading}
+            disabled={isUploading || isConverting}
           >
-            {isUploading ? (
+            {isConverting ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : isUploading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : !isOnline ? (
               <CloudOff className="h-4 w-4" />
             ) : (
               <ImagePlus className="h-4 w-4" />
             )}
-            {isOnline ? "Add Photo" : "Queue Photo"}
+            {isConverting ? "Converting..." : isOnline ? "Add Photo" : "Queue Photo"}
             {totalPending > 0 && (
               <Badge variant="secondary" className="ml-1">
                 {totalPending}

@@ -4,6 +4,7 @@ import { useBusinessContext } from './useBusinessContext';
 import { MediaCategory } from './useJobMedia';
 import { toast } from 'sonner';
 import { extractExifData, getCurrentPosition, ExtractedExifData } from '@/lib/exifExtractor';
+import { processFileForUpload } from '@/lib/heicConverter';
 
 interface UploadPhotoParams {
   jobId: string;
@@ -41,24 +42,32 @@ export function useUploadPhoto() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Extract EXIF data from the file (runs in parallel with GPS fetch)
-      const [exifData, gpsPosition] = await Promise.all([
-        extractExifData(file),
+      // Process file - convert HEIC to JPEG if needed
+      // Extract EXIF from ORIGINAL file before conversion (heic2any strips EXIF)
+      const [processedResult, exifData, gpsPosition] = await Promise.all([
+        processFileForUpload(file),
+        extractExifData(file), // Extract from original before any conversion
         getCurrentPosition(),
       ]);
 
-      // Generate unique file path
-      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      // Use the processed file (converted if HEIC, otherwise original)
+      const processedFile = processedResult.file;
+      if (processedResult.wasConverted) {
+        console.log('HEIC file converted to JPEG:', file.name, '->', processedFile.name);
+      }
+
+      // Generate unique file path using processed file
+      const fileExt = processedFile.name.split('.').pop()?.toLowerCase() || 'jpg';
       const fileName = `${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
       const storagePath = `${activeBusinessId}/${jobId}/${fileName}`;
 
-      // Determine media type
-      const mediaType = file.type.startsWith('video/') ? 'video' : 'photo';
+      // Determine media type from processed file
+      const mediaType = processedFile.type.startsWith('video/') ? 'video' : 'photo';
 
-      // Upload file to storage
+      // Upload processed file to storage
       const { error: uploadError } = await supabase.storage
         .from('job-media')
-        .upload(storagePath, file, {
+        .upload(storagePath, processedFile, {
           cacheControl: '3600',
           upsert: false,
         });
@@ -86,12 +95,12 @@ export function useUploadPhoto() {
         job_id: jobId,
         customer_id: customerId || null,
         media_type: mediaType,
-        mime_type: file.type,
+        mime_type: processedFile.type,
         file_extension: fileExt,
         storage_path: storagePath,
         storage_bucket: 'job-media',
         url,
-        file_size_bytes: file.size,
+        file_size_bytes: processedFile.size,
         category,
         description: description || null,
         uploaded_by: user.id,
