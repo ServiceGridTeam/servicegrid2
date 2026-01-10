@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Camera, ChevronDown, ImagePlus, CloudOff, Loader2, RefreshCw, Video } from "lucide-react";
+import { Camera, ChevronDown, ImagePlus, CloudOff, Loader2, RefreshCw, Video, Aperture } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,6 +16,7 @@ import type { MediaCategory } from "@/hooks/useJobMedia";
 import { cn } from "@/lib/utils";
 import { isHeicFile } from "@/lib/heicConverter";
 import { VideoRecordButton } from "./VideoRecordButton";
+import { CameraCapture } from "./CameraCapture";
 import { isVideoRecordingSupported } from "@/lib/videoUtils";
 
 interface PhotoCaptureButtonProps {
@@ -48,6 +49,7 @@ export function PhotoCaptureButton({
   const [selectedCategory, setSelectedCategory] = useState<MediaCategory>("general");
   const [isUploading, setIsUploading] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const uploadPhoto = useUploadPhoto();
   const { status: queueStatus, isOnline, queueUpload } = useUploadQueue();
   const supportsVideoRecording = isVideoRecordingSupported();
@@ -86,6 +88,51 @@ export function PhotoCaptureButton({
       toast({
         title: "Upload failed",
         description: "Failed to upload video",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+      onUploadComplete?.();
+    }
+  };
+
+  // Handle camera capture
+  const handleCameraCapture = async (file: File, category: MediaCategory, description?: string) => {
+    onUploadStart?.();
+    setIsUploading(true);
+
+    // Haptic feedback on capture
+    if (navigator.vibrate) {
+      navigator.vibrate([10, 50, 10]);
+    }
+
+    try {
+      if (isOnline) {
+        await uploadPhoto.mutateAsync({
+          file,
+          jobId,
+          category,
+          description,
+        });
+      } else {
+        const result = await queueUpload({
+          file,
+          jobId,
+          category,
+        });
+        
+        if (result.success) {
+          toast({
+            title: "Photo queued",
+            description: "Photo will upload when you're back online",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Camera capture upload failed:", error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload photo",
         variant: "destructive",
       });
     } finally {
@@ -182,6 +229,14 @@ export function PhotoCaptureButton({
           onChange={handleFileChange}
         />
         
+        {/* Camera Capture Modal */}
+        <CameraCapture
+          open={cameraOpen}
+          onOpenChange={setCameraOpen}
+          onCapture={handleCameraCapture}
+          defaultCategory={selectedCategory}
+        />
+        
         {/* Video record button - positioned above camera button */}
         {supportsVideoRecording && isOnline && (
           <div className="fixed bottom-24 right-6 z-50">
@@ -191,6 +246,22 @@ export function PhotoCaptureButton({
             />
           </div>
         )}
+        
+        {/* Live camera button */}
+        {isOnline && (
+          <div className="fixed bottom-24 right-20 z-50">
+            <Button
+              size="icon"
+              variant="secondary"
+              className="h-12 w-12 rounded-full shadow-lg"
+              onClick={() => setCameraOpen(true)}
+              disabled={isUploading || isConverting}
+            >
+              <Aperture className="h-5 w-5" />
+            </Button>
+          </div>
+        )}
+        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -251,6 +322,28 @@ export function PhotoCaptureButton({
         className="hidden"
         onChange={handleFileChange}
       />
+      
+      {/* Camera Capture Modal */}
+      <CameraCapture
+        open={cameraOpen}
+        onOpenChange={setCameraOpen}
+        onCapture={handleCameraCapture}
+        defaultCategory={selectedCategory}
+      />
+      
+      {/* Live camera button */}
+      {isOnline && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={() => setCameraOpen(true)}
+          disabled={isUploading || isConverting}
+        >
+          <Aperture className="h-4 w-4" />
+          Camera
+        </Button>
+      )}
       
       {/* Video recording button for default variant */}
       {supportsVideoRecording && isOnline && (

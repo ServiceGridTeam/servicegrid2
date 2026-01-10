@@ -21,3 +21,4 @@ export { PhotoLightbox } from "./PhotoLightbox";
 export { VideoRecordButton } from "./VideoRecordButton";
 export { MediaGalleryPreview } from "./MediaGalleryPreview";
 export { GPSAccuracyIndicator } from "./GPSAccuracyIndicator";
+export { CameraCapture } from "./CameraCapture";
