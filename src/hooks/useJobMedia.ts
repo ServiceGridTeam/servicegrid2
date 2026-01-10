@@ -39,6 +39,10 @@ export interface JobMedia {
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
+  // Annotation extension fields
+  has_annotations?: boolean;
+  annotation_count?: number;
+  current_annotation_id?: string | null;
 }
 
 interface UseJobMediaOptions {

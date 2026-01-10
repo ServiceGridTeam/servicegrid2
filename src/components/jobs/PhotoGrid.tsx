@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { Star, Trash2, Loader2, ImageOff, Play, GripVertical, CheckSquare, Square, Tag as TagIcon, X } from "lucide-react";
+import { Star, Trash2, Loader2, ImageOff, Play, GripVertical, CheckSquare, Square, Tag as TagIcon, X, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -276,6 +276,21 @@ function SortablePhotoItem({
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-background/80 text-foreground capitalize">
             {item.category}
           </span>
+        </div>
+      )}
+
+      {/* Annotation badge - show when photo has annotations */}
+      {item.has_annotations && !isUploading && (
+        <div className="absolute bottom-1 right-1 z-10">
+          <Badge 
+            variant="secondary" 
+            className="text-[10px] px-1.5 py-0.5 bg-black/70 text-white border-0 flex items-center gap-0.5"
+          >
+            <Pencil className="h-2.5 w-2.5" />
+            {item.annotation_count && item.annotation_count > 1 && (
+              <span>{item.annotation_count}</span>
+            )}
+          </Badge>
         </div>
       )}
 
