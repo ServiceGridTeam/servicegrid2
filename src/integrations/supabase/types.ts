@@ -2781,6 +2781,7 @@ export type Database = {
           customer_id: string
           customer_photos: string[] | null
           customer_visible_notes: string | null
+          deleted_at: string | null
           description: string | null
           drive_time_from_previous: number | null
           estimated_arrival: string | null
@@ -2848,6 +2849,7 @@ export type Database = {
           customer_id: string
           customer_photos?: string[] | null
           customer_visible_notes?: string | null
+          deleted_at?: string | null
           description?: string | null
           drive_time_from_previous?: number | null
           estimated_arrival?: string | null
@@ -2915,6 +2917,7 @@ export type Database = {
           customer_id?: string
           customer_photos?: string[] | null
           customer_visible_notes?: string | null
+          deleted_at?: string | null
           description?: string | null
           drive_time_from_previous?: number | null
           estimated_arrival?: string | null
@@ -3055,6 +3058,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "lead_scoring_rules_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_metrics: {
+        Row: {
+          business_id: string | null
+          cleanup_bytes_reclaimed: number | null
+          cleanup_deleted: number | null
+          created_at: string | null
+          id: string
+          metric_date: string
+          scans_clean: number | null
+          scans_rejected: number | null
+          storage_bytes: number | null
+          thumbnails_bytes: number | null
+          uploads_count: number | null
+        }
+        Insert: {
+          business_id?: string | null
+          cleanup_bytes_reclaimed?: number | null
+          cleanup_deleted?: number | null
+          created_at?: string | null
+          id?: string
+          metric_date?: string
+          scans_clean?: number | null
+          scans_rejected?: number | null
+          storage_bytes?: number | null
+          thumbnails_bytes?: number | null
+          uploads_count?: number | null
+        }
+        Update: {
+          business_id?: string | null
+          cleanup_bytes_reclaimed?: number | null
+          cleanup_deleted?: number | null
+          created_at?: string | null
+          id?: string
+          metric_date?: string
+          scans_clean?: number | null
+          scans_rejected?: number | null
+          storage_bytes?: number | null
+          thumbnails_bytes?: number | null
+          uploads_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_metrics_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
