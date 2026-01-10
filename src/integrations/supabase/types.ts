@@ -6707,10 +6707,12 @@ export type Database = {
         Args: { p_business_id: string; p_identifier: string }
         Returns: string
       }
-      increment_gallery_views_atomic: {
-        Args: { p_fingerprint_hash: string; p_share_id: string }
-        Returns: boolean
-      }
+      increment_gallery_views_atomic:
+        | { Args: { p_share_id: string }; Returns: undefined }
+        | {
+            Args: { p_fingerprint_hash: string; p_share_id: string }
+            Returns: boolean
+          }
       rebuild_media_search_text: {
         Args: { p_media_id: string }
         Returns: undefined
