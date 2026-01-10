@@ -2,11 +2,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusinessContext } from './useBusinessContext';
 import { usePhotoSettings } from './usePhotoSettings';
+import { useBusiness } from './useBusiness';
 import { MediaCategory } from './useJobMedia';
 import { toast } from 'sonner';
 import { extractExifData, getCurrentPosition, ExtractedExifData } from '@/lib/exifExtractor';
 import { processFileForUpload } from '@/lib/heicConverter';
 import { generateThumbnails } from '@/lib/thumbnailGenerator';
+import { applyWatermark, shouldApplyWatermark } from '@/lib/watermarkUtils';
 
 interface UploadPhotoParams {
   jobId: string;
@@ -43,6 +45,7 @@ export function useUploadPhoto() {
   const queryClient = useQueryClient();
   const { activeBusinessId } = useBusinessContext();
   const { photoSettings } = usePhotoSettings();
+  const { data: business } = useBusiness();
 
   return useMutation({
     mutationFn: async ({
@@ -85,11 +88,31 @@ export function useUploadPhoto() {
       // Determine media type from processed file
       const mediaType = processedFile.type.startsWith('video/') ? 'video' : 'photo';
       
+      // Apply watermark if enabled (only for photos, not videos)
+      let finalFile = processedFile;
+      if (mediaType === 'photo' && shouldApplyWatermark(photoSettings.auto_watermark, business?.logo_url)) {
+        try {
+          console.log('Applying watermark to photo...');
+          const watermarkedBlob = await applyWatermark(processedFile, {
+            logoUrl: business!.logo_url!,
+            position: photoSettings.watermark_position,
+            opacity: 0.7,
+            sizePercent: 12,
+            margin: 20,
+          });
+          finalFile = new File([watermarkedBlob], processedFile.name, { type: processedFile.type });
+          console.log('Watermark applied successfully');
+        } catch (err) {
+          console.warn('Watermark application failed, using original:', err);
+          // Continue with original file if watermarking fails
+        }
+      }
+      
       // Generate thumbnails and blurhash client-side for images
       let thumbnails: Awaited<ReturnType<typeof generateThumbnails>> | null = null;
       if (mediaType === 'photo') {
         try {
-          thumbnails = await generateThumbnails(processedFile);
+          thumbnails = await generateThumbnails(finalFile);
           console.log('Client-side thumbnails generated:', {
             blurhash: thumbnails.blurhash.substring(0, 10) + '...',
             dimensions: `${thumbnails.width}x${thumbnails.height}`,
@@ -99,16 +122,16 @@ export function useUploadPhoto() {
         }
       }
 
-      // Generate unique file path using processed file
-      const fileExt = processedFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+      // Generate unique file path using final file (watermarked if applicable)
+      const fileExt = finalFile.name.split('.').pop()?.toLowerCase() || 'jpg';
       const fileName = `${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
       const storagePath = `${activeBusinessId}/${jobId}/${fileName}`;
       const baseFilename = fileName.replace(/\.[^.]+$/, '');
 
-      // Upload original file to storage
+      // Upload original file (or watermarked) to storage
       const { error: uploadError } = await supabase.storage
         .from('job-media')
-        .upload(storagePath, processedFile, {
+        .upload(storagePath, finalFile, {
           cacheControl: '3600',
           upsert: false,
         });
@@ -167,12 +190,12 @@ export function useUploadPhoto() {
         job_id: jobId,
         customer_id: customerId || null,
         media_type: mediaType,
-        mime_type: processedFile.type,
+        mime_type: finalFile.type,
         file_extension: fileExt,
         storage_path: storagePath,
         storage_bucket: 'job-media',
         url,
-        file_size_bytes: processedFile.size,
+        file_size_bytes: finalFile.size,
         category,
         description: description || null,
         uploaded_by: user.id,
@@ -204,6 +227,8 @@ export function useUploadPhoto() {
         thumbnail_url_lg: thumbnailUrls.lg,
         // Blurhash for placeholder
         blurhash: thumbnails?.blurhash || null,
+        // Track if watermark was applied
+        is_watermarked: mediaType === 'photo' && shouldApplyWatermark(photoSettings.auto_watermark, business?.logo_url),
       };
 
       // Add optional fields that may not be in types yet
@@ -242,8 +267,8 @@ export function useUploadPhoto() {
 
       // Check for duplicates after upload
       try {
-        // Compute simple content hash for duplicate check
-        const arrayBuffer = await processedFile.arrayBuffer();
+        // Compute simple content hash for duplicate check (use final file - watermarked or original)
+        const arrayBuffer = await finalFile.arrayBuffer();
         const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const contentHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
