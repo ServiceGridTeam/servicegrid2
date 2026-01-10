@@ -18,12 +18,14 @@ import { ClockEventTimeline } from "./ClockEventTimeline";
 import { ExpandGeofenceDialog } from "./ExpandGeofenceDialog";
 import { JobLaborCard } from "./JobLaborCard";
 import { PhotoGrid } from "./PhotoGrid";
+import { PhotoUploadProgress } from "./PhotoUploadProgress";
 import { PhotoCaptureButton } from "./PhotoCaptureButton";
 import { MediaGalleryPreview } from "./MediaGalleryPreview";
 import { TimeEntriesTable } from "@/components/team/TimeEntriesTable";
 import { useUpdateJob, type JobWithCustomer } from "@/hooks/useJobs";
 import { useBusiness } from "@/hooks/useBusiness";
 import { useJobMedia } from "@/hooks/useJobMedia";
+import { useUploadQueue } from "@/hooks/useUploadQueue";
 import { useToast } from "@/hooks/use-toast";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 import {
@@ -61,10 +63,14 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
   const navigate = useNavigate();
   const updateJob = useUpdateJob();
   const { data: business } = useBusiness();
+  const { status: uploadStatus, retryFailed } = useUploadQueue();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [showTimeEntries, setShowTimeEntries] = useState(false);
   const [expandDialogOpen, setExpandDialogOpen] = useState(false);
   const [showMediaSection, setShowMediaSection] = useState(false);
+
+  // Check if there are active uploads for this job
+  const hasActiveUploads = uploadStatus.pendingCount > 0 || uploadStatus.uploadingCount > 0 || uploadStatus.failedCount > 0;
 
   // Check if geofence is currently expanded
   const isGeofenceExpanded =
@@ -614,6 +620,14 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
         open={expandDialogOpen}
         onOpenChange={setExpandDialogOpen}
       />
+
+      {/* Photo Upload Progress */}
+      {open && hasActiveUploads && (
+        <PhotoUploadProgress 
+          jobId={job.id} 
+          onRetryFailed={retryFailed}
+        />
+      )}
     </>
   );
 }
