@@ -297,8 +297,8 @@ export function useAnnotationLock(
         supabase.rpc('release_annotation_lock', {
           p_media_id: mediaId,
           p_user_id: user.id,
-        }).then(() => {}).catch(() => {
-          // Ignore errors on cleanup
+        }).then(() => {
+          // Best effort cleanup - errors ignored
         });
       }
     };
