@@ -143,3 +143,6 @@ verify_jwt = false
 
 [functions.email-to-request]
 verify_jwt = false
+
+[functions.process-photo-upload]
+verify_jwt = false
