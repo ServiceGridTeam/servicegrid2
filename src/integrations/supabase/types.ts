@@ -2435,11 +2435,13 @@ export type Database = {
           mime_type: string
           perceptual_hash: string | null
           processing_error: string | null
+          search_text: string | null
           shutter_speed: string | null
           sort_order: number | null
           status: Database["public"]["Enums"]["media_status"]
           storage_bucket: string
           storage_path: string
+          tag_slugs: string[] | null
           thumbnail_url_lg: string | null
           thumbnail_url_md: string | null
           thumbnail_url_sm: string | null
@@ -2483,11 +2485,13 @@ export type Database = {
           mime_type: string
           perceptual_hash?: string | null
           processing_error?: string | null
+          search_text?: string | null
           shutter_speed?: string | null
           sort_order?: number | null
           status?: Database["public"]["Enums"]["media_status"]
           storage_bucket?: string
           storage_path: string
+          tag_slugs?: string[] | null
           thumbnail_url_lg?: string | null
           thumbnail_url_md?: string | null
           thumbnail_url_sm?: string | null
@@ -2531,11 +2535,13 @@ export type Database = {
           mime_type?: string
           perceptual_hash?: string | null
           processing_error?: string | null
+          search_text?: string | null
           shutter_speed?: string | null
           sort_order?: number | null
           status?: Database["public"]["Enums"]["media_status"]
           storage_bucket?: string
           storage_path?: string
+          tag_slugs?: string[] | null
           thumbnail_url_lg?: string | null
           thumbnail_url_md?: string | null
           thumbnail_url_sm?: string | null
@@ -2571,6 +2577,65 @@ export type Database = {
           {
             foreignKeyName: "job_media_uploaded_by_fkey"
             columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_media_tags: {
+        Row: {
+          business_id: string
+          id: string
+          job_media_id: string
+          source: string | null
+          tag_id: string
+          tagged_at: string | null
+          tagged_by: string | null
+        }
+        Insert: {
+          business_id: string
+          id?: string
+          job_media_id: string
+          source?: string | null
+          tag_id: string
+          tagged_at?: string | null
+          tagged_by?: string | null
+        }
+        Update: {
+          business_id?: string
+          id?: string
+          job_media_id?: string
+          source?: string | null
+          tag_id?: string
+          tagged_at?: string | null
+          tagged_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_media_tags_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_media_tags_job_media_id_fkey"
+            columns: ["job_media_id"]
+            isOneToOne: false
+            referencedRelation: "job_media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_media_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "media_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_media_tags_tagged_by_fkey"
+            columns: ["tagged_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -3123,6 +3188,68 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "media_metrics_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_tags: {
+        Row: {
+          business_id: string
+          color: string | null
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          is_system: boolean | null
+          last_used_at: string | null
+          name: string
+          slug: string
+          sort_order: number | null
+          tag_group: string | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          business_id: string
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          last_used_at?: string | null
+          name: string
+          slug: string
+          sort_order?: number | null
+          tag_group?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          business_id?: string
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          last_used_at?: string | null
+          name?: string
+          slug?: string
+          sort_order?: number | null
+          tag_group?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_tags_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
@@ -5314,6 +5441,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      rebuild_media_search_text: {
+        Args: { p_media_id: string }
+        Returns: undefined
       }
       set_job_cover_photo: {
         Args: { p_job_id: string; p_media_id: string }
