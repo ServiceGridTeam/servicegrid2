@@ -20,6 +20,7 @@ import { PhoneIntegrationCard } from "@/components/settings/PhoneIntegrationCard
 import { PhoneSettingsForm } from "@/components/settings/PhoneSettingsForm";
 import { EmailBrandingCard } from "@/components/settings/EmailBrandingCard";
 import { PhotoSettingsCard } from "@/components/settings/PhotoSettingsCard";
+import { TagManager } from "@/components/tags/TagManager";
 import { EmailConnectionCard, EmailRulesManager } from "@/components/email";
 import { useEmailConnections } from "@/hooks/useEmailConnections";
 
@@ -495,6 +496,10 @@ export default function Settings() {
             </p>
           </div>
           <PhotoSettingsCard />
+          
+          <div className="mt-6">
+            <TagManager />
+          </div>
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">
