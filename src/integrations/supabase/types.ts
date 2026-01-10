@@ -14,6 +14,123 @@ export type Database = {
   }
   public: {
     Tables: {
+      annotation_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_name: string | null
+          annotation_id: string | null
+          business_id: string
+          changes: Json | null
+          comparison_id: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          target_type: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_name?: string | null
+          annotation_id?: string | null
+          business_id: string
+          changes?: Json | null
+          comparison_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          target_type: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_name?: string | null
+          annotation_id?: string | null
+          business_id?: string
+          changes?: Json | null
+          comparison_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "annotation_audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "annotation_audit_log_annotation_id_fkey"
+            columns: ["annotation_id"]
+            isOneToOne: false
+            referencedRelation: "media_annotations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "annotation_audit_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "annotation_audit_log_comparison_id_fkey"
+            columns: ["comparison_id"]
+            isOneToOne: false
+            referencedRelation: "before_after_comparisons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      annotation_locks: {
+        Row: {
+          expires_at: string
+          job_media_id: string
+          locked_at: string
+          locked_by: string
+          locked_by_name: string
+        }
+        Insert: {
+          expires_at: string
+          job_media_id: string
+          locked_at?: string
+          locked_by: string
+          locked_by_name: string
+        }
+        Update: {
+          expires_at?: string
+          job_media_id?: string
+          locked_at?: string
+          locked_by?: string
+          locked_by_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "annotation_locks_job_media_id_fkey"
+            columns: ["job_media_id"]
+            isOneToOne: true
+            referencedRelation: "job_media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "annotation_locks_job_media_id_fkey"
+            columns: ["job_media_id"]
+            isOneToOne: true
+            referencedRelation: "media_search_index"
+            referencedColumns: ["media_id"]
+          },
+          {
+            foreignKeyName: "annotation_locks_locked_by_fkey"
+            columns: ["locked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audience_segments: {
         Row: {
           business_id: string
@@ -110,6 +227,126 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      before_after_comparisons: {
+        Row: {
+          after_crop: Json | null
+          after_media_id: string
+          before_crop: Json | null
+          before_media_id: string
+          business_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          description: string | null
+          display_mode: string
+          id: string
+          is_public: boolean
+          job_id: string
+          share_expires_at: string | null
+          share_token: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          after_crop?: Json | null
+          after_media_id: string
+          before_crop?: Json | null
+          before_media_id: string
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          display_mode?: string
+          id?: string
+          is_public?: boolean
+          job_id: string
+          share_expires_at?: string | null
+          share_token?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          after_crop?: Json | null
+          after_media_id?: string
+          before_crop?: Json | null
+          before_media_id?: string
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          display_mode?: string
+          id?: string
+          is_public?: boolean
+          job_id?: string
+          share_expires_at?: string | null
+          share_token?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "before_after_comparisons_after_media_id_fkey"
+            columns: ["after_media_id"]
+            isOneToOne: false
+            referencedRelation: "job_media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "before_after_comparisons_after_media_id_fkey"
+            columns: ["after_media_id"]
+            isOneToOne: false
+            referencedRelation: "media_search_index"
+            referencedColumns: ["media_id"]
+          },
+          {
+            foreignKeyName: "before_after_comparisons_before_media_id_fkey"
+            columns: ["before_media_id"]
+            isOneToOne: false
+            referencedRelation: "job_media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "before_after_comparisons_before_media_id_fkey"
+            columns: ["before_media_id"]
+            isOneToOne: false
+            referencedRelation: "media_search_index"
+            referencedColumns: ["media_id"]
+          },
+          {
+            foreignKeyName: "before_after_comparisons_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "before_after_comparisons_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "before_after_comparisons_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "before_after_comparisons_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
             referencedColumns: ["id"]
           },
         ]
@@ -2411,6 +2648,7 @@ export type Database = {
       job_media: {
         Row: {
           altitude: number | null
+          annotation_count: number
           aperture: string | null
           blurhash: string | null
           business_id: string
@@ -2422,6 +2660,7 @@ export type Database = {
           checklist_sequence: number | null
           content_hash: string | null
           created_at: string
+          current_annotation_id: string | null
           customer_id: string | null
           deleted_at: string | null
           description: string | null
@@ -2430,6 +2669,7 @@ export type Database = {
           file_size_bytes: number
           focal_length: string | null
           gps_accuracy_meters: number | null
+          has_annotations: boolean
           height: number | null
           id: string
           is_cover_photo: boolean | null
@@ -2461,6 +2701,7 @@ export type Database = {
         }
         Insert: {
           altitude?: number | null
+          annotation_count?: number
           aperture?: string | null
           blurhash?: string | null
           business_id: string
@@ -2472,6 +2713,7 @@ export type Database = {
           checklist_sequence?: number | null
           content_hash?: string | null
           created_at?: string
+          current_annotation_id?: string | null
           customer_id?: string | null
           deleted_at?: string | null
           description?: string | null
@@ -2480,6 +2722,7 @@ export type Database = {
           file_size_bytes: number
           focal_length?: string | null
           gps_accuracy_meters?: number | null
+          has_annotations?: boolean
           height?: number | null
           id?: string
           is_cover_photo?: boolean | null
@@ -2511,6 +2754,7 @@ export type Database = {
         }
         Update: {
           altitude?: number | null
+          annotation_count?: number
           aperture?: string | null
           blurhash?: string | null
           business_id?: string
@@ -2522,6 +2766,7 @@ export type Database = {
           checklist_sequence?: number | null
           content_hash?: string | null
           created_at?: string
+          current_annotation_id?: string | null
           customer_id?: string | null
           deleted_at?: string | null
           description?: string | null
@@ -2530,6 +2775,7 @@ export type Database = {
           file_size_bytes?: number
           focal_length?: string | null
           gps_accuracy_meters?: number | null
+          has_annotations?: boolean
           height?: number | null
           id?: string
           is_cover_photo?: boolean | null
@@ -2565,6 +2811,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_media_current_annotation_id_fkey"
+            columns: ["current_annotation_id"]
+            isOneToOne: false
+            referencedRelation: "media_annotations"
             referencedColumns: ["id"]
           },
           {
@@ -2870,6 +3123,7 @@ export type Database = {
           clock_out_location_lng: number | null
           clock_out_override: boolean | null
           clock_out_time: string | null
+          comparison_count: number
           cover_photo_url: string | null
           created_at: string
           customer_id: string
@@ -2887,6 +3141,7 @@ export type Database = {
           geofence_expanded_until: string | null
           geofence_radius_meters: number | null
           has_after_photos: boolean | null
+          has_before_after: boolean
           has_before_photos: boolean | null
           id: string
           internal_notes: string | null
@@ -2938,6 +3193,7 @@ export type Database = {
           clock_out_location_lng?: number | null
           clock_out_override?: boolean | null
           clock_out_time?: string | null
+          comparison_count?: number
           cover_photo_url?: string | null
           created_at?: string
           customer_id: string
@@ -2955,6 +3211,7 @@ export type Database = {
           geofence_expanded_until?: string | null
           geofence_radius_meters?: number | null
           has_after_photos?: boolean | null
+          has_before_after?: boolean
           has_before_photos?: boolean | null
           id?: string
           internal_notes?: string | null
@@ -3006,6 +3263,7 @@ export type Database = {
           clock_out_location_lng?: number | null
           clock_out_override?: boolean | null
           clock_out_time?: string | null
+          comparison_count?: number
           cover_photo_url?: string | null
           created_at?: string
           customer_id?: string
@@ -3023,6 +3281,7 @@ export type Database = {
           geofence_expanded_until?: string | null
           geofence_radius_meters?: number | null
           has_after_photos?: boolean | null
+          has_before_after?: boolean
           has_before_photos?: boolean | null
           id?: string
           internal_notes?: string | null
@@ -3155,6 +3414,121 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_annotations: {
+        Row: {
+          annotation_data: Json
+          business_id: string
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          has_arrows: boolean
+          has_measurements: boolean
+          has_shapes: boolean
+          has_text: boolean
+          id: string
+          is_current: boolean
+          job_media_id: string
+          object_count: number
+          parent_version_id: string | null
+          render_error: string | null
+          rendered_at: string | null
+          rendered_url: string | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          annotation_data?: Json
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          has_arrows?: boolean
+          has_measurements?: boolean
+          has_shapes?: boolean
+          has_text?: boolean
+          id?: string
+          is_current?: boolean
+          job_media_id: string
+          object_count?: number
+          parent_version_id?: string | null
+          render_error?: string | null
+          rendered_at?: string | null
+          rendered_url?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          annotation_data?: Json
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          has_arrows?: boolean
+          has_measurements?: boolean
+          has_shapes?: boolean
+          has_text?: boolean
+          id?: string
+          is_current?: boolean
+          job_media_id?: string
+          object_count?: number
+          parent_version_id?: string | null
+          render_error?: string | null
+          rendered_at?: string | null
+          rendered_url?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_annotations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_annotations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_annotations_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_annotations_job_media_id_fkey"
+            columns: ["job_media_id"]
+            isOneToOne: false
+            referencedRelation: "job_media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_annotations_job_media_id_fkey"
+            columns: ["job_media_id"]
+            isOneToOne: false
+            referencedRelation: "media_search_index"
+            referencedColumns: ["media_id"]
+          },
+          {
+            foreignKeyName: "media_annotations_parent_version_id_fkey"
+            columns: ["parent_version_id"]
+            isOneToOne: false
+            referencedRelation: "media_annotations"
             referencedColumns: ["id"]
           },
         ]
@@ -4128,6 +4502,56 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      render_jobs: {
+        Row: {
+          annotation_id: string
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          id: string
+          last_error: string | null
+          max_attempts: number
+          next_retry_at: string | null
+          priority: number
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          annotation_id: string
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          max_attempts?: number
+          next_retry_at?: string | null
+          priority?: number
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          annotation_id?: string
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          max_attempts?: number
+          next_retry_at?: string | null
+          priority?: number
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "render_jobs_annotation_id_fkey"
+            columns: ["annotation_id"]
+            isOneToOne: false
+            referencedRelation: "media_annotations"
             referencedColumns: ["id"]
           },
         ]
@@ -5469,6 +5893,10 @@ export type Database = {
     }
     Functions: {
       accept_team_invite: { Args: { _token: string }; Returns: Json }
+      acquire_annotation_lock: {
+        Args: { p_media_id: string; p_ttl_seconds?: number; p_user_id: string }
+        Returns: Json
+      }
       calculate_distance_meters: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number
@@ -5499,7 +5927,9 @@ export type Database = {
           reason: string
         }[]
       }
+      cleanup_expired_annotation_locks: { Args: never; Returns: number }
       cleanup_expired_rate_limits: { Args: never; Returns: undefined }
+      generate_comparison_share_token: { Args: never; Returns: string }
       generate_service_request_number: {
         Args: { bus_id: string }
         Returns: string
@@ -5538,6 +5968,14 @@ export type Database = {
         Returns: undefined
       }
       refresh_media_search_index: { Args: never; Returns: undefined }
+      release_annotation_lock: {
+        Args: { p_media_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      save_annotation_version: {
+        Args: { p_annotation_data: Json; p_media_id: string; p_user_id: string }
+        Returns: Json
+      }
       search_photos: {
         Args: {
           p_business_id: string
