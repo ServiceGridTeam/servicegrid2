@@ -13,6 +13,7 @@ interface UploadPhotoParams {
   category?: MediaCategory;
   description?: string;
   checklistItemId?: string;
+  durationSeconds?: number; // For video uploads
 }
 
 interface UploadResult {
@@ -33,6 +34,7 @@ export function useUploadPhoto() {
       category = 'general',
       description,
       checklistItemId,
+      durationSeconds,
     }: UploadPhotoParams): Promise<UploadResult> => {
       if (!activeBusinessId) {
         throw new Error('No active business');
@@ -124,6 +126,8 @@ export function useUploadPhoto() {
         // Image dimensions from EXIF
         width: exifData?.width || null,
         height: exifData?.height || null,
+        // Video duration (passed from client for videos)
+        duration_seconds: durationSeconds || null,
       };
 
       // Add optional fields that may not be in types yet
