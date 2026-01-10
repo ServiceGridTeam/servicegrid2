@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { GripVertical, MoreVertical, Pencil, Plus, Trash2 } from 'lucide-react';
-import { useTags, useCreateTag, useUpdateTag, useDeleteTag, useReorderTags, type MediaTag, type TagColor } from '@/hooks/useTags';
+import { GripVertical, MoreVertical, Pencil, Plus, Trash2, AlertCircle, Info, Lock } from 'lucide-react';
+import { useTags, useCreateTag, useUpdateTag, useDeleteTag, useReorderTags, useTagCreationRateLimit, type MediaTag, type TagColor } from '@/hooks/useTags';
 import { TagChip } from './TagChip';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +21,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   DndContext,
   closestCenter,
@@ -104,9 +111,20 @@ function SortableTagRow({ tag, onEdit, onDelete }: SortableTagRowProps) {
       <TagChip name={tag.name} color={tag.color} size="md" />
 
       {tag.is_system && (
-        <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-          System
-        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="secondary" className="text-xs cursor-help gap-1">
+              <Lock className="h-3 w-3" />
+              System
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-[220px]">
+            <p className="text-xs">
+              System tags are built-in and cannot be renamed or deleted. 
+              You can still change the color and group.
+            </p>
+          </TooltipContent>
+        </Tooltip>
       )}
 
       <span className="text-sm text-muted-foreground ml-auto">
@@ -124,7 +142,13 @@ function SortableTagRow({ tag, onEdit, onDelete }: SortableTagRowProps) {
             <Pencil className="h-4 w-4 mr-2" />
             Edit
           </DropdownMenuItem>
-          {!tag.is_system && (
+          {tag.is_system ? (
+            <DropdownMenuItem disabled className="text-muted-foreground">
+              <Lock className="h-4 w-4 mr-2" />
+              Delete
+              <Badge variant="outline" className="ml-2 text-xs">Protected</Badge>
+            </DropdownMenuItem>
+          ) : (
             <DropdownMenuItem 
               onClick={() => onDelete(tag)}
               className="text-destructive focus:text-destructive"
@@ -152,6 +176,7 @@ export function TagManager() {
   const updateTag = useUpdateTag();
   const deleteTag = useDeleteTag();
   const reorderTags = useReorderTags();
+  const rateLimit = useTagCreationRateLimit();
 
   const [editingTag, setEditingTag] = useState<MediaTag | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -201,7 +226,7 @@ export function TagManager() {
       await updateTag.mutateAsync({
         tagId: editingTag.id,
         updates: {
-          name: formData.name,
+          name: editingTag.is_system ? undefined : formData.name, // Don't update name for system tags
           color: formData.color,
           description: formData.description || undefined,
           tag_group: formData.tag_group || undefined,
@@ -244,10 +269,28 @@ export function TagManager() {
               Create and manage tags to organize your job photos
             </CardDescription>
           </div>
-          <Button onClick={openCreate} className="gap-2">
-            <Plus className="h-4 w-4" />
-            New Tag
-          </Button>
+          <div className="flex items-center gap-2">
+            {rateLimit.isNearLimit && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="text-amber-600 border-amber-300">
+                    {rateLimit.remaining}/20 remaining
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">Tag creation limit resets in {rateLimit.resetTimeMinutes} min</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            <Button 
+              onClick={openCreate} 
+              className="gap-2"
+              disabled={!rateLimit.canCreate}
+            >
+              <Plus className="h-4 w-4" />
+              New Tag
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -312,6 +355,16 @@ export function TagManager() {
           </DialogHeader>
 
           <div className="space-y-4">
+            {/* System tag warning */}
+            {editingTag?.is_system && (
+              <Alert>
+                <Lock className="h-4 w-4" />
+                <AlertDescription>
+                  System tag names are protected. You can change the color and group.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div>
               <Label htmlFor="name">Name</Label>
               <Input
@@ -322,7 +375,8 @@ export function TagManager() {
                 disabled={editingTag?.is_system}
               />
               {editingTag?.is_system && (
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <Lock className="h-3 w-3" />
                   System tag names cannot be changed
                 </p>
               )}
@@ -406,21 +460,38 @@ export function TagManager() {
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Tag</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              Delete Tag
+              {deleteConfirm?.is_system && (
+                <Badge variant="destructive">System Tag</Badge>
+              )}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deleteConfirm?.name}"? 
-              This tag will be removed from all photos.
-              This action cannot be undone.
+              {deleteConfirm?.is_system ? (
+                <>
+                  <span className="font-medium text-destructive">This is a system tag and cannot be deleted.</span>
+                  <br />
+                  System tags are built-in to ensure consistent organization.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to delete "{deleteConfirm?.name}"? 
+                  This tag will be removed from all photos.
+                  <span className="block mt-2 font-medium">This action cannot be undone.</span>
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
+            {!deleteConfirm?.is_system && (
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
