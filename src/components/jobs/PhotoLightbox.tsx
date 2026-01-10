@@ -7,13 +7,18 @@ import {
   Trash2, 
   Download,
   MapPin,
-  Calendar
+  Calendar,
+  Tag as TagIcon
 } from "lucide-react";
 import { format } from "date-fns";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { TagChip } from "@/components/tags/TagChip";
+import { TagPicker } from "@/components/tags/TagPicker";
+import { usePhotoTags, useTagPhoto, useUntagPhoto } from "@/hooks/usePhotoTags";
+import { useCreateTag, type TagColor } from "@/hooks/useTags";
 import type { JobMedia } from "@/hooks/useJobMedia";
 
 interface PhotoLightboxProps {
@@ -40,6 +45,13 @@ export function PhotoLightbox({
   }, [initialIndex]);
 
   const currentMedia = media[currentIndex];
+  
+  // Tag hooks
+  const { data: photoTags = [] } = usePhotoTags(currentMedia?.id ?? null);
+  const tagPhoto = useTagPhoto();
+  const untagPhoto = useUntagPhoto();
+  const createTag = useCreateTag();
+
   if (!currentMedia) return null;
 
   const goToPrevious = () => {
@@ -72,6 +84,23 @@ export function PhotoLightbox({
     if (e.key === "ArrowRight") goToNext();
     if (e.key === "Escape") onOpenChange(false);
   };
+
+  const handleTagSelect = (tagId: string) => {
+    tagPhoto.mutate({ mediaId: currentMedia.id, tagId });
+  };
+
+  const handleTagRemove = (tagId: string) => {
+    untagPhoto.mutate({ mediaId: currentMedia.id, tagId });
+  };
+
+  const handleCreateTag = async (name: string, color: TagColor) => {
+    const newTag = await createTag.mutateAsync({ name, color });
+    if (newTag) {
+      tagPhoto.mutate({ mediaId: currentMedia.id, tagId: newTag.id });
+    }
+  };
+
+  const selectedTagIds = photoTags.map(pt => pt.tag_id);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -130,10 +159,11 @@ export function PhotoLightbox({
 
         {/* Bottom info bar */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-          <div className="flex items-end justify-between">
+          <div className="flex items-end justify-between gap-4">
             {/* Photo info */}
-            <div className="text-white space-y-1">
-              <div className="flex items-center gap-2">
+            <div className="text-white space-y-2 flex-1 min-w-0">
+              {/* Category and cover badge */}
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="secondary" className="capitalize">
                   {currentMedia.category}
                 </Badge>
@@ -143,6 +173,32 @@ export function PhotoLightbox({
                     Cover
                   </Badge>
                 )}
+              </div>
+
+              {/* Tags section */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {photoTags.slice(0, 4).map(pt => pt.tag && (
+                  <TagChip
+                    key={pt.id}
+                    name={pt.tag.name}
+                    color={pt.tag.color}
+                    size="sm"
+                    removable
+                    onRemove={() => handleTagRemove(pt.tag_id)}
+                  />
+                ))}
+                {photoTags.length > 4 && (
+                  <span className="text-xs text-white/60">+{photoTags.length - 4} more</span>
+                )}
+                <TagPicker
+                  selectedTagIds={selectedTagIds}
+                  onTagSelect={handleTagSelect}
+                  onTagRemove={handleTagRemove}
+                  onCreateTag={handleCreateTag}
+                  variant="button"
+                  placeholder="Add tag"
+                  className="h-7 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20"
+                />
               </div>
               
               {currentMedia.description && (
@@ -171,7 +227,7 @@ export function PhotoLightbox({
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
