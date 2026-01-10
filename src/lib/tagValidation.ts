@@ -10,7 +10,7 @@ interface ValidationResult {
 const FORBIDDEN_PATTERNS = [
   /<script/i,           // HTML script tags
   /<[^>]+>/,            // Any HTML tags
-  /['";--]/,            // SQL injection patterns
+  /['";]|--/,           // SQL injection patterns (quotes, semicolons, comment syntax)
   /[\x00-\x1F\x7F]/,    // Control characters
   /javascript:/i,       // JS protocol
   /data:/i,             // Data URIs
