@@ -12,6 +12,7 @@ import { useLocation, Link } from "react-router-dom";
 import { GlobalSearch } from "./GlobalSearch";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import { GeofenceAlertBanner } from "@/components/team/GeofenceAlertBanner";
+import { OfflineSyncIndicator } from "./OfflineSyncIndicator";
 
 const routeTitles: Record<string, string> = {
   "/": "Dashboard",
@@ -79,6 +80,7 @@ export function AppHeader() {
 
       <div className="ml-auto flex items-center gap-2">
         <GeofenceAlertBanner />
+        <OfflineSyncIndicator />
         <GlobalSearch />
         <NotificationsDropdown />
       </div>

@@ -17,9 +17,13 @@ import { AutoAssignButton } from "./AutoAssignButton";
 import { ClockEventTimeline } from "./ClockEventTimeline";
 import { ExpandGeofenceDialog } from "./ExpandGeofenceDialog";
 import { JobLaborCard } from "./JobLaborCard";
+import { PhotoGrid } from "./PhotoGrid";
+import { PhotoCaptureButton } from "./PhotoCaptureButton";
+import { MediaGalleryPreview } from "./MediaGalleryPreview";
 import { TimeEntriesTable } from "@/components/team/TimeEntriesTable";
 import { useUpdateJob, type JobWithCustomer } from "@/hooks/useJobs";
 import { useBusiness } from "@/hooks/useBusiness";
+import { useJobMedia } from "@/hooks/useJobMedia";
 import { useToast } from "@/hooks/use-toast";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 import {
@@ -38,6 +42,9 @@ import {
   Timer,
   Shield,
   Expand,
+  Camera,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +64,7 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [showTimeEntries, setShowTimeEntries] = useState(false);
   const [expandDialogOpen, setExpandDialogOpen] = useState(false);
+  const [showMediaSection, setShowMediaSection] = useState(false);
 
   // Check if geofence is currently expanded
   const isGeofenceExpanded =
@@ -438,6 +446,41 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
                     </Button>
                   )}
               </div>
+            </div>
+            <Separator />
+
+            {/* Photos & Media */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                  <Camera className="h-4 w-4" />
+                  Photos & Media
+                </h3>
+                <div className="flex items-center gap-2">
+                  <PhotoCaptureButton jobId={job.id} />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() => setShowMediaSection(!showMediaSection)}
+                  >
+                    {showMediaSection ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+              
+              {!showMediaSection ? (
+                <MediaGalleryPreview 
+                  jobId={job.id} 
+                  onViewAll={() => setShowMediaSection(true)}
+                />
+              ) : (
+                <PhotoGrid jobId={job.id} />
+              )}
             </div>
             <Separator />
 

@@ -15,3 +15,7 @@ export { ClockEventHistory } from "./ClockEventHistory";
 export { ClockEventTimeline } from "./ClockEventTimeline";
 export { ExpandGeofenceDialog } from "./ExpandGeofenceDialog";
 export { JobLaborCard } from "./JobLaborCard";
+export { PhotoCaptureButton } from "./PhotoCaptureButton";
+export { PhotoGrid } from "./PhotoGrid";
+export { PhotoLightbox } from "./PhotoLightbox";
+export { MediaGalleryPreview } from "./MediaGalleryPreview";
