@@ -1,14 +1,17 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
-import { Star, Trash2, Loader2, ImageOff, Play, GripVertical } from "lucide-react";
+import { Star, Trash2, Loader2, ImageOff, Play, GripVertical, CheckSquare, Square, Tag as TagIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useJobMedia, useSetCoverPhoto, useReorderMedia, type MediaCategory, type JobMedia, type MediaStatus } from "@/hooks/useJobMedia";
+import { usePhotoTags } from "@/hooks/usePhotoTags";
 import { useDeletePhoto } from "@/hooks/useDeletePhoto";
 import { useToast } from "@/hooks/use-toast";
 import { PhotoLightbox } from "./PhotoLightbox";
+import { BulkTagDialog } from "@/components/tags/BulkTagDialog";
+import { TagChip } from "@/components/tags/TagChip";
 import { formatDuration } from "@/lib/videoUtils";
 import { decodeBlurhash } from "@/lib/thumbnailGenerator";
 import {
@@ -77,16 +80,48 @@ function BlurhashPlaceholder({ hash, className }: { hash: string; className?: st
   );
 }
 
+// Photo tags overlay (shows on hover)
+function PhotoTagsOverlay({ mediaId }: { mediaId: string }) {
+  const { data: tags = [] } = usePhotoTags(mediaId);
+  
+  if (!tags.length) return null;
+  
+  return (
+    <div className="absolute bottom-6 left-1 right-1 flex flex-wrap gap-0.5 pointer-events-none">
+      {tags.slice(0, 2).map(t => t.tag && (
+        <TagChip
+          key={t.id}
+          name={t.tag.name}
+          color={t.tag.color}
+          size="sm"
+          className="text-[9px] px-1 py-0"
+        />
+      ))}
+      {tags.length > 2 && (
+        <span className="text-[9px] text-white bg-black/50 px-1 rounded">
+          +{tags.length - 2}
+        </span>
+      )}
+    </div>
+  );
+}
+
 // Sortable Photo Item Component
 function SortablePhotoItem({
   item,
   index,
+  isSelectMode,
+  isSelected,
+  onToggleSelect,
   onSetCover,
   onDelete,
   onOpenLightbox,
 }: {
   item: MediaItem;
   index: number;
+  isSelectMode: boolean;
+  isSelected: boolean;
+  onToggleSelect: (id: string) => void;
   onSetCover: (id: string) => void;
   onDelete: (id: string) => void;
   onOpenLightbox: (item: MediaItem, index: number) => void;
@@ -98,7 +133,7 @@ function SortablePhotoItem({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: item.id, disabled: item.status === 'uploading' });
+  } = useSortable({ id: item.id, disabled: item.status === 'uploading' || isSelectMode });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -108,6 +143,16 @@ function SortablePhotoItem({
 
   const isUploading = item.status === 'uploading';
   const isProcessing = item.status === 'processing';
+
+  const handleClick = () => {
+    if (isDragging) return;
+    if (isSelectMode) {
+      onToggleSelect(item.id);
+      if (navigator.vibrate) navigator.vibrate(5);
+    } else {
+      onOpenLightbox(item, index);
+    }
+  };
 
   return (
     <motion.div
@@ -122,12 +167,24 @@ function SortablePhotoItem({
       className={cn(
         "group relative aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer",
         (isProcessing || isUploading) && "opacity-80",
-        isDragging && "opacity-50 ring-2 ring-primary shadow-xl"
+        isDragging && "opacity-50 ring-2 ring-primary shadow-xl",
+        isSelected && "ring-2 ring-primary"
       )}
-      onClick={() => !isDragging && onOpenLightbox(item, index)}
+      onClick={handleClick}
     >
-      {/* Drag handle - visible on hover */}
-      {!isUploading && (
+      {/* Selection checkbox */}
+      {isSelectMode && (
+        <div className="absolute top-1 left-1 z-20">
+          {isSelected ? (
+            <CheckSquare className="h-5 w-5 text-primary fill-primary/20" />
+          ) : (
+            <Square className="h-5 w-5 text-white/80 drop-shadow" />
+          )}
+        </div>
+      )}
+
+      {/* Drag handle - visible on hover (not in select mode) */}
+      {!isUploading && !isSelectMode && (
         <div
           {...attributes}
           {...listeners}
@@ -205,6 +262,13 @@ function SortablePhotoItem({
         </div>
       )}
 
+      {/* Tags overlay on hover */}
+      {!isSelectMode && !isUploading && (
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+          <PhotoTagsOverlay mediaId={item.id} />
+        </div>
+      )}
+
       {/* Category badge - only show for images (videos already have duration badge) */}
       {item.media_type !== "video" && !isUploading && (
         <div className="absolute bottom-1 left-1">
@@ -214,8 +278,8 @@ function SortablePhotoItem({
         </div>
       )}
 
-      {/* Hover actions - don't show for uploading items */}
-      {!isUploading && !isDragging && (
+      {/* Hover actions - don't show for uploading items or in select mode */}
+      {!isUploading && !isDragging && !isSelectMode && (
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
           {item.media_type !== "video" && (
             <Button
@@ -285,6 +349,11 @@ export function PhotoGrid({ jobId, onPhotoCountChange }: PhotoGridProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number>(0);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [localMedia, setLocalMedia] = useState<MediaItem[] | null>(null);
+  
+  // Multi-select state
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkTagDialogOpen, setBulkTagDialogOpen] = useState(false);
 
   const { 
     media: fetchedMedia, 
@@ -416,7 +485,47 @@ export function PhotoGrid({ jobId, onPhotoCountChange }: PhotoGridProps) {
     setLightboxIndex(index);
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) 
+        ? prev.filter(i => i !== id)
+        : [...prev, id]
+    );
+  };
+
+  const selectAll = () => {
+    const selectableIds = media.filter(m => m.status !== 'uploading').map(m => m.id);
+    setSelectedIds(selectableIds);
+  };
+
+  const clearSelection = () => {
+    setSelectedIds([]);
+    setIsSelectMode(false);
+  };
+
+  const handleBulkDelete = async () => {
+    if (!selectedIds.length) return;
+    
+    for (const id of selectedIds) {
+      await deletePhoto.mutateAsync({ mediaId: id, jobId });
+    }
+    
+    toast({
+      title: `${selectedIds.length} photos deleted`,
+      description: "Selected photos have been removed.",
+    });
+    
+    clearSelection();
+  };
+
   const activeItem = activeId ? media.find((m) => m.id === activeId) : null;
+
+  const selectedThumbnails = useMemo(() => 
+    media
+      .filter(m => selectedIds.includes(m.id))
+      .map(m => ({ id: m.id, url: m.thumbnail_url_sm || m.url || '' })),
+    [media, selectedIds]
+  );
 
   if (isLoading) {
     return (
@@ -433,29 +542,97 @@ export function PhotoGrid({ jobId, onPhotoCountChange }: PhotoGridProps) {
 
   return (
     <div className="space-y-4">
-      {/* Category Tabs */}
-      <Tabs
-        value={activeCategory}
-        onValueChange={(v) => setActiveCategory(v as MediaCategory | "all")}
-      >
-        <TabsList className="w-full flex-wrap h-auto gap-1 p-1">
-          {CATEGORY_TABS.map((tab) => (
-            <TabsTrigger
-              key={tab.value}
-              value={tab.value}
-              className="text-xs px-2 py-1"
-            >
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      {/* Header with Category Tabs and Select Mode */}
+      <div className="flex items-center gap-2 justify-between">
+        <Tabs
+          value={activeCategory}
+          onValueChange={(v) => setActiveCategory(v as MediaCategory | "all")}
+          className="flex-1"
+        >
+          <TabsList className="w-full flex-wrap h-auto gap-1 p-1">
+            {CATEGORY_TABS.map((tab) => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="text-xs px-2 py-1"
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+        
+        <Button
+          variant={isSelectMode ? "secondary" : "outline"}
+          size="sm"
+          onClick={() => {
+            if (isSelectMode) {
+              clearSelection();
+            } else {
+              setIsSelectMode(true);
+            }
+          }}
+        >
+          {isSelectMode ? (
+            <>
+              <X className="h-3.5 w-3.5 mr-1" />
+              Cancel
+            </>
+          ) : (
+            <>
+              <CheckSquare className="h-3.5 w-3.5 mr-1" />
+              Select
+            </>
+          )}
+        </Button>
+      </div>
 
       {/* Stats */}
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
         <span>{photoCount} photos</span>
         {videoCount > 0 && <span>{videoCount} videos</span>}
+        {isSelectMode && selectedIds.length > 0 && (
+          <Badge variant="secondary">{selectedIds.length} selected</Badge>
+        )}
       </div>
+
+      {/* Floating action bar when photos selected */}
+      <AnimatePresence>
+        {isSelectMode && selectedIds.length > 0 && (
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 20, opacity: 0 }}
+            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-background border shadow-lg rounded-full px-4 py-2 flex items-center gap-2"
+          >
+            <span className="text-sm font-medium">{selectedIds.length} selected</span>
+            <div className="w-px h-6 bg-border" />
+            <Button size="sm" variant="ghost" onClick={selectAll}>
+              Select All
+            </Button>
+            <Button 
+              size="sm" 
+              variant="ghost"
+              onClick={() => setBulkTagDialogOpen(true)}
+            >
+              <TagIcon className="h-4 w-4 mr-1" />
+              Tag
+            </Button>
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className="text-destructive"
+              onClick={handleBulkDelete}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Delete
+            </Button>
+            <Button size="sm" variant="ghost" onClick={clearSelection}>
+              Clear
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Grid with Drag and Drop */}
       {media.length === 0 ? (
@@ -481,6 +658,9 @@ export function PhotoGrid({ jobId, onPhotoCountChange }: PhotoGridProps) {
                     key={item.id}
                     item={item}
                     index={index}
+                    isSelectMode={isSelectMode}
+                    isSelected={selectedIds.includes(item.id)}
+                    onToggleSelect={toggleSelect}
                     onSetCover={handleSetCover}
                     onDelete={handleDelete}
                     onOpenLightbox={openLightbox}
@@ -507,6 +687,15 @@ export function PhotoGrid({ jobId, onPhotoCountChange }: PhotoGridProps) {
           onDelete={handleDelete}
         />
       )}
+
+      {/* Bulk Tag Dialog */}
+      <BulkTagDialog
+        open={bulkTagDialogOpen}
+        onOpenChange={setBulkTagDialogOpen}
+        selectedMediaIds={selectedIds}
+        thumbnails={selectedThumbnails}
+        onComplete={clearSelection}
+      />
     </div>
   );
 }

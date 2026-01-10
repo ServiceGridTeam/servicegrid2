@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JobStatusBadge } from "./JobStatusBadge";
 import { JobPriorityBadge } from "./JobPriorityBadge";
 import { DeleteJobDialog } from "./DeleteJobDialog";
@@ -21,6 +22,7 @@ import { PhotoGrid } from "./PhotoGrid";
 import { PhotoUploadProgress } from "./PhotoUploadProgress";
 import { PhotoCaptureButton } from "./PhotoCaptureButton";
 import { MediaGalleryPreview } from "./MediaGalleryPreview";
+import { PhotoTimeline, CategoryOrganizer } from "@/components/photos";
 import { TimeEntriesTable } from "@/components/team/TimeEntriesTable";
 import { useUpdateJob, type JobWithCustomer } from "@/hooks/useJobs";
 import { useBusiness } from "@/hooks/useBusiness";
@@ -47,9 +49,14 @@ import {
   Camera,
   ChevronDown,
   ChevronUp,
+  Grid3X3,
+  AlignLeft,
+  Columns,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+
+type PhotoViewMode = 'gallery' | 'timeline' | 'category';
 
 interface JobDetailSheetProps {
   job: JobWithCustomer | null;
@@ -68,6 +75,16 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
   const [showTimeEntries, setShowTimeEntries] = useState(false);
   const [expandDialogOpen, setExpandDialogOpen] = useState(false);
   const [showMediaSection, setShowMediaSection] = useState(false);
+  const [photoViewMode, setPhotoViewMode] = useState<PhotoViewMode>(() => {
+    // Persist preference in localStorage
+    const saved = localStorage.getItem('photo-view-mode');
+    return (saved as PhotoViewMode) || 'gallery';
+  });
+
+  const handleViewModeChange = (mode: PhotoViewMode) => {
+    setPhotoViewMode(mode);
+    localStorage.setItem('photo-view-mode', mode);
+  };
 
   // Check if there are active uploads for this job
   const hasActiveUploads = uploadStatus.pendingCount > 0 || uploadStatus.uploadingCount > 0 || uploadStatus.failedCount > 0;
@@ -485,7 +502,43 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
                   onViewAll={() => setShowMediaSection(true)}
                 />
               ) : (
-                <PhotoGrid jobId={job.id} />
+                <>
+                  {/* View mode toggle */}
+                  <div className="flex items-center gap-1 mb-3 p-1 bg-muted rounded-lg w-fit">
+                    <Button
+                      variant={photoViewMode === 'gallery' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={() => handleViewModeChange('gallery')}
+                    >
+                      <Grid3X3 className="h-3.5 w-3.5 mr-1" />
+                      Grid
+                    </Button>
+                    <Button
+                      variant={photoViewMode === 'timeline' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={() => handleViewModeChange('timeline')}
+                    >
+                      <AlignLeft className="h-3.5 w-3.5 mr-1" />
+                      Timeline
+                    </Button>
+                    <Button
+                      variant={photoViewMode === 'category' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={() => handleViewModeChange('category')}
+                    >
+                      <Columns className="h-3.5 w-3.5 mr-1" />
+                      Category
+                    </Button>
+                  </div>
+
+                  {/* Render based on view mode */}
+                  {photoViewMode === 'gallery' && <PhotoGrid jobId={job.id} />}
+                  {photoViewMode === 'timeline' && <PhotoTimeline jobId={job.id} />}
+                  {photoViewMode === 'category' && <CategoryOrganizer jobId={job.id} />}
+                </>
               )}
             </div>
             <Separator />

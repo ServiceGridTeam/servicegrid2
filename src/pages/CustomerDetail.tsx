@@ -23,6 +23,7 @@ import { QuoteTable } from "@/components/quotes/QuoteTable";
 import { JobTable } from "@/components/jobs/JobTable";
 import { JobDetailSheet } from "@/components/jobs/JobDetailSheet";
 import { JobFormDialog } from "@/components/jobs/JobFormDialog";
+import { CustomerPhotoTimeline } from "@/components/photos/CustomerPhotoTimeline";
 import { useCustomer, useQualifyLead } from "@/hooks/useCustomers";
 import { useQuotes } from "@/hooks/useQuotes";
 import { useJobs, type JobWithCustomer } from "@/hooks/useJobs";
@@ -224,6 +225,9 @@ export default function CustomerDetail() {
           </TabsTrigger>
           <TabsTrigger value="invoices">
             Invoices {invoices?.length ? `(${invoices.length})` : ""}
+          </TabsTrigger>
+          <TabsTrigger value="photos">
+            Photos
           </TabsTrigger>
         </TabsList>
 
@@ -555,6 +559,10 @@ export default function CustomerDetail() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="photos">
+          <CustomerPhotoTimeline customerId={customer.id} />
         </TabsContent>
       </Tabs>
 
