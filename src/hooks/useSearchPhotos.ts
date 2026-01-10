@@ -2,6 +2,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusinessContext } from './useBusinessContext';
 import { searchLimiter } from '@/lib/rateLimiter';
+import { sanitizeSearchQuery } from '@/lib/tagValidation';
 
 export interface SearchPhotosParams {
   query?: string;
@@ -62,9 +63,12 @@ export function useSearchPhotos(params: SearchPhotosParams) {
         searchLimiter.recordRequest();
       }
 
+      // Sanitize search query for security
+      const sanitizedQuery = params.query ? sanitizeSearchQuery(params.query) : null;
+
       const { data, error } = await supabase.rpc('search_photos', {
         p_business_id: activeBusinessId,
-        p_query: params.query || null,
+        p_query: sanitizedQuery,
         p_tags: params.tags?.length ? params.tags : null,
         p_categories: params.categories?.length ? params.categories : null,
         p_customer_id: params.customerId || null,

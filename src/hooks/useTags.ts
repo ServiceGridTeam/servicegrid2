@@ -4,6 +4,7 @@ import { useBusinessContext } from './useBusinessContext';
 import { usePermission } from './usePermission';
 import { toast } from 'sonner';
 import { tagCreationLimiter } from '@/lib/rateLimiter';
+import { validateTagName } from '@/lib/tagValidation';
 
 export type TagColor = 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'pink' | 'gray';
 
@@ -49,6 +50,31 @@ function generateSlug(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
+}
+
+// Generate unique slug with collision handling
+async function generateUniqueSlug(baseName: string, businessId: string): Promise<string> {
+  const baseSlug = generateSlug(baseName);
+  let slug = baseSlug;
+  let attempt = 0;
+  const maxAttempts = 10;
+  
+  while (attempt < maxAttempts) {
+    const { data: existing } = await supabase
+      .from('media_tags')
+      .select('id')
+      .eq('business_id', businessId)
+      .eq('slug', slug)
+      .maybeSingle();
+    
+    if (!existing) return slug;
+    
+    attempt++;
+    slug = `${baseSlug}-${attempt}`;
+  }
+  
+  // Fallback: append timestamp
+  return `${baseSlug}-${Date.now()}`;
 }
 
 // Fetch all tags for the active business
@@ -105,19 +131,27 @@ export function useCreateTag() {
 
       if (!activeBusinessId) throw new Error('No active business');
 
+      // Input validation
+      const validation = validateTagName(input.name);
+      if (!validation.valid) {
+        throw new Error(validation.error);
+      }
+      const safeName = validation.sanitized!;
+
       // Rate limit check
       if (!tagCreationLimiter.canMakeRequest()) {
         const resetMinutes = tagCreationLimiter.getResetTimeMinutes();
         throw new Error(`Rate limit exceeded. You can create more tags in ${resetMinutes} minute${resetMinutes !== 1 ? 's' : ''}.`);
       }
 
-      const slug = generateSlug(input.name);
+      // Generate unique slug with collision handling
+      const slug = await generateUniqueSlug(safeName, activeBusinessId);
 
       const { data, error } = await supabase
         .from('media_tags')
         .insert({
           business_id: activeBusinessId,
-          name: input.name,
+          name: safeName,
           slug,
           color: input.color || 'gray',
           description: input.description,
@@ -130,7 +164,7 @@ export function useCreateTag() {
 
       if (error) {
         if (error.code === '23505') {
-          throw new Error(`Tag "${input.name}" already exists`);
+          throw new Error(`Tag "${safeName}" already exists`);
         }
         throw error;
       }
@@ -164,9 +198,14 @@ export function useUpdateTag() {
 
       const updateData: Record<string, unknown> = { ...updates };
       
-      // If name is being updated, also update slug
+      // If name is being updated, validate and update slug
       if (updates.name) {
-        updateData.slug = generateSlug(updates.name);
+        const validation = validateTagName(updates.name);
+        if (!validation.valid) {
+          throw new Error(validation.error);
+        }
+        updateData.name = validation.sanitized;
+        updateData.slug = generateSlug(validation.sanitized!);
       }
 
       const { data, error } = await supabase

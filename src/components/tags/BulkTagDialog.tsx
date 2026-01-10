@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2, Tag as TagIcon, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Loader2, Tag as TagIcon, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -11,10 +11,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { TagPicker } from './TagPicker';
 import { TagChip } from './TagChip';
 import { useTags, useCreateTag, type TagColor } from '@/hooks/useTags';
-import { useBulkTagPhotos, useBulkUntagPhotos } from '@/hooks/usePhotoTags';
+import { useBulkTagPhotos, useBulkUntagPhotos, type BulkTagResult } from '@/hooks/usePhotoTags';
 
 interface BulkTagDialogProps {
   open: boolean;
@@ -35,6 +37,8 @@ export function BulkTagDialog({
   const [tagsToRemove, setTagsToRemove] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [isApplying, setIsApplying] = useState(false);
+  const [result, setResult] = useState<BulkTagResult | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
 
   const { data: allTags = [] } = useTags();
   const createTag = useCreateTag();
@@ -75,14 +79,16 @@ export function BulkTagDialog({
   const handleApply = async () => {
     setIsApplying(true);
     setProgress(0);
+    setResult(null);
 
     try {
       const totalOperations = (tagsToAdd.length > 0 ? 1 : 0) + (tagsToRemove.length > 0 ? 1 : 0);
       let completed = 0;
+      let tagResult: BulkTagResult | null = null;
 
       // Add tags
       if (tagsToAdd.length > 0) {
-        await bulkTag.mutateAsync({
+        tagResult = await bulkTag.mutateAsync({
           mediaIds: selectedMediaIds,
           tagIds: tagsToAdd,
           onProgress: (done, total) => {
@@ -108,19 +114,31 @@ export function BulkTagDialog({
       // Haptic feedback
       if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
 
-      // Close dialog and reset
-      setTimeout(() => {
-        onOpenChange(false);
-        setTagsToAdd([]);
-        setTagsToRemove([]);
-        setProgress(0);
+      // Show result if there were any failures
+      if (tagResult && tagResult.failed > 0) {
+        setResult(tagResult);
         setIsApplying(false);
-        onComplete?.();
-      }, 500);
+      } else {
+        // Close dialog and reset
+        setTimeout(() => {
+          handleClose();
+        }, 500);
+      }
     } catch (error) {
       console.error('Bulk tag failed:', error);
       setIsApplying(false);
     }
+  };
+
+  const handleClose = () => {
+    onOpenChange(false);
+    setTagsToAdd([]);
+    setTagsToRemove([]);
+    setProgress(0);
+    setIsApplying(false);
+    setResult(null);
+    setShowErrors(false);
+    onComplete?.();
   };
 
   const tagsToAddDetails = allTags.filter(t => tagsToAdd.includes(t.id));
@@ -128,7 +146,7 @@ export function BulkTagDialog({
   const hasChanges = tagsToAdd.length > 0 || tagsToRemove.length > 0;
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !isApplying && onOpenChange(v)}>
+    <Dialog open={open} onOpenChange={(v) => !isApplying && !result && onOpenChange(v)}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -218,7 +236,7 @@ export function BulkTagDialog({
         </div>
 
         {/* Progress bar */}
-        {isApplying && (
+        {isApplying && !result && (
           <div className="space-y-2">
             <Progress value={progress} className="h-2" />
             <p className="text-xs text-center text-muted-foreground">
@@ -227,27 +245,78 @@ export function BulkTagDialog({
           </div>
         )}
 
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isApplying}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleApply}
-            disabled={!hasChanges || isApplying}
-          >
-            {isApplying ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Applying...
-              </>
-            ) : (
-              `Apply to ${selectedMediaIds.length} photos`
+        {/* Result summary for partial failures */}
+        {result && (
+          <div className="space-y-3">
+            <Alert variant={result.failed > 0 ? "destructive" : "default"}>
+              {result.failed > 0 ? (
+                <AlertTriangle className="h-4 w-4" />
+              ) : (
+                <CheckCircle className="h-4 w-4" />
+              )}
+              <AlertDescription>
+                {result.success} photos tagged successfully
+                {result.failed > 0 && `, ${result.failed} failed`}
+              </AlertDescription>
+            </Alert>
+            
+            {result.errors.length > 0 && (
+              <Collapsible open={showErrors} onOpenChange={setShowErrors}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-full">
+                    {showErrors ? 'Hide' : 'Show'} error details ({result.errors.length})
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <ScrollArea className="max-h-32 mt-2">
+                    <div className="space-y-1 text-xs text-muted-foreground">
+                      {result.errors.slice(0, 10).map((err, i) => (
+                        <div key={i} className="px-2 py-1 bg-muted rounded">
+                          {err.error}
+                        </div>
+                      ))}
+                      {result.errors.length > 10 && (
+                        <div className="px-2 py-1 text-center">
+                          ...and {result.errors.length - 10} more
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </CollapsibleContent>
+              </Collapsible>
             )}
-          </Button>
+          </div>
+        )}
+
+        <DialogFooter>
+          {result ? (
+            <Button onClick={handleClose}>
+              Done
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isApplying}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleApply}
+                disabled={!hasChanges || isApplying}
+              >
+                {isApplying ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Applying...
+                  </>
+                ) : (
+                  `Apply to ${selectedMediaIds.length} photos`
+                )}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
