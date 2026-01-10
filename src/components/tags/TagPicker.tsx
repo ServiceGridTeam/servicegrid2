@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Check, Plus, Search, Tag as TagIcon } from 'lucide-react';
+import { Check, Plus, Search, Tag as TagIcon, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTags, type MediaTag, type TagColor } from '@/hooks/useTags';
+import { MAX_TAGS_PER_PHOTO } from '@/lib/tagValidation';
 import { TagChip } from './TagChip';
 import {
   Popover,
@@ -22,6 +23,8 @@ interface TagPickerProps {
   variant?: 'button' | 'inline';
   showSelectedInline?: boolean;
   className?: string;
+  /** Current number of tags on this photo (for limit enforcement) */
+  currentTagCount?: number;
 }
 
 const quickColors: TagColor[] = ['blue', 'green', 'yellow', 'red', 'purple', 'gray'];
@@ -36,6 +39,7 @@ export function TagPicker({
   variant = 'button',
   showSelectedInline = true,
   className,
+  currentTagCount = 0,
 }: TagPickerProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -69,6 +73,11 @@ export function TagPicker({
 
   const flatTags = filteredTags;
   const canCreate = search.trim() && !allTags.some(t => t.name.toLowerCase() === search.toLowerCase());
+  
+  // Calculate tag limit status
+  const effectiveTagCount = currentTagCount + selectedTagIds.length;
+  const isAtTagLimit = effectiveTagCount >= MAX_TAGS_PER_PHOTO;
+  const isNearTagLimit = effectiveTagCount >= MAX_TAGS_PER_PHOTO - 5;
 
   // Reset focus when search changes
   useEffect(() => {
@@ -113,6 +122,10 @@ export function TagPicker({
     if (selectedTagIds.includes(tagId)) {
       onTagRemove(tagId);
     } else {
+      // Prevent adding if at limit
+      if (isAtTagLimit) {
+        return;
+      }
       onTagSelect(tagId);
     }
     // Haptic feedback
@@ -199,6 +212,19 @@ export function TagPicker({
               className="pl-8 h-8"
             />
           </div>
+          {/* Tag limit indicator */}
+          {isNearTagLimit && (
+            <div className={cn(
+              "flex items-center gap-1.5 mt-2 text-xs",
+              isAtTagLimit ? "text-destructive" : "text-amber-600"
+            )}>
+              <AlertCircle className="h-3 w-3" />
+              {isAtTagLimit 
+                ? `Tag limit reached (${MAX_TAGS_PER_PHOTO} max)`
+                : `${MAX_TAGS_PER_PHOTO - effectiveTagCount} tags remaining`
+              }
+            </div>
+          )}
         </div>
 
         <ScrollArea className="max-h-64">
@@ -223,11 +249,13 @@ export function TagPicker({
                         key={tag.id}
                         type="button"
                         onClick={() => handleToggle(tag.id)}
+                        disabled={isAtTagLimit && !isSelected}
                         className={cn(
                           'w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left',
                           'hover:bg-accent transition-colors',
                           isFocused && 'bg-accent',
-                          isSelected && 'bg-primary/10'
+                          isSelected && 'bg-primary/10',
+                          isAtTagLimit && !isSelected && 'opacity-50 cursor-not-allowed'
                         )}
                       >
                         <TagChip name={tag.name} color={tag.color} size="sm" />
@@ -251,7 +279,7 @@ export function TagPicker({
                 </div>
               )}
 
-              {canCreate && onCreateTag && (
+              {canCreate && onCreateTag && !isAtTagLimit && (
                 <div className="border-t mt-1 pt-1">
                   <button
                     type="button"

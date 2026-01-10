@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useBusinessContext } from './useBusinessContext';
 import { toast } from 'sonner';
 import { tagOperationLimiter } from '@/lib/rateLimiter';
+import { MAX_TAGS_PER_PHOTO } from '@/lib/tagValidation';
 import type { MediaTag } from './useTags';
 
 export interface JobMediaTag {
@@ -41,7 +42,7 @@ export function usePhotoTags(mediaId: string | null) {
   });
 }
 
-// Add a tag to a photo (optimistic UI, with rate limiting)
+// Add a tag to a photo (optimistic UI, with rate limiting and max tags check)
 export function useTagPhoto() {
   const queryClient = useQueryClient();
   const { activeBusinessId } = useBusinessContext();
@@ -53,6 +54,18 @@ export function useTagPhoto() {
       // Rate limit check
       if (!tagOperationLimiter.canMakeRequest()) {
         throw new Error('Too many tag operations. Please slow down.');
+      }
+
+      // Check max tags per photo limit
+      const { count, error: countError } = await supabase
+        .from('job_media_tags')
+        .select('id', { count: 'exact', head: true })
+        .eq('job_media_id', mediaId);
+
+      if (countError) throw countError;
+      
+      if ((count || 0) >= MAX_TAGS_PER_PHOTO) {
+        throw new Error(`Maximum of ${MAX_TAGS_PER_PHOTO} tags per photo reached`);
       }
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -179,7 +192,15 @@ export function useUntagPhoto() {
   });
 }
 
-// Bulk tag multiple photos
+// Bulk tag result with detailed error tracking
+export interface BulkTagResult {
+  success: number;
+  failed: number;
+  skipped: number;
+  errors: { mediaId: string; tagId: string; error: string }[];
+}
+
+// Bulk tag multiple photos with partial failure handling
 export function useBulkTagPhotos() {
   const queryClient = useQueryClient();
   const { activeBusinessId } = useBusinessContext();
@@ -193,13 +214,17 @@ export function useBulkTagPhotos() {
       mediaIds: string[]; 
       tagIds: string[];
       onProgress?: (completed: number, total: number) => void;
-    }) => {
+    }): Promise<BulkTagResult> => {
       if (!activeBusinessId) throw new Error('No active business');
 
       const { data: { user } } = await supabase.auth.getUser();
       
       const total = mediaIds.length * tagIds.length;
       let completed = 0;
+      let successCount = 0;
+      let failedCount = 0;
+      let skippedCount = 0;
+      const errors: BulkTagResult['errors'] = [];
 
       // Create all combinations
       const inserts = mediaIds.flatMap(mediaId =>
@@ -212,27 +237,61 @@ export function useBulkTagPhotos() {
         }))
       );
 
-      // Batch insert (ignore duplicates)
+      // Batch insert with error tracking (ignore duplicates)
       const batchSize = 50;
       for (let i = 0; i < inserts.length; i += batchSize) {
         const batch = inserts.slice(i, i + batchSize);
         
-        const { error } = await supabase
-          .from('job_media_tags')
-          .upsert(batch, { onConflict: 'job_media_id,tag_id', ignoreDuplicates: true });
+        try {
+          const { error, count } = await supabase
+            .from('job_media_tags')
+            .upsert(batch, { onConflict: 'job_media_id,tag_id', ignoreDuplicates: true });
 
-        if (error) throw error;
+          if (error) {
+            // Track batch failure
+            failedCount += batch.length;
+            batch.forEach(item => {
+              errors.push({
+                mediaId: item.job_media_id,
+                tagId: item.tag_id,
+                error: error.message,
+              });
+            });
+          } else {
+            successCount += batch.length;
+          }
+        } catch (err) {
+          // Track batch failure
+          failedCount += batch.length;
+          batch.forEach(item => {
+            errors.push({
+              mediaId: item.job_media_id,
+              tagId: item.tag_id,
+              error: (err as Error).message,
+            });
+          });
+        }
 
         completed += batch.length;
         onProgress?.(completed, total);
       }
 
-      return { tagged: inserts.length };
+      return { 
+        success: successCount, 
+        failed: failedCount, 
+        skipped: skippedCount,
+        errors 
+      };
     },
-    onSuccess: ({ tagged }) => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['photo-tags'] });
       queryClient.invalidateQueries({ queryKey: ['job-media'] });
-      toast.success(`Tagged ${tagged} photos`);
+      
+      if (result.failed > 0) {
+        toast.warning(`Tagged ${result.success} photos, ${result.failed} failed`);
+      } else {
+        toast.success(`Tagged ${result.success} photos`);
+      }
     },
     onError: () => {
       toast.error('Failed to bulk tag photos');

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { GripVertical, MoreVertical, Pencil, Plus, Trash2, AlertCircle, Info, Lock } from 'lucide-react';
 import { useTags, useCreateTag, useUpdateTag, useDeleteTag, useReorderTags, useTagCreationRateLimit, type MediaTag, type TagColor } from '@/hooks/useTags';
+import { validateTagName, getTagNameCharacterCount, MAX_TAG_NAME_LENGTH } from '@/lib/tagValidation';
 import { TagChip } from './TagChip';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -188,6 +189,14 @@ export function TagManager() {
     tag_group: '',
   });
 
+  // Real-time validation for tag name
+  const nameValidation = useMemo(() => {
+    if (!formData.name.trim()) return { valid: true, error: undefined };
+    return validateTagName(formData.name);
+  }, [formData.name]);
+
+  const charCount = getTagNameCharacterCount(formData.name);
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -366,20 +375,37 @@ export function TagManager() {
             )}
 
             <div>
-              <Label htmlFor="name">Name</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="name">Name</Label>
+                <span className={cn(
+                  "text-xs",
+                  charCount.isOverLimit && "text-destructive font-medium",
+                  charCount.isNearLimit && !charCount.isOverLimit && "text-amber-600"
+                )}>
+                  {charCount.current}/{charCount.max}
+                </span>
+              </div>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={e => setFormData(f => ({ ...f, name: e.target.value }))}
                 placeholder="e.g., Completed Work"
                 disabled={editingTag?.is_system}
+                className={cn(
+                  !nameValidation.valid && formData.name.trim() && "border-destructive focus-visible:ring-destructive"
+                )}
               />
-              {editingTag?.is_system && (
+              {editingTag?.is_system ? (
                 <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                   <Lock className="h-3 w-3" />
                   System tag names cannot be changed
                 </p>
-              )}
+              ) : !nameValidation.valid && formData.name.trim() ? (
+                <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {nameValidation.error}
+                </p>
+              ) : null}
             </div>
 
             <div>
@@ -448,7 +474,13 @@ export function TagManager() {
             </Button>
             <Button
               onClick={handleSave}
-              disabled={!formData.name.trim() || createTag.isPending || updateTag.isPending}
+              disabled={
+                !formData.name.trim() || 
+                !nameValidation.valid || 
+                charCount.isOverLimit ||
+                createTag.isPending || 
+                updateTag.isPending
+              }
             >
               {editingTag ? 'Save Changes' : 'Create Tag'}
             </Button>
