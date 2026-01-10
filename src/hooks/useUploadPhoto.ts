@@ -6,6 +6,7 @@ import { MediaCategory } from './useJobMedia';
 import { toast } from 'sonner';
 import { extractExifData, getCurrentPosition, ExtractedExifData } from '@/lib/exifExtractor';
 import { processFileForUpload } from '@/lib/heicConverter';
+import { generateThumbnails } from '@/lib/thumbnailGenerator';
 
 interface UploadPhotoParams {
   jobId: string;
@@ -35,6 +36,7 @@ interface OptimisticMediaEntry {
   description: string | null;
   is_cover_photo: boolean;
   duration_seconds: number | null;
+  blurhash?: string;
 }
 
 export function useUploadPhoto() {
@@ -80,15 +82,30 @@ export function useUploadPhoto() {
         console.log('HEIC file converted to JPEG:', file.name, '->', processedFile.name);
       }
 
+      // Determine media type from processed file
+      const mediaType = processedFile.type.startsWith('video/') ? 'video' : 'photo';
+      
+      // Generate thumbnails and blurhash client-side for images
+      let thumbnails: Awaited<ReturnType<typeof generateThumbnails>> | null = null;
+      if (mediaType === 'photo') {
+        try {
+          thumbnails = await generateThumbnails(processedFile);
+          console.log('Client-side thumbnails generated:', {
+            blurhash: thumbnails.blurhash.substring(0, 10) + '...',
+            dimensions: `${thumbnails.width}x${thumbnails.height}`,
+          });
+        } catch (err) {
+          console.warn('Thumbnail generation failed, will use server-side:', err);
+        }
+      }
+
       // Generate unique file path using processed file
       const fileExt = processedFile.name.split('.').pop()?.toLowerCase() || 'jpg';
       const fileName = `${Date.now()}-${crypto.randomUUID()}.${fileExt}`;
       const storagePath = `${activeBusinessId}/${jobId}/${fileName}`;
+      const baseFilename = fileName.replace(/\.[^.]+$/, '');
 
-      // Determine media type from processed file
-      const mediaType = processedFile.type.startsWith('video/') ? 'video' : 'photo';
-
-      // Upload processed file to storage
+      // Upload original file to storage
       const { error: uploadError } = await supabase.storage
         .from('job-media')
         .upload(storagePath, processedFile, {
@@ -97,6 +114,37 @@ export function useUploadPhoto() {
         });
 
       if (uploadError) throw uploadError;
+
+      // Upload client-generated thumbnails if available
+      const thumbnailUrls: Record<string, string | null> = {
+        sm: null,
+        md: null,
+        lg: null,
+      };
+      
+      if (thumbnails) {
+        const thumbnailSizes = ['sm', 'md', 'lg'] as const;
+        await Promise.all(
+          thumbnailSizes.map(async (size) => {
+            const thumbnailPath = `${activeBusinessId}/${jobId}/thumb_${size}_${baseFilename}.webp`;
+            const blob = thumbnails[size];
+            
+            const { error: thumbError } = await supabase.storage
+              .from('job-media-thumbnails')
+              .upload(thumbnailPath, blob, {
+                contentType: 'image/webp',
+                upsert: true,
+              });
+            
+            if (!thumbError) {
+              const { data: signedUrl } = await supabase.storage
+                .from('job-media-thumbnails')
+                .createSignedUrl(thumbnailPath, 60 * 60 * 24 * 365);
+              thumbnailUrls[size] = signedUrl?.signedUrl || null;
+            }
+          })
+        );
+      }
 
       // Get signed URL for private bucket
       const { data: signedUrlData } = await supabase.storage
@@ -130,7 +178,7 @@ export function useUploadPhoto() {
         uploaded_by: user.id,
         upload_source: 'web',
         upload_device: navigator.userAgent,
-        status: 'processing',
+        status: thumbnails ? 'ready' : 'processing', // Mark as ready if we have client thumbnails
         // GPS data (prefer device GPS, fallback to EXIF)
         latitude,
         longitude,
@@ -145,11 +193,17 @@ export function useUploadPhoto() {
         aperture: exifData?.aperture || null,
         shutter_speed: exifData?.shutter_speed || null,
         focal_length: exifData?.focal_length || null,
-        // Image dimensions from EXIF
-        width: exifData?.width || null,
-        height: exifData?.height || null,
+        // Image dimensions from client-side or EXIF
+        width: thumbnails?.width || exifData?.width || null,
+        height: thumbnails?.height || exifData?.height || null,
         // Video duration (passed from client for videos)
         duration_seconds: durationSeconds || null,
+        // Client-generated thumbnail URLs
+        thumbnail_url_sm: thumbnailUrls.sm,
+        thumbnail_url_md: thumbnailUrls.md,
+        thumbnail_url_lg: thumbnailUrls.lg,
+        // Blurhash for placeholder
+        blurhash: thumbnails?.blurhash || null,
       };
 
       // Add optional fields that may not be in types yet
@@ -169,25 +223,48 @@ export function useUploadPhoto() {
 
       if (insertError) throw insertError;
 
-      // Trigger thumbnail generation edge function (fire and forget)
-      supabase.functions.invoke('process-photo-upload', {
-        body: {
-          media_id: inserted.id,
-          storage_path: storagePath,
-          bucket: 'job-media',
-        },
-      }).then(({ error }) => {
-        if (error) {
-          console.error('Thumbnail generation failed:', error);
+      // If we didn't generate thumbnails client-side, trigger edge function
+      if (!thumbnails) {
+        supabase.functions.invoke('process-photo-upload', {
+          body: {
+            media_id: inserted.id,
+            storage_path: storagePath,
+            bucket: 'job-media',
+          },
+        }).then(({ error }) => {
+          if (error) {
+            console.error('Thumbnail generation failed:', error);
+          }
+        }).catch((err) => {
+          console.error('Thumbnail generation error:', err);
+        });
+      }
+
+      // Check for duplicates after upload
+      try {
+        // Compute simple content hash for duplicate check
+        const arrayBuffer = await processedFile.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const contentHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        
+        const { data: duplicates } = await supabase.rpc('check_duplicate_photo', {
+          p_business_id: activeBusinessId,
+          p_content_hash: contentHash,
+        });
+        
+        // If duplicates exist (more than the one we just inserted)
+        if (duplicates && Array.isArray(duplicates) && duplicates.length > 1) {
+          toast.warning('This photo may be a duplicate of an existing image');
         }
-      }).catch((err) => {
-        console.error('Thumbnail generation error:', err);
-      });
+      } catch (err) {
+        console.warn('Duplicate check failed:', err);
+      }
 
       return {
         id: inserted.id,
         url: url || '',
-        thumbnailUrl: null, // Will be populated by edge function
+        thumbnailUrl: thumbnailUrls.md,
       };
     },
     onMutate: async ({ jobId, file, category = 'general', durationSeconds }) => {
