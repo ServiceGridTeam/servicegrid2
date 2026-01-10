@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Camera, X, Upload, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Camera, X, Upload, Loader2, AlertCircle, CheckCircle, Shield } from 'lucide-react';
 import { usePhotoUpload } from '@/hooks/usePhotoUpload';
 import { useOptimisticServiceRequest } from '@/hooks/useOptimisticServiceRequest';
 import { cn } from '@/lib/utils';
@@ -44,7 +44,7 @@ export function CustomerServiceRequestForm({ onSuccess }: CustomerServiceRequest
   const [isSubmitted, setIsSubmitted] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { photos, addPhotos, removePhoto, retryUpload, getUrls, isUploading, canAddMore, maxPhotos } = usePhotoUpload();
+  const { photos, addPhotos, removePhoto, retryUpload, getUrls, isUploading, isScanning, canAddMore, maxPhotos } = usePhotoUpload();
   const { submit, isPending } = useOptimisticServiceRequest();
 
   const toggleTime = (time: string) => {
@@ -190,11 +190,20 @@ export function CustomerServiceRequestForm({ onSuccess }: CustomerServiceRequest
                 alt="Upload preview"
                 className="w-full h-full object-cover"
               />
-              {photo.progress > 0 && photo.progress < 100 && (
+              {/* Uploading state */}
+              {photo.progress > 0 && photo.progress < 100 && !photo.scanStatus && (
                 <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                   <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
               )}
+              {/* Scanning state */}
+              {(photo.scanStatus === 'scanning' || photo.scanStatus === 'pending') && (
+                <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center">
+                  <Shield className="h-5 w-5 text-primary animate-pulse mb-1" />
+                  <span className="text-xs text-muted-foreground">Scanning...</span>
+                </div>
+              )}
+              {/* Error state */}
               {photo.error && (
                 <div className="absolute inset-0 bg-destructive/80 flex flex-col items-center justify-center">
                   <AlertCircle className="h-4 w-4 text-destructive-foreground mb-1" />
@@ -205,6 +214,12 @@ export function CustomerServiceRequestForm({ onSuccess }: CustomerServiceRequest
                   >
                     Retry
                   </button>
+                </div>
+              )}
+              {/* Success indicator */}
+              {photo.scanStatus === 'clean' && (
+                <div className="absolute top-1 left-1 p-1 rounded-full bg-green-500">
+                  <CheckCircle className="h-3 w-3 text-white" />
                 </div>
               )}
               <button
@@ -242,12 +257,17 @@ export function CustomerServiceRequestForm({ onSuccess }: CustomerServiceRequest
       <Button
         type="submit"
         className="w-full"
-        disabled={!description.trim() || isPending || isUploading}
+        disabled={!description.trim() || isPending || isUploading || isScanning}
       >
         {isPending ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             Submitting...
+          </>
+        ) : isScanning ? (
+          <>
+            <Shield className="h-4 w-4 mr-2 animate-pulse" />
+            Scanning photos...
           </>
         ) : isUploading ? (
           <>
