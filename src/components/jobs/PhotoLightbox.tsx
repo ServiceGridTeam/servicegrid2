@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { 
   X, 
   ChevronLeft, 
@@ -10,6 +10,7 @@ import {
   Calendar,
   Pencil,
   Layers,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -22,8 +23,12 @@ import { usePhotoTags, useTagPhoto, useUntagPhoto } from "@/hooks/usePhotoTags";
 import { useCreateTag, type TagColor } from "@/hooks/useTags";
 import { usePermission } from "@/hooks/usePermission";
 import { useAnnotation } from "@/hooks/useAnnotations";
-import { AnnotationEditor } from "@/components/annotations";
 import type { JobMedia } from "@/hooks/useJobMedia";
+
+// Lazy load AnnotationEditor to prevent react-konva from blocking app startup
+const AnnotationEditor = lazy(() => 
+  import("@/components/annotations/AnnotationEditor").then(mod => ({ default: mod.AnnotationEditor }))
+);
 
 interface PhotoLightboxProps {
   media: JobMedia[];
@@ -324,16 +329,25 @@ export function PhotoLightbox({
         )}
       </DialogContent>
 
-      {/* Annotation Editor Modal */}
+      {/* Annotation Editor Modal - lazy loaded */}
       {showAnnotationEditor && currentMedia.url && (
-        <AnnotationEditor
-          mediaId={currentMedia.id}
-          mediaUrl={currentMedia.url}
-          onClose={() => setShowAnnotationEditor(false)}
-          onSave={() => {
-            // Optionally trigger a refetch of annotations
-          }}
-        />
+        <Suspense fallback={
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80">
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="text-sm text-muted-foreground">Loading annotation editor...</span>
+            </div>
+          </div>
+        }>
+          <AnnotationEditor
+            mediaId={currentMedia.id}
+            mediaUrl={currentMedia.url}
+            onClose={() => setShowAnnotationEditor(false)}
+            onSave={() => {
+              // Optionally trigger a refetch of annotations
+            }}
+          />
+        </Suspense>
       )}
     </Dialog>
   );
