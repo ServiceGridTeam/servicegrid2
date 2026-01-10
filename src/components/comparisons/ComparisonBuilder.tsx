@@ -43,7 +43,7 @@ export function ComparisonBuilder({
 
   // Filter photos only (not videos)
   const photos = useMemo(() => 
-    media?.filter(m => m.media_type === 'image') || [], 
+    media?.filter(m => m.media_type === 'photo') || [], 
     [media]
   );
 

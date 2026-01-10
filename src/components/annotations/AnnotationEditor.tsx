@@ -371,48 +371,70 @@ export function AnnotationEditor({
     onComplete: addObject,
   });
 
+  // Wrapper to add IDs to tool-generated annotations
+  const handleLineComplete = useCallback((annotation: Omit<LineAnnotation, 'id'>) => {
+    addObject({ ...annotation, id: crypto.randomUUID() } as LineAnnotation);
+  }, [addObject]);
+
+  const handleRectComplete = useCallback((annotation: Omit<RectAnnotation, 'id'>) => {
+    addObject({ ...annotation, id: crypto.randomUUID() } as RectAnnotation);
+  }, [addObject]);
+
+  const handleCircleComplete = useCallback((annotation: Omit<CircleAnnotation, 'id'>) => {
+    addObject({ ...annotation, id: crypto.randomUUID() } as CircleAnnotation);
+  }, [addObject]);
+
+  const handleFreehandComplete = useCallback((annotation: Omit<FreehandAnnotation, 'id'>) => {
+    addObject({ ...annotation, id: crypto.randomUUID() } as FreehandAnnotation);
+  }, [addObject]);
+
+  const handleMeasurementComplete = useCallback((annotation: Omit<MeasurementAnnotation, 'id'>) => {
+    addObject({ ...annotation, id: crypto.randomUUID() } as MeasurementAnnotation);
+  }, [addObject]);
+
   const lineTool = useLineTool({
     stageRef,
     color,
     strokeWidth,
-    onComplete: addObject,
+    onComplete: handleLineComplete,
   });
 
   const rectTool = useRectTool({
     stageRef,
     color,
     strokeWidth,
-    onComplete: addObject,
+    onComplete: handleRectComplete,
   });
 
   const circleTool = useCircleTool({
     stageRef,
     color,
     strokeWidth,
-    onComplete: addObject,
+    onComplete: handleCircleComplete,
   });
 
   const freehandTool = useFreehandTool({
     stageRef,
     color,
     strokeWidth,
-    onComplete: addObject,
+    onComplete: handleFreehandComplete,
   });
 
   const measurementTool = useMeasurementTool({
     stageRef,
     color,
     strokeWidth,
-    onComplete: addObject,
+    unit: 'px',
+    onComplete: handleMeasurementComplete,
   });
 
   const selectTool = useSelectTool({
     stageRef,
-    scale,
+    annotations: annotationData.objects,
     selectedIds,
-    onSelectionChange: setSelectedIds,
-    onObjectUpdate: updateObject,
-    onDeleteSelected: deleteSelected,
+    setSelectedIds,
+    updateObject,
+    deleteSelected,
   });
 
   const isEditable = !readOnly && lockState.isOwnLock;
@@ -773,15 +795,15 @@ export function AnnotationEditor({
                     {/* Drawing previews from tools */}
                     {arrowTool.previewElement}
                     {textTool.previewElement}
-                    {lineTool.state.isDrawing && (
+                    {lineTool.state.isDrawing && lineTool.state.preview && (
                       <Line
-                        points={lineTool.state.preview}
+                        points={lineTool.state.preview.points}
                         stroke={color}
                         strokeWidth={strokeWidth}
                         lineCap="round"
                       />
                     )}
-                    {rectTool.state.isDrawing && (
+                    {rectTool.state.isDrawing && rectTool.state.preview && (
                       <Rect
                         x={rectTool.state.preview.x}
                         y={rectTool.state.preview.y}
@@ -792,19 +814,19 @@ export function AnnotationEditor({
                         fill="transparent"
                       />
                     )}
-                    {circleTool.state.isDrawing && (
+                    {circleTool.state.isDrawing && circleTool.state.preview && (
                       <Circle
-                        x={circleTool.state.preview.centerX}
-                        y={circleTool.state.preview.centerY}
+                        x={circleTool.state.preview.x}
+                        y={circleTool.state.preview.y}
                         radius={circleTool.state.preview.radius}
                         stroke={color}
                         strokeWidth={strokeWidth}
                         fill="transparent"
                       />
                     )}
-                    {freehandTool.state.isDrawing && (
+                    {freehandTool.state.isDrawing && freehandTool.state.preview && (
                       <Line
-                        points={freehandTool.state.preview}
+                        points={freehandTool.state.preview.points}
                         stroke={color}
                         strokeWidth={strokeWidth}
                         tension={0.5}
@@ -812,9 +834,9 @@ export function AnnotationEditor({
                         lineJoin="round"
                       />
                     )}
-                    {measurementTool.state.isDrawing && (
+                    {measurementTool.state.isDrawing && measurementTool.state.preview && (
                       <Line
-                        points={measurementTool.state.preview}
+                        points={measurementTool.state.preview.points}
                         stroke={color}
                         strokeWidth={strokeWidth}
                         lineCap="round"
@@ -839,19 +861,19 @@ export function AnnotationEditor({
             </div>
 
             {/* History Panel */}
-            {showHistoryPanel && (
-              <AnnotationHistoryPanel
-                mediaId={mediaId}
-                onClose={() => setShowHistoryPanel(false)}
-                onRevert={(versionData) => {
-                  setAnnotationData(versionData);
-                  setHasUnsavedChanges(true);
-                  const newHistory = [...history.slice(0, historyIndex + 1), versionData];
-                  setHistory(newHistory);
-                  setHistoryIndex(newHistory.length - 1);
-                }}
-              />
-            )}
+            <AnnotationHistoryPanel
+              mediaId={mediaId}
+              open={showHistoryPanel}
+              onOpenChange={setShowHistoryPanel}
+              onPreviewVersion={(versionData) => {
+                setAnnotationData(versionData);
+                setHasUnsavedChanges(true);
+                const newHistory = [...history.slice(0, historyIndex + 1), versionData];
+                setHistory(newHistory);
+                setHistoryIndex(newHistory.length - 1);
+              }}
+              currentVersion={annotationData.version}
+            />
           </div>
 
           {/* Text input overlay for text tool */}

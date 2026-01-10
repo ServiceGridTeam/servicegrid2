@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useShareComparison, useUnshareComparison } from '@/hooks/useComparisons';
+import { useShareComparison, useRevokeShareLink } from '@/hooks/useComparisons';
 import { ComparisonWithMedia } from '@/types/annotations';
 import { toast } from 'sonner';
 import { format, addDays } from 'date-fns';
@@ -28,7 +28,7 @@ export function ShareComparisonDialog({
   onOpenChange,
 }: ShareComparisonDialogProps) {
   const shareComparison = useShareComparison();
-  const unshareComparison = useUnshareComparison();
+  const revokeShareLink = useRevokeShareLink();
   const [copied, setCopied] = useState(false);
   const [expirationDays, setExpirationDays] = useState<ExpirationDays>('30');
 
@@ -53,7 +53,7 @@ export function ShareComparisonDialog({
 
   const handleRemoveLink = async () => {
     try {
-      await unshareComparison.mutateAsync(comparison.id);
+      await revokeShareLink.mutateAsync(comparison.id);
       toast.success('Share link removed');
     } catch (error) {
       console.error('Failed to remove share link:', error);
@@ -143,7 +143,7 @@ export function ShareComparisonDialog({
                 <Button
                   variant="destructive"
                   onClick={handleRemoveLink}
-                  disabled={unshareComparison.isPending}
+                  disabled={revokeShareLink.isPending}
                 >
                   Remove Link
                 </Button>
