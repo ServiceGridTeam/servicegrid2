@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Cloud, CloudOff, Loader2, Check, AlertCircle } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Cloud, CloudOff, Loader2, Check, AlertCircle, RefreshCw } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -7,7 +7,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { 
+  getQueueStatus, 
+  retryFailedItems,
+  clearFailedItems,
+  dispatchQueueUpdate 
+} from "@/lib/indexedDbQueue";
 
 type SyncStatus = "synced" | "syncing" | "pending" | "offline" | "error";
 
@@ -18,12 +25,40 @@ interface OfflineSyncIndicatorProps {
 export function OfflineSyncIndicator({ className }: OfflineSyncIndicatorProps) {
   const [status, setStatus] = useState<SyncStatus>("synced");
   const [pendingCount, setPendingCount] = useState(0);
+  const [failedCount, setFailedCount] = useState(0);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  // Load initial queue status
+  useEffect(() => {
+    const loadStatus = async () => {
+      try {
+        const queueStatus = await getQueueStatus();
+        setPendingCount(queueStatus.pendingCount + queueStatus.uploadingCount);
+        setFailedCount(queueStatus.failedCount);
+        
+        if (!navigator.onLine) {
+          setStatus("offline");
+        } else if (queueStatus.uploadingCount > 0) {
+          setStatus("syncing");
+        } else if (queueStatus.failedCount > 0) {
+          setStatus("error");
+        } else if (queueStatus.pendingCount > 0) {
+          setStatus("pending");
+        } else {
+          setStatus("synced");
+        }
+      } catch (err) {
+        console.error("Failed to load queue status:", err);
+      }
+    };
+    
+    loadStatus();
+  }, []);
 
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      setStatus((prev) => (prev === "offline" ? "synced" : prev));
+      setStatus((prev) => (prev === "offline" ? "pending" : prev));
     };
     
     const handleOffline = () => {
@@ -42,9 +77,12 @@ export function OfflineSyncIndicator({ className }: OfflineSyncIndicatorProps) {
 
   // Listen for custom upload queue events
   useEffect(() => {
-    const handleQueueUpdate = (e: CustomEvent<{ pending: number; status: SyncStatus }>) => {
+    const handleQueueUpdate = (e: CustomEvent<{ pending: number; status: SyncStatus; failed?: number }>) => {
       setPendingCount(e.detail.pending);
       setStatus(e.detail.status);
+      if (e.detail.failed !== undefined) {
+        setFailedCount(e.detail.failed);
+      }
     };
 
     window.addEventListener("upload-queue-update" as any, handleQueueUpdate);
@@ -52,6 +90,14 @@ export function OfflineSyncIndicator({ className }: OfflineSyncIndicatorProps) {
       window.removeEventListener("upload-queue-update" as any, handleQueueUpdate);
     };
   }, []);
+
+  const handleRetryFailed = useCallback(async () => {
+    await retryFailedItems();
+    setFailedCount(0);
+    setStatus("pending");
+    // Trigger queue processing by dispatching update
+    dispatchQueueUpdate({ pending: pendingCount, status: "pending" });
+  }, [pendingCount]);
 
   const getStatusConfig = () => {
     switch (status) {

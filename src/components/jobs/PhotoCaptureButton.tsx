@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { Camera, ChevronDown, ImagePlus } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { Camera, ChevronDown, ImagePlus, CloudOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,8 +9,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useUploadPhoto } from "@/hooks/useUploadPhoto";
+import { useUploadQueue } from "@/hooks/useUploadQueue";
 import { useToast } from "@/hooks/use-toast";
 import type { MediaCategory } from "@/hooks/useJobMedia";
+import { cn } from "@/lib/utils";
 
 interface PhotoCaptureButtonProps {
   jobId: string;
@@ -40,21 +42,44 @@ export function PhotoCaptureButton({
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedCategory, setSelectedCategory] = useState<MediaCategory>("general");
+  const [isUploading, setIsUploading] = useState(false);
   const uploadPhoto = useUploadPhoto();
+  const { status: queueStatus, isOnline, queueUpload } = useUploadQueue();
+
+  // Combined pending count from props and queue
+  const totalPending = pendingCount + queueStatus.pendingCount + queueStatus.uploadingCount;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     onUploadStart?.();
+    setIsUploading(true);
 
     for (const file of Array.from(files)) {
       try {
-        await uploadPhoto.mutateAsync({
-          file,
-          jobId,
-          category: selectedCategory,
-        });
+        if (isOnline) {
+          // Direct upload when online
+          await uploadPhoto.mutateAsync({
+            file,
+            jobId,
+            category: selectedCategory,
+          });
+        } else {
+          // Queue for later when offline
+          const result = await queueUpload({
+            file,
+            jobId,
+            category: selectedCategory,
+          });
+          
+          if (result.success) {
+            toast({
+              title: "Photo queued",
+              description: `${file.name} will upload when you're back online`,
+            });
+          }
+        }
       } catch (error) {
         console.error("Upload failed:", error);
         toast({
@@ -65,6 +90,7 @@ export function PhotoCaptureButton({
       }
     }
 
+    setIsUploading(false);
     onUploadComplete?.();
     
     // Reset the input
@@ -94,20 +120,35 @@ export function PhotoCaptureButton({
           <DropdownMenuTrigger asChild>
             <Button
               size="lg"
-              className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50"
+              className={cn(
+                "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50",
+                !isOnline && "bg-muted"
+              )}
+              disabled={isUploading}
             >
-              <Camera className="h-6 w-6" />
-              {pendingCount > 0 && (
+              {isUploading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : !isOnline ? (
+                <CloudOff className="h-6 w-6" />
+              ) : (
+                <Camera className="h-6 w-6" />
+              )}
+              {totalPending > 0 && (
                 <Badge
-                  variant="destructive"
+                  variant={isOnline ? "destructive" : "secondary"}
                   className="absolute -top-1 -right-1 h-5 min-w-[20px] rounded-full px-1 text-xs"
                 >
-                  {pendingCount}
+                  {totalPending}
                 </Badge>
               )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
+            {!isOnline && (
+              <div className="px-2 py-1.5 text-xs text-muted-foreground border-b mb-1">
+                Offline - photos will queue
+              </div>
+            )}
             {CATEGORIES.map((cat) => (
               <DropdownMenuItem
                 key={cat.value}
@@ -135,18 +176,33 @@ export function PhotoCaptureButton({
       />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="gap-2">
-            <ImagePlus className="h-4 w-4" />
-            Add Photo
-            {pendingCount > 0 && (
+          <Button 
+            variant="outline" 
+            className={cn("gap-2", !isOnline && "border-muted-foreground/50")}
+            disabled={isUploading}
+          >
+            {isUploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : !isOnline ? (
+              <CloudOff className="h-4 w-4" />
+            ) : (
+              <ImagePlus className="h-4 w-4" />
+            )}
+            {isOnline ? "Add Photo" : "Queue Photo"}
+            {totalPending > 0 && (
               <Badge variant="secondary" className="ml-1">
-                {pendingCount}
+                {totalPending}
               </Badge>
             )}
             <ChevronDown className="h-3 w-3 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
+          {!isOnline && (
+            <div className="px-2 py-1.5 text-xs text-muted-foreground border-b mb-1">
+              Offline - photos will queue
+            </div>
+          )}
           {CATEGORIES.map((cat) => (
             <DropdownMenuItem
               key={cat.value}
