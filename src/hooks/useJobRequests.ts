@@ -324,13 +324,28 @@ export function useApproveJobRequest() {
 
       return { jobId };
     },
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["job-requests"] });
       queryClient.invalidateQueries({ queryKey: ["job-requests-count"] });
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
       
       if (variables.convertToJob && data?.jobId) {
         toast.success("Request converted to job");
+        
+        // Convert customer uploads to job media
+        try {
+          const { error } = await supabase.functions.invoke("convert-customer-uploads", {
+            body: {
+              job_request_id: variables.requestId,
+              job_id: data.jobId,
+            },
+          });
+          if (error) {
+            console.warn("Failed to convert customer uploads:", error);
+          }
+        } catch (err) {
+          console.warn("Error converting customer uploads:", err);
+        }
       } else {
         toast.success("Request approved");
       }
