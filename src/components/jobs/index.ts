@@ -19,3 +19,4 @@ export { PhotoCaptureButton } from "./PhotoCaptureButton";
 export { PhotoGrid } from "./PhotoGrid";
 export { PhotoLightbox } from "./PhotoLightbox";
 export { MediaGalleryPreview } from "./MediaGalleryPreview";
+export { GPSAccuracyIndicator } from "./GPSAccuracyIndicator";

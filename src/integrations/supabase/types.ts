@@ -2405,11 +2405,15 @@ export type Database = {
         Row: {
           altitude: number | null
           aperture: string | null
+          blurhash: string | null
           business_id: string
           camera_make: string | null
           camera_model: string | null
           captured_at: string | null
           category: Database["public"]["Enums"]["media_category"]
+          checklist_item_id: string | null
+          checklist_sequence: number | null
+          content_hash: string | null
           created_at: string
           customer_id: string | null
           deleted_at: string | null
@@ -2418,6 +2422,7 @@ export type Database = {
           file_extension: string
           file_size_bytes: number
           focal_length: string | null
+          gps_accuracy_meters: number | null
           height: number | null
           id: string
           is_cover_photo: boolean | null
@@ -2448,11 +2453,15 @@ export type Database = {
         Insert: {
           altitude?: number | null
           aperture?: string | null
+          blurhash?: string | null
           business_id: string
           camera_make?: string | null
           camera_model?: string | null
           captured_at?: string | null
           category?: Database["public"]["Enums"]["media_category"]
+          checklist_item_id?: string | null
+          checklist_sequence?: number | null
+          content_hash?: string | null
           created_at?: string
           customer_id?: string | null
           deleted_at?: string | null
@@ -2461,6 +2470,7 @@ export type Database = {
           file_extension: string
           file_size_bytes: number
           focal_length?: string | null
+          gps_accuracy_meters?: number | null
           height?: number | null
           id?: string
           is_cover_photo?: boolean | null
@@ -2491,11 +2501,15 @@ export type Database = {
         Update: {
           altitude?: number | null
           aperture?: string | null
+          blurhash?: string | null
           business_id?: string
           camera_make?: string | null
           camera_model?: string | null
           captured_at?: string | null
           category?: Database["public"]["Enums"]["media_category"]
+          checklist_item_id?: string | null
+          checklist_sequence?: number | null
+          content_hash?: string | null
           created_at?: string
           customer_id?: string | null
           deleted_at?: string | null
@@ -2504,6 +2518,7 @@ export type Database = {
           file_extension?: string
           file_size_bytes?: number
           focal_length?: string | null
+          gps_accuracy_meters?: number | null
           height?: number | null
           id?: string
           is_cover_photo?: boolean | null
@@ -5251,6 +5266,15 @@ export type Database = {
       calculate_time_entry_labor_cost: {
         Args: { p_entry_id: string }
         Returns: number
+      }
+      check_duplicate_photo: {
+        Args: { p_business_id: string; p_content_hash: string }
+        Returns: {
+          is_exact_match: boolean
+          job_id: string
+          media_id: string
+          url: string
+        }[]
       }
       check_email_duplicate: {
         Args: {
