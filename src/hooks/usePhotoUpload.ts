@@ -1,5 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { 
+  getQueuedItemsByJob, 
+  dispatchQueueUpdate,
+  type QueuedUpload 
+} from '@/lib/indexedDbQueue';
 
 export interface UploadingPhoto {
   id: string;
@@ -8,12 +13,56 @@ export interface UploadingPhoto {
   serverUrl: string | null;
   progress: number;
   error: string | null;
+  isQueued?: boolean; // True if stored in IndexedDB for offline upload
 }
 
 const MAX_PHOTOS = 5;
 
-export function usePhotoUpload() {
+export function usePhotoUpload(jobId?: string) {
   const [photos, setPhotos] = useState<UploadingPhoto[]>([]);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  // Track online status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Load queued photos for this job on mount
+  useEffect(() => {
+    const loadQueuedPhotos = async () => {
+      if (!jobId) return;
+      
+      try {
+        const queuedItems = await getQueuedItemsByJob(jobId);
+        const queuedPhotos: UploadingPhoto[] = queuedItems.map(item => ({
+          id: item.id,
+          file: new File([item.fileBlob], item.fileName, { type: item.mimeType }),
+          localUrl: item.localPreviewUrl || URL.createObjectURL(item.fileBlob),
+          serverUrl: null,
+          progress: item.status === 'uploading' ? 50 : 0,
+          error: item.status === 'failed' ? item.lastError || 'Upload failed' : null,
+          isQueued: true,
+        }));
+        
+        if (queuedPhotos.length > 0) {
+          setPhotos(prev => [...prev, ...queuedPhotos]);
+        }
+      } catch (err) {
+        console.error('Failed to load queued photos:', err);
+      }
+    };
+
+    loadQueuedPhotos();
+  }, [jobId]);
 
   const addPhotos = useCallback(async (files: FileList | File[]) => {
     const newFiles = Array.from(files).slice(0, MAX_PHOTOS - photos.length);
@@ -25,15 +74,25 @@ export function usePhotoUpload() {
       serverUrl: null,
       progress: 0,
       error: null,
+      isQueued: !isOnline, // Mark as queued if offline
     }));
 
     setPhotos(prev => [...prev, ...newPhotos].slice(0, MAX_PHOTOS));
 
-    // Upload each photo in background
+    // Upload each photo in background (or queue if offline)
     for (const photo of newPhotos) {
-      uploadPhoto(photo);
+      if (isOnline) {
+        uploadPhoto(photo);
+      } else {
+        // Photo will be handled by useUploadQueue when added via PhotoCaptureButton
+        // Just update the progress indicator to show it's queued
+        setPhotos(prev => prev.map(p => 
+          p.id === photo.id ? { ...p, progress: 0, isQueued: true } : p
+        ));
+        dispatchQueueUpdate({ pending: 1, status: 'offline' });
+      }
     }
-  }, [photos.length]);
+  }, [photos.length, isOnline]);
 
   const uploadPhoto = async (photo: UploadingPhoto) => {
     try {
@@ -43,7 +102,7 @@ export function usePhotoUpload() {
 
       // Update progress to indicate upload started
       setPhotos(prev => prev.map(p => 
-        p.id === photo.id ? { ...p, progress: 10 } : p
+        p.id === photo.id ? { ...p, progress: 10, isQueued: false } : p
       ));
 
       const { error: uploadError } = await supabase.storage
@@ -59,7 +118,7 @@ export function usePhotoUpload() {
 
       setPhotos(prev => prev.map(p => 
         p.id === photo.id 
-          ? { ...p, serverUrl: urlData.publicUrl, progress: 100 } 
+          ? { ...p, serverUrl: urlData.publicUrl, progress: 100, isQueued: false } 
           : p
       ));
     } catch (err) {
@@ -86,7 +145,7 @@ export function usePhotoUpload() {
     const photo = photos.find(p => p.id === id);
     if (photo) {
       setPhotos(prev => prev.map(p => 
-        p.id === id ? { ...p, error: null, progress: 0 } : p
+        p.id === id ? { ...p, error: null, progress: 0, isQueued: false } : p
       ));
       uploadPhoto(photo);
     }
@@ -100,6 +159,7 @@ export function usePhotoUpload() {
 
   const isUploading = photos.some(p => p.progress > 0 && p.progress < 100);
   const hasErrors = photos.some(p => p.error);
+  const hasQueued = photos.some(p => p.isQueued);
   const canAddMore = photos.length < MAX_PHOTOS;
 
   const clear = useCallback(() => {
@@ -117,8 +177,10 @@ export function usePhotoUpload() {
     getUrls,
     isUploading,
     hasErrors,
+    hasQueued,
     canAddMore,
     clear,
     maxPhotos: MAX_PHOTOS,
+    isOnline,
   };
 }
