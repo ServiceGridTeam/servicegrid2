@@ -8,7 +8,6 @@ import {
   Download,
   MapPin,
   Calendar,
-  Tag as TagIcon
 } from "lucide-react";
 import { format } from "date-fns";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -19,6 +18,7 @@ import { TagChip } from "@/components/tags/TagChip";
 import { TagPicker } from "@/components/tags/TagPicker";
 import { usePhotoTags, useTagPhoto, useUntagPhoto } from "@/hooks/usePhotoTags";
 import { useCreateTag, type TagColor } from "@/hooks/useTags";
+import { usePermission } from "@/hooks/usePermission";
 import type { JobMedia } from "@/hooks/useJobMedia";
 
 interface PhotoLightboxProps {
@@ -39,6 +39,9 @@ export function PhotoLightbox({
   onDelete,
 }: PhotoLightboxProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
+
+  // Permission check - technician+ can tag photos
+  const { allowed: canTag } = usePermission('technician');
 
   useEffect(() => {
     setCurrentIndex(initialIndex);
@@ -175,7 +178,7 @@ export function PhotoLightbox({
                 )}
               </div>
 
-              {/* Tags section */}
+              {/* Tags section - only show for users who can tag */}
               <div className="flex items-center gap-2 flex-wrap">
                 {photoTags.slice(0, 4).map(pt => pt.tag && (
                   <TagChip
@@ -183,22 +186,25 @@ export function PhotoLightbox({
                     name={pt.tag.name}
                     color={pt.tag.color}
                     size="sm"
-                    removable
-                    onRemove={() => handleTagRemove(pt.tag_id)}
+                    removable={canTag}
+                    onRemove={canTag ? () => handleTagRemove(pt.tag_id) : undefined}
                   />
                 ))}
                 {photoTags.length > 4 && (
                   <span className="text-xs text-white/60">+{photoTags.length - 4} more</span>
                 )}
-                <TagPicker
-                  selectedTagIds={selectedTagIds}
-                  onTagSelect={handleTagSelect}
-                  onTagRemove={handleTagRemove}
-                  onCreateTag={handleCreateTag}
-                  variant="button"
-                  placeholder="Add tag"
-                  className="h-7 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20"
-                />
+                {/* Only show TagPicker if user can tag photos */}
+                {canTag && (
+                  <TagPicker
+                    selectedTagIds={selectedTagIds}
+                    onTagSelect={handleTagSelect}
+                    onTagRemove={handleTagRemove}
+                    onCreateTag={handleCreateTag}
+                    variant="button"
+                    placeholder="Add tag"
+                    className="h-7 text-xs bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  />
+                )}
               </div>
               
               {currentMedia.description && (

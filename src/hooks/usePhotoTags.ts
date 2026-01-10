@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusinessContext } from './useBusinessContext';
 import { toast } from 'sonner';
+import { tagOperationLimiter } from '@/lib/rateLimiter';
 import type { MediaTag } from './useTags';
 
 export interface JobMediaTag {
@@ -40,7 +41,7 @@ export function usePhotoTags(mediaId: string | null) {
   });
 }
 
-// Add a tag to a photo (optimistic UI)
+// Add a tag to a photo (optimistic UI, with rate limiting)
 export function useTagPhoto() {
   const queryClient = useQueryClient();
   const { activeBusinessId } = useBusinessContext();
@@ -48,6 +49,11 @@ export function useTagPhoto() {
   return useMutation({
     mutationFn: async ({ mediaId, tagId }: { mediaId: string; tagId: string }) => {
       if (!activeBusinessId) throw new Error('No active business');
+
+      // Rate limit check
+      if (!tagOperationLimiter.canMakeRequest()) {
+        throw new Error('Too many tag operations. Please slow down.');
+      }
 
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -70,6 +76,10 @@ export function useTagPhoto() {
         }
         throw error;
       }
+
+      // Record the request for rate limiting
+      tagOperationLimiter.recordRequest();
+
       return data;
     },
     onMutate: async ({ mediaId, tagId }) => {
@@ -110,7 +120,7 @@ export function useTagPhoto() {
       if (context?.previousTags) {
         queryClient.setQueryData(['photo-tags', mediaId], context.previousTags);
       }
-      toast.error('Failed to add tag');
+      toast.error((err as Error).message || 'Failed to add tag');
     },
     onSettled: (_, __, { mediaId }) => {
       queryClient.invalidateQueries({ queryKey: ['photo-tags', mediaId] });
@@ -119,12 +129,17 @@ export function useTagPhoto() {
   });
 }
 
-// Remove a tag from a photo (optimistic UI)
+// Remove a tag from a photo (optimistic UI, with rate limiting)
 export function useUntagPhoto() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ mediaId, tagId }: { mediaId: string; tagId: string }) => {
+      // Rate limit check
+      if (!tagOperationLimiter.canMakeRequest()) {
+        throw new Error('Too many tag operations. Please slow down.');
+      }
+
       const { error } = await supabase
         .from('job_media_tags')
         .delete()
@@ -132,6 +147,9 @@ export function useUntagPhoto() {
         .eq('tag_id', tagId);
 
       if (error) throw error;
+
+      // Record the request for rate limiting
+      tagOperationLimiter.recordRequest();
     },
     onMutate: async ({ mediaId, tagId }) => {
       await queryClient.cancelQueries({ queryKey: ['photo-tags', mediaId] });
@@ -152,7 +170,7 @@ export function useUntagPhoto() {
       if (context?.previousTags) {
         queryClient.setQueryData(['photo-tags', mediaId], context.previousTags);
       }
-      toast.error('Failed to remove tag');
+      toast.error((err as Error).message || 'Failed to remove tag');
     },
     onSettled: (_, __, { mediaId }) => {
       queryClient.invalidateQueries({ queryKey: ['photo-tags', mediaId] });

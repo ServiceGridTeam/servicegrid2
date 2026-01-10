@@ -9,6 +9,7 @@ import { useJobMedia, useSetCoverPhoto, useReorderMedia, type MediaCategory, typ
 import { usePhotoTags } from "@/hooks/usePhotoTags";
 import { useDeletePhoto } from "@/hooks/useDeletePhoto";
 import { useToast } from "@/hooks/use-toast";
+import { usePermission } from "@/hooks/usePermission";
 import { PhotoLightbox } from "./PhotoLightbox";
 import { BulkTagDialog } from "@/components/tags/BulkTagDialog";
 import { TagChip } from "@/components/tags/TagChip";
@@ -355,6 +356,9 @@ export function PhotoGrid({ jobId, onPhotoCountChange }: PhotoGridProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkTagDialogOpen, setBulkTagDialogOpen] = useState(false);
 
+  // Permission check - technician+ can tag photos
+  const { allowed: canTag } = usePermission('technician');
+
   const { 
     media: fetchedMedia, 
     isLoading, 
@@ -610,14 +614,16 @@ export function PhotoGrid({ jobId, onPhotoCountChange }: PhotoGridProps) {
             <Button size="sm" variant="ghost" onClick={selectAll}>
               Select All
             </Button>
-            <Button 
-              size="sm" 
-              variant="ghost"
-              onClick={() => setBulkTagDialogOpen(true)}
-            >
-              <TagIcon className="h-4 w-4 mr-1" />
-              Tag
-            </Button>
+            {canTag && (
+              <Button 
+                size="sm" 
+                variant="ghost"
+                onClick={() => setBulkTagDialogOpen(true)}
+              >
+                <TagIcon className="h-4 w-4 mr-1" />
+                Tag
+              </Button>
+            )}
             <Button 
               size="sm" 
               variant="ghost" 

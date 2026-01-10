@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusinessContext } from './useBusinessContext';
+import { searchLimiter } from '@/lib/rateLimiter';
 
 export interface SearchPhotosParams {
   query?: string;
@@ -52,6 +53,14 @@ export function useSearchPhotos(params: SearchPhotosParams) {
     queryFn: async ({ pageParam }) => {
       const page = pageParam as number;
       if (!activeBusinessId) return { results: [], totalCount: 0, page };
+
+      // Rate limit check (soft - we still allow the query but log a warning)
+      if (!searchLimiter.canMakeRequest()) {
+        console.warn('Photo search rate limit reached');
+        // Still allow the request but don't record it (already at limit)
+      } else {
+        searchLimiter.recordRequest();
+      }
 
       const { data, error } = await supabase.rpc('search_photos', {
         p_business_id: activeBusinessId,

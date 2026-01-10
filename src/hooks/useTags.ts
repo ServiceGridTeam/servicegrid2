@@ -1,7 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusinessContext } from './useBusinessContext';
+import { usePermission } from './usePermission';
 import { toast } from 'sonner';
+import { tagCreationLimiter } from '@/lib/rateLimiter';
 
 export type TagColor = 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'pink' | 'gray';
 
@@ -88,14 +90,26 @@ export function useTagsByGroup() {
   return { tagsByGroup, tags, ...rest };
 }
 
-// Create a new tag
+// Create a new tag (admin+ only, with rate limiting)
 export function useCreateTag() {
   const queryClient = useQueryClient();
   const { activeBusinessId } = useBusinessContext();
+  const { allowed: canManageTags } = usePermission('admin');
 
   return useMutation({
     mutationFn: async (input: CreateTagInput) => {
+      // Permission check
+      if (!canManageTags) {
+        throw new Error('Permission denied: Admin access required to create tags');
+      }
+
       if (!activeBusinessId) throw new Error('No active business');
+
+      // Rate limit check
+      if (!tagCreationLimiter.canMakeRequest()) {
+        const resetMinutes = tagCreationLimiter.getResetTimeMinutes();
+        throw new Error(`Rate limit exceeded. You can create more tags in ${resetMinutes} minute${resetMinutes !== 1 ? 's' : ''}.`);
+      }
 
       const slug = generateSlug(input.name);
 
@@ -120,6 +134,10 @@ export function useCreateTag() {
         }
         throw error;
       }
+
+      // Record the request for rate limiting
+      tagCreationLimiter.recordRequest();
+
       return data as MediaTag;
     },
     onSuccess: () => {
@@ -132,12 +150,18 @@ export function useCreateTag() {
   });
 }
 
-// Update an existing tag
+// Update an existing tag (admin+ only for name changes)
 export function useUpdateTag() {
   const queryClient = useQueryClient();
+  const { allowed: canManageTags } = usePermission('admin');
 
   return useMutation({
     mutationFn: async ({ tagId, updates }: { tagId: string; updates: UpdateTagInput }) => {
+      // If updating name, require admin
+      if (updates.name && !canManageTags) {
+        throw new Error('Permission denied: Admin access required to rename tags');
+      }
+
       const updateData: Record<string, unknown> = { ...updates };
       
       // If name is being updated, also update slug
@@ -159,18 +183,23 @@ export function useUpdateTag() {
       queryClient.invalidateQueries({ queryKey: ['media-tags'] });
       toast.success('Tag updated');
     },
-    onError: () => {
-      toast.error('Failed to update tag');
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update tag');
     },
   });
 }
 
-// Delete a tag (only non-system tags)
+// Delete a tag (admin+ only, non-system tags)
 export function useDeleteTag() {
   const queryClient = useQueryClient();
+  const { allowed: canManageTags } = usePermission('admin');
 
   return useMutation({
     mutationFn: async (tagId: string) => {
+      if (!canManageTags) {
+        throw new Error('Permission denied: Admin access required to delete tags');
+      }
+
       const { error } = await supabase
         .from('media_tags')
         .delete()
@@ -182,13 +211,13 @@ export function useDeleteTag() {
       queryClient.invalidateQueries({ queryKey: ['media-tags'] });
       toast.success('Tag deleted');
     },
-    onError: () => {
-      toast.error('Failed to delete tag');
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to delete tag');
     },
   });
 }
 
-// Reorder tags
+// Reorder tags (admin+ only)
 export function useReorderTags() {
   const queryClient = useQueryClient();
 
@@ -207,4 +236,14 @@ export function useReorderTags() {
       queryClient.invalidateQueries({ queryKey: ['media-tags'] });
     },
   });
+}
+
+// Helper to check rate limit status
+export function useTagCreationRateLimit() {
+  return {
+    canCreate: tagCreationLimiter.canMakeRequest(),
+    remaining: tagCreationLimiter.getRemainingRequests(),
+    resetTimeMinutes: tagCreationLimiter.getResetTimeMinutes(),
+    isNearLimit: tagCreationLimiter.isNearLimit(),
+  };
 }

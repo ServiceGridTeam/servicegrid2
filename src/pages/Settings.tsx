@@ -21,6 +21,7 @@ import { PhoneSettingsForm } from "@/components/settings/PhoneSettingsForm";
 import { EmailBrandingCard } from "@/components/settings/EmailBrandingCard";
 import { PhotoSettingsCard } from "@/components/settings/PhotoSettingsCard";
 import { TagManager } from "@/components/tags/TagManager";
+import { RoleGate } from "@/components/auth/RoleGate";
 import { EmailConnectionCard, EmailRulesManager } from "@/components/email";
 import { useEmailConnections } from "@/hooks/useEmailConnections";
 
@@ -497,9 +498,22 @@ export default function Settings() {
           </div>
           <PhotoSettingsCard />
           
-          <div className="mt-6">
-            <TagManager />
-          </div>
+          <RoleGate 
+            minRole="admin" 
+            fallback={
+              <Card className="mt-6">
+                <CardContent className="py-6">
+                  <p className="text-muted-foreground text-center text-sm">
+                    Only administrators can manage photo tags.
+                  </p>
+                </CardContent>
+              </Card>
+            }
+          >
+            <div className="mt-6">
+              <TagManager />
+            </div>
+          </RoleGate>
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">

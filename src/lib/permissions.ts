@@ -53,7 +53,7 @@ export function hasMinRole(userRole: AppRole | null | undefined, minRole: AppRol
  */
 export function canPerformAction(
   userRole: AppRole | null | undefined,
-  action: 'manage_team' | 'manage_settings' | 'manage_billing' | 'view_jobs' | 'edit_jobs' | 'clock_in_out'
+  action: 'manage_team' | 'manage_settings' | 'manage_billing' | 'view_jobs' | 'edit_jobs' | 'clock_in_out' | 'manage_tags' | 'tag_photos'
 ): boolean {
   if (!userRole) return false;
 
@@ -64,6 +64,8 @@ export function canPerformAction(
     view_jobs: 'viewer',
     edit_jobs: 'technician',
     clock_in_out: 'technician',
+    manage_tags: 'admin', // Admin+ can create/edit/delete tags
+    tag_photos: 'technician', // Technician+ can tag photos
   };
 
   return hasMinRole(userRole, actionRoles[action]);
