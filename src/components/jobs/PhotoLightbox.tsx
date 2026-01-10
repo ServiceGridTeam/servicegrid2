@@ -8,6 +8,8 @@ import {
   Download,
   MapPin,
   Calendar,
+  Pencil,
+  Layers,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -19,6 +21,8 @@ import { TagPicker } from "@/components/tags/TagPicker";
 import { usePhotoTags, useTagPhoto, useUntagPhoto } from "@/hooks/usePhotoTags";
 import { useCreateTag, type TagColor } from "@/hooks/useTags";
 import { usePermission } from "@/hooks/usePermission";
+import { useAnnotation } from "@/hooks/useAnnotations";
+import { AnnotationEditor } from "@/components/annotations";
 import type { JobMedia } from "@/hooks/useJobMedia";
 
 interface PhotoLightboxProps {
@@ -39,8 +43,9 @@ export function PhotoLightbox({
   onDelete,
 }: PhotoLightboxProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [showAnnotationEditor, setShowAnnotationEditor] = useState(false);
 
-  // Permission check - technician+ can tag photos
+  // Permission check - technician+ can tag photos and annotate
   const { allowed: canTag } = usePermission('technician');
 
   useEffect(() => {
@@ -54,6 +59,11 @@ export function PhotoLightbox({
   const tagPhoto = useTagPhoto();
   const untagPhoto = useUntagPhoto();
   const createTag = useCreateTag();
+  
+  // Check for existing annotations
+  const { data: existingAnnotation } = useAnnotation(currentMedia?.id ?? null);
+  const hasAnnotations = existingAnnotation && existingAnnotation.annotation_data && 
+    (existingAnnotation.annotation_data as { objects?: unknown[] }).objects?.length > 0;
 
   if (!currentMedia) return null;
 
@@ -234,6 +244,24 @@ export function PhotoLightbox({
 
             {/* Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Annotate button - only for images */}
+              {currentMedia.media_type !== "video" && canTag && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "text-white hover:bg-white/20",
+                    hasAnnotations && "text-primary"
+                  )}
+                  onClick={() => setShowAnnotationEditor(true)}
+                >
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Annotate
+                  {hasAnnotations && (
+                    <Layers className="h-3 w-3 ml-1" />
+                  )}
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -281,7 +309,32 @@ export function PhotoLightbox({
             </div>
           </div>
         </div>
+
+        {/* Annotation badge indicator on image */}
+        {hasAnnotations && (
+          <div className="absolute top-16 left-4 z-40">
+            <Badge 
+              variant="secondary" 
+              className="bg-primary/90 text-primary-foreground gap-1"
+            >
+              <Layers className="h-3 w-3" />
+              Annotated
+            </Badge>
+          </div>
+        )}
       </DialogContent>
+
+      {/* Annotation Editor Modal */}
+      {showAnnotationEditor && currentMedia.url && (
+        <AnnotationEditor
+          mediaId={currentMedia.id}
+          mediaUrl={currentMedia.url}
+          onClose={() => setShowAnnotationEditor(false)}
+          onSave={() => {
+            // Optionally trigger a refetch of annotations
+          }}
+        />
+      )}
     </Dialog>
   );
 }

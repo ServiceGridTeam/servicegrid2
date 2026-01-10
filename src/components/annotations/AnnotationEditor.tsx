@@ -4,23 +4,39 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Stage, Layer, Image as KonvaImage, Transformer, Arrow, Text } from 'react-konva';
+import { Stage, Layer, Image as KonvaImage, Transformer, Arrow, Text, Line, Rect, Circle, Group } from 'react-konva';
 import useImage from 'use-image';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, History } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAnnotationLock } from '@/hooks/useAnnotationLock';
 import { useSaveAnnotation, useAnnotation } from '@/hooks/useAnnotations';
 import { usePhotoWatcher } from '@/hooks/usePhotoWatcher';
 import { AnnotationToolbar } from './AnnotationToolbar';
-import { useArrowTool } from './tools/useArrowTool';
-import { useTextTool } from './tools/useTextTool';
+import { AnnotationHistoryPanel } from './AnnotationHistoryPanel';
+import { 
+  useArrowTool, 
+  useTextTool, 
+  useLineTool, 
+  useRectTool, 
+  useCircleTool, 
+  useFreehandTool, 
+  useMeasurementTool,
+  useSelectTool 
+} from './tools';
 import {
   AnnotationData,
   AnnotationObject,
   AnnotationToolType,
+  ArrowAnnotation,
+  TextAnnotation,
+  LineAnnotation,
+  RectAnnotation,
+  CircleAnnotation,
+  FreehandAnnotation,
+  MeasurementAnnotation,
   DEFAULT_ANNOTATION_DATA,
   DEFAULT_EDITOR_SETTINGS,
   MAX_UNDO_STEPS,
@@ -51,7 +67,6 @@ export function AnnotationEditor({
   const {
     lockState,
     isAcquiring,
-    acquireLock,
     releaseLock,
   } = useAnnotationLock(mediaId, {
     autoAcquire: !readOnly,
@@ -77,6 +92,7 @@ export function AnnotationEditor({
   // Canvas state
   const [image] = useImage(mediaUrl, 'anonymous');
   const stageRef = useRef<Konva.Stage>(null);
+  const transformerRef = useRef<Konva.Transformer>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [stageSize, setStageSize] = useState({ width: 800, height: 600 });
   const [scale, setScale] = useState(1);
@@ -94,6 +110,7 @@ export function AnnotationEditor({
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
 
   // Initialize from existing annotation
   useEffect(() => {
@@ -109,8 +126,8 @@ export function AnnotationEditor({
   useEffect(() => {
     if (!containerRef.current || !image) return;
 
-    const containerWidth = containerRef.current.clientWidth - 32; // padding
-    const containerHeight = containerRef.current.clientHeight - 120; // toolbar space
+    const containerWidth = containerRef.current.clientWidth - 32;
+    const containerHeight = containerRef.current.clientHeight - 120;
 
     const imageAspect = image.width / image.height;
     const containerAspect = containerWidth / containerHeight;
@@ -128,12 +145,26 @@ export function AnnotationEditor({
     setStageSize({ width, height });
     setScale(newScale);
     
-    // Update canvas dimensions in annotation data
     setAnnotationData(prev => ({
       ...prev,
       canvas: { width: image.width, height: image.height, scale: newScale },
     }));
   }, [image, containerRef.current?.clientWidth, containerRef.current?.clientHeight]);
+
+  // Update transformer when selection changes
+  useEffect(() => {
+    if (!transformerRef.current || !stageRef.current) return;
+    
+    const stage = stageRef.current;
+    const transformer = transformerRef.current;
+    
+    const selectedNodes = selectedIds
+      .map(id => stage.findOne(`#${id}`))
+      .filter(Boolean) as Konva.Node[];
+    
+    transformer.nodes(selectedNodes);
+    transformer.getLayer()?.batchDraw();
+  }, [selectedIds]);
 
   // Add object to canvas
   const addObject = useCallback((object: AnnotationObject) => {
@@ -143,7 +174,6 @@ export function AnnotationEditor({
         objects: [...prev.objects, object],
       };
       
-      // Add to history
       const newHistory = history.slice(0, historyIndex + 1);
       newHistory.push(newData);
       if (newHistory.length > MAX_UNDO_STEPS) {
@@ -284,7 +314,11 @@ export function AnnotationEditor({
       }
 
       if (e.key === 'Escape') {
-        onClose();
+        if (showHistoryPanel) {
+          setShowHistoryPanel(false);
+        } else {
+          handleClose();
+        }
       } else if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
         e.preventDefault();
         if (e.shiftKey) {
@@ -303,12 +337,22 @@ export function AnnotationEditor({
         setActiveTool('arrow');
       } else if (e.key === 't') {
         setActiveTool('text');
+      } else if (e.key === 'r') {
+        setActiveTool('rect');
+      } else if (e.key === 'c') {
+        setActiveTool('circle');
+      } else if (e.key === 'l') {
+        setActiveTool('line');
+      } else if (e.key === 'd') {
+        setActiveTool('freehand');
+      } else if (e.key === 'm') {
+        setActiveTool('measurement');
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo, handleSave, deleteSelected, onClose]);
+  }, [undo, redo, handleSave, deleteSelected, showHistoryPanel]);
 
   // Tool hooks
   const arrowTool = useArrowTool({
@@ -327,36 +371,143 @@ export function AnnotationEditor({
     onComplete: addObject,
   });
 
-  // Stage event handlers
+  const lineTool = useLineTool({
+    stageRef,
+    color,
+    strokeWidth,
+    onComplete: addObject,
+  });
+
+  const rectTool = useRectTool({
+    stageRef,
+    color,
+    strokeWidth,
+    onComplete: addObject,
+  });
+
+  const circleTool = useCircleTool({
+    stageRef,
+    color,
+    strokeWidth,
+    onComplete: addObject,
+  });
+
+  const freehandTool = useFreehandTool({
+    stageRef,
+    color,
+    strokeWidth,
+    onComplete: addObject,
+  });
+
+  const measurementTool = useMeasurementTool({
+    stageRef,
+    color,
+    strokeWidth,
+    onComplete: addObject,
+  });
+
+  const selectTool = useSelectTool({
+    stageRef,
+    scale,
+    selectedIds,
+    onSelectionChange: setSelectedIds,
+    onObjectUpdate: updateObject,
+    onDeleteSelected: deleteSelected,
+  });
+
+  const isEditable = !readOnly && lockState.isOwnLock;
+
+  // Stage event handlers - delegate to active tool
   const handleStageMouseDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    // Deselect when clicking on empty area
+    if (readOnly || !lockState.isOwnLock) return;
+
+    // Deselect when clicking on empty area with select tool
     const clickedOnEmpty = e.target === e.target.getStage();
-    if (clickedOnEmpty) {
+    if (clickedOnEmpty && activeTool === 'select') {
       setSelectedIds([]);
     }
 
-    if (readOnly || !lockState.isOwnLock) return;
-
-    if (activeTool === 'arrow') {
-      arrowTool.handleMouseDown(e);
-    } else if (activeTool === 'text') {
-      textTool.handleMouseDown(e);
+    switch (activeTool) {
+      case 'select':
+        selectTool.handleMouseDown(e);
+        break;
+      case 'arrow':
+        arrowTool.handleMouseDown(e);
+        break;
+      case 'text':
+        textTool.handleMouseDown(e);
+        break;
+      case 'line':
+        lineTool.handleMouseDown(e);
+        break;
+      case 'rect':
+        rectTool.handleMouseDown(e);
+        break;
+      case 'circle':
+        circleTool.handleMouseDown(e);
+        break;
+      case 'freehand':
+        freehandTool.handleMouseDown(e);
+        break;
+      case 'measurement':
+        measurementTool.handleMouseDown(e);
+        break;
     }
   };
 
   const handleStageMouseMove = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     if (readOnly || !lockState.isOwnLock) return;
 
-    if (activeTool === 'arrow') {
-      arrowTool.handleMouseMove(e);
+    switch (activeTool) {
+      case 'select':
+        selectTool.handleMouseMove(e);
+        break;
+      case 'arrow':
+        arrowTool.handleMouseMove(e);
+        break;
+      case 'line':
+        lineTool.handleMouseMove(e);
+        break;
+      case 'rect':
+        rectTool.handleMouseMove(e);
+        break;
+      case 'circle':
+        circleTool.handleMouseMove(e);
+        break;
+      case 'freehand':
+        freehandTool.handleMouseMove(e);
+        break;
+      case 'measurement':
+        measurementTool.handleMouseMove(e);
+        break;
     }
   };
 
   const handleStageMouseUp = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     if (readOnly || !lockState.isOwnLock) return;
 
-    if (activeTool === 'arrow') {
-      arrowTool.handleMouseUp(e);
+    switch (activeTool) {
+      case 'select':
+        selectTool.handleMouseUp(e);
+        break;
+      case 'arrow':
+        arrowTool.handleMouseUp(e);
+        break;
+      case 'line':
+        lineTool.handleMouseUp(e);
+        break;
+      case 'rect':
+        rectTool.handleMouseUp(e);
+        break;
+      case 'circle':
+        circleTool.handleMouseUp(e);
+        break;
+      case 'freehand':
+        freehandTool.handleMouseUp(e);
+        break;
+      case 'measurement':
+        measurementTool.handleMouseUp(e);
+        break;
     }
   };
 
@@ -375,7 +526,170 @@ export function AnnotationEditor({
   }, [hasUnsavedChanges, readOnly, lockState.isOwnLock, releaseLock, onClose]);
 
   const isLocked = !readOnly && !lockState.isOwnLock && lockState.isLocked;
-  const isEditable = !readOnly && lockState.isOwnLock;
+
+  // Render annotation objects
+  const renderAnnotationObject = (obj: AnnotationObject) => {
+    const isSelected = selectedIds.includes(obj.id);
+    
+    const handleObjectClick = () => {
+      if (activeTool === 'select' && isEditable) {
+        setSelectedIds([obj.id]);
+      }
+    };
+
+    const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
+      const node = e.target;
+      updateObject(obj.id, {
+        x: node.x() / scale,
+        y: node.y() / scale,
+      });
+    };
+
+    const commonProps = {
+      id: obj.id,
+      onClick: handleObjectClick,
+      onTap: handleObjectClick,
+      draggable: isEditable && activeTool === 'select',
+      onDragEnd: handleDragEnd,
+    };
+
+    switch (obj.type) {
+      case 'arrow': {
+        const arrow = obj as ArrowAnnotation;
+        return (
+          <Arrow
+            key={obj.id}
+            {...commonProps}
+            points={arrow.points.map(p => p * scale)}
+            stroke={arrow.color}
+            strokeWidth={arrow.strokeWidth}
+            fill={arrow.color}
+            pointerLength={arrow.pointerLength || 10}
+            pointerWidth={arrow.pointerWidth || 10}
+          />
+        );
+      }
+      case 'text': {
+        const text = obj as TextAnnotation;
+        return (
+          <Text
+            key={obj.id}
+            {...commonProps}
+            x={text.x * scale}
+            y={text.y * scale}
+            text={text.text}
+            fontSize={text.fontSize * scale}
+            fill={text.color}
+            fontFamily={text.fontFamily || 'Inter'}
+          />
+        );
+      }
+      case 'line': {
+        const line = obj as LineAnnotation;
+        return (
+          <Line
+            key={obj.id}
+            {...commonProps}
+            points={line.points.map(p => p * scale)}
+            stroke={line.color}
+            strokeWidth={line.strokeWidth}
+            lineCap={line.lineCap || 'round'}
+            lineJoin={line.lineJoin || 'round'}
+            dash={line.dash}
+          />
+        );
+      }
+      case 'rect': {
+        const rect = obj as RectAnnotation;
+        return (
+          <Rect
+            key={obj.id}
+            {...commonProps}
+            x={rect.x * scale}
+            y={rect.y * scale}
+            width={rect.width * scale}
+            height={rect.height * scale}
+            stroke={rect.color}
+            strokeWidth={rect.strokeWidth}
+            fill={rect.fill || 'transparent'}
+            cornerRadius={rect.cornerRadius}
+          />
+        );
+      }
+      case 'circle': {
+        const circle = obj as CircleAnnotation;
+        return (
+          <Circle
+            key={obj.id}
+            {...commonProps}
+            x={circle.x * scale}
+            y={circle.y * scale}
+            radius={circle.radius * scale}
+            stroke={circle.color}
+            strokeWidth={circle.strokeWidth}
+            fill={circle.fill || 'transparent'}
+          />
+        );
+      }
+      case 'freehand': {
+        const freehand = obj as FreehandAnnotation;
+        return (
+          <Line
+            key={obj.id}
+            {...commonProps}
+            points={freehand.points.map(p => p * scale)}
+            stroke={freehand.color}
+            strokeWidth={freehand.strokeWidth}
+            tension={freehand.tension || 0.5}
+            lineCap={freehand.lineCap || 'round'}
+            lineJoin={freehand.lineJoin || 'round'}
+          />
+        );
+      }
+      case 'measurement': {
+        const measurement = obj as MeasurementAnnotation;
+        const [x1, y1, x2, y2] = measurement.points;
+        const midX = ((x1 + x2) / 2) * scale;
+        const midY = ((y1 + y2) / 2) * scale;
+        const labelText = `${measurement.length.toFixed(1)} ${measurement.unit}`;
+        
+        return (
+          <Group key={obj.id} {...commonProps}>
+            <Line
+              points={measurement.points.map(p => p * scale)}
+              stroke={measurement.color}
+              strokeWidth={measurement.strokeWidth}
+              lineCap="round"
+            />
+            {/* End tick marks */}
+            <Line
+              points={[x1 * scale - 5, y1 * scale - 5, x1 * scale + 5, y1 * scale + 5]}
+              stroke={measurement.color}
+              strokeWidth={measurement.strokeWidth}
+            />
+            <Line
+              points={[x2 * scale - 5, y2 * scale - 5, x2 * scale + 5, y2 * scale + 5]}
+              stroke={measurement.color}
+              strokeWidth={measurement.strokeWidth}
+            />
+            {measurement.showLabel !== false && (
+              <Text
+                x={midX}
+                y={midY - 20}
+                text={labelText}
+                fontSize={12}
+                fill={measurement.color}
+                align="center"
+                offsetX={labelText.length * 3}
+              />
+            )}
+          </Group>
+        );
+      }
+      default:
+        return null;
+    }
+  };
 
   return (
     <Dialog open onOpenChange={(open) => !open && handleClose()}>
@@ -394,105 +708,154 @@ export function AnnotationEditor({
                 </span>
               )}
             </div>
-            <Button variant="ghost" size="icon" onClick={handleClose}>
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {!readOnly && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowHistoryPanel(!showHistoryPanel)}
+                  className="gap-1"
+                >
+                  <History className="h-4 w-4" />
+                  History
+                </Button>
+              )}
+              <Button variant="ghost" size="icon" onClick={handleClose}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
-          {/* Canvas container */}
-          <div
-            ref={containerRef}
-            className="flex-1 flex items-center justify-center bg-muted/50 overflow-hidden p-4"
-          >
-            {isLoadingAnnotation || isAcquiring ? (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>{isAcquiring ? 'Acquiring lock...' : 'Loading...'}</span>
-              </div>
-            ) : (
-              <Stage
-                ref={stageRef}
-                width={stageSize.width}
-                height={stageSize.height}
-                onMouseDown={handleStageMouseDown}
-                onMouseMove={handleStageMouseMove}
-                onMouseUp={handleStageMouseUp}
-                onTouchStart={handleStageMouseDown}
-                onTouchMove={handleStageMouseMove}
-                onTouchEnd={handleStageMouseUp}
-                className={cn(
-                  'bg-white shadow-lg',
-                  !isEditable && 'cursor-not-allowed'
-                )}
-              >
-                {/* Background image layer */}
-                <Layer>
-                  {image && (
-                    <KonvaImage
-                      image={image}
-                      width={stageSize.width}
-                      height={stageSize.height}
-                    />
+          {/* Main content */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Canvas container */}
+            <div
+              ref={containerRef}
+              className="flex-1 flex items-center justify-center bg-muted/50 overflow-hidden p-4"
+            >
+              {isLoadingAnnotation || isAcquiring ? (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>{isAcquiring ? 'Acquiring lock...' : 'Loading...'}</span>
+                </div>
+              ) : (
+                <Stage
+                  ref={stageRef}
+                  width={stageSize.width}
+                  height={stageSize.height}
+                  onMouseDown={handleStageMouseDown}
+                  onMouseMove={handleStageMouseMove}
+                  onMouseUp={handleStageMouseUp}
+                  onTouchStart={handleStageMouseDown}
+                  onTouchMove={handleStageMouseMove}
+                  onTouchEnd={handleStageMouseUp}
+                  className={cn(
+                    'bg-white shadow-lg',
+                    !isEditable && 'cursor-not-allowed'
                   )}
-                </Layer>
+                >
+                  {/* Background image layer */}
+                  <Layer>
+                    {image && (
+                      <KonvaImage
+                        image={image}
+                        width={stageSize.width}
+                        height={stageSize.height}
+                      />
+                    )}
+                  </Layer>
 
-                {/* Annotations layer */}
-                <Layer>
-                  {/* Render existing annotations */}
-                  {annotationData.objects.map((obj) => {
-                    // Render based on type - simplified for now
-                    if (obj.type === 'arrow') {
-                      const arrow = obj as import('@/types/annotations').ArrowAnnotation;
-                      return (
-                        <Arrow
-                          key={obj.id}
-                          id={obj.id}
-                          points={arrow.points.map((p) => p * scale)}
-                          stroke={arrow.color}
-                          strokeWidth={arrow.strokeWidth}
-                          fill={arrow.color}
-                          pointerLength={arrow.pointerLength || 10}
-                          pointerWidth={arrow.pointerWidth || 10}
-                          onClick={() => activeTool === 'select' && setSelectedIds([obj.id])}
-                          onTap={() => activeTool === 'select' && setSelectedIds([obj.id])}
-                          draggable={isEditable && activeTool === 'select'}
-                        />
-                      );
-                    }
-                    if (obj.type === 'text') {
-                      const text = obj as import('@/types/annotations').TextAnnotation;
-                      return (
-                        <Text
-                          key={obj.id}
-                          id={obj.id}
-                          x={text.x * scale}
-                          y={text.y * scale}
-                          text={text.text}
-                          fontSize={text.fontSize * scale}
-                          fill={text.color}
-                          onClick={() => activeTool === 'select' && setSelectedIds([obj.id])}
-                          onTap={() => activeTool === 'select' && setSelectedIds([obj.id])}
-                          draggable={isEditable && activeTool === 'select'}
-                          onDragEnd={(e) => {
-                            const node = e.target;
-                            updateObject(obj.id, {
-                              x: node.x() / scale,
-                              y: node.y() / scale,
-                            });
-                          }}
-                        />
-                      );
-                    }
-                    return null;
-                  })}
+                  {/* Annotations layer */}
+                  <Layer>
+                    {/* Render existing annotations */}
+                    {annotationData.objects.map(renderAnnotationObject)}
 
-                  {/* Drawing preview */}
-                  {arrowTool.previewElement}
-                  {textTool.previewElement}
-                </Layer>
-              </Stage>
+                    {/* Drawing previews from tools */}
+                    {arrowTool.previewElement}
+                    {textTool.previewElement}
+                    {lineTool.state.isDrawing && (
+                      <Line
+                        points={lineTool.state.preview}
+                        stroke={color}
+                        strokeWidth={strokeWidth}
+                        lineCap="round"
+                      />
+                    )}
+                    {rectTool.state.isDrawing && (
+                      <Rect
+                        x={rectTool.state.preview.x}
+                        y={rectTool.state.preview.y}
+                        width={rectTool.state.preview.width}
+                        height={rectTool.state.preview.height}
+                        stroke={color}
+                        strokeWidth={strokeWidth}
+                        fill="transparent"
+                      />
+                    )}
+                    {circleTool.state.isDrawing && (
+                      <Circle
+                        x={circleTool.state.preview.centerX}
+                        y={circleTool.state.preview.centerY}
+                        radius={circleTool.state.preview.radius}
+                        stroke={color}
+                        strokeWidth={strokeWidth}
+                        fill="transparent"
+                      />
+                    )}
+                    {freehandTool.state.isDrawing && (
+                      <Line
+                        points={freehandTool.state.preview}
+                        stroke={color}
+                        strokeWidth={strokeWidth}
+                        tension={0.5}
+                        lineCap="round"
+                        lineJoin="round"
+                      />
+                    )}
+                    {measurementTool.state.isDrawing && (
+                      <Line
+                        points={measurementTool.state.preview}
+                        stroke={color}
+                        strokeWidth={strokeWidth}
+                        lineCap="round"
+                      />
+                    )}
+
+                    {/* Transformer for selected objects */}
+                    {isEditable && activeTool === 'select' && (
+                      <Transformer
+                        ref={transformerRef}
+                        boundBoxFunc={(oldBox, newBox) => {
+                          if (newBox.width < 10 || newBox.height < 10) {
+                            return oldBox;
+                          }
+                          return newBox;
+                        }}
+                      />
+                    )}
+                  </Layer>
+                </Stage>
+              )}
+            </div>
+
+            {/* History Panel */}
+            {showHistoryPanel && (
+              <AnnotationHistoryPanel
+                mediaId={mediaId}
+                onClose={() => setShowHistoryPanel(false)}
+                onRevert={(versionData) => {
+                  setAnnotationData(versionData);
+                  setHasUnsavedChanges(true);
+                  const newHistory = [...history.slice(0, historyIndex + 1), versionData];
+                  setHistory(newHistory);
+                  setHistoryIndex(newHistory.length - 1);
+                }}
+              />
             )}
           </div>
+
+          {/* Text input overlay for text tool */}
+          {textTool.textInputOverlay}
 
           {/* Toolbar */}
           {!readOnly && (
