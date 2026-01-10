@@ -35,6 +35,7 @@ import NotFound from "./pages/NotFound";
 import PublicQuote from "./pages/PublicQuote";
 import PublicInvoice from "./pages/PublicInvoice";
 import PublicJobTracking from "./pages/PublicJobTracking";
+import PublicComparison from "./pages/PublicComparison";
 import StripeReturn from "./pages/StripeReturn";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
@@ -85,6 +86,7 @@ const App = () => (
             <Route path="/quote/:token" element={<PublicQuote />} />
             <Route path="/invoice/:token" element={<PublicInvoice />} />
             <Route path="/track/:token" element={<PublicJobTracking />} />
+            <Route path="/compare/:token" element={<PublicComparison />} />
             <Route path="/invite/:token" element={<AcceptInvite />} />
             <Route path="/stripe/return" element={<StripeReturn />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />

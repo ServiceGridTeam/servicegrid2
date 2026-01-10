@@ -23,6 +23,7 @@ import { PhotoUploadProgress } from "./PhotoUploadProgress";
 import { PhotoCaptureButton } from "./PhotoCaptureButton";
 import { MediaGalleryPreview } from "./MediaGalleryPreview";
 import { PhotoTimeline, CategoryOrganizer } from "@/components/photos";
+import { ComparisonsList } from "@/components/comparisons";
 import { TimeEntriesTable } from "@/components/team/TimeEntriesTable";
 import { useUpdateJob, type JobWithCustomer } from "@/hooks/useJobs";
 import { useBusiness } from "@/hooks/useBusiness";
@@ -52,11 +53,13 @@ import {
   Grid3X3,
   AlignLeft,
   Columns,
+  Layers,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
 type PhotoViewMode = 'gallery' | 'timeline' | 'category';
+type MediaTabMode = 'photos' | 'comparisons';
 
 interface JobDetailSheetProps {
   job: JobWithCustomer | null;
@@ -75,6 +78,7 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
   const [showTimeEntries, setShowTimeEntries] = useState(false);
   const [expandDialogOpen, setExpandDialogOpen] = useState(false);
   const [showMediaSection, setShowMediaSection] = useState(false);
+  const [mediaTab, setMediaTab] = useState<MediaTabMode>('photos');
   const [photoViewMode, setPhotoViewMode] = useState<PhotoViewMode>(() => {
     // Persist preference in localStorage
     const saved = localStorage.getItem('photo-view-mode');
@@ -480,7 +484,7 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
                   Photos & Media
                 </h3>
                 <div className="flex items-center gap-2">
-                  <PhotoCaptureButton jobId={job.id} />
+                  {mediaTab === 'photos' && <PhotoCaptureButton jobId={job.id} />}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -503,41 +507,73 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
                 />
               ) : (
                 <>
-                  {/* View mode toggle */}
-                  <div className="flex items-center gap-1 mb-3 p-1 bg-muted rounded-lg w-fit">
+                  {/* Tab toggle: Photos / Comparisons */}
+                  <div className="flex items-center gap-1 mb-3 p-1 bg-muted rounded-lg">
                     <Button
-                      variant={photoViewMode === 'gallery' ? 'secondary' : 'ghost'}
+                      variant={mediaTab === 'photos' ? 'secondary' : 'ghost'}
                       size="sm"
-                      className="h-7 px-2"
-                      onClick={() => handleViewModeChange('gallery')}
+                      className="h-7 px-3 flex-1"
+                      onClick={() => setMediaTab('photos')}
                     >
-                      <Grid3X3 className="h-3.5 w-3.5 mr-1" />
-                      Grid
+                      <Camera className="h-3.5 w-3.5 mr-1" />
+                      Photos
                     </Button>
                     <Button
-                      variant={photoViewMode === 'timeline' ? 'secondary' : 'ghost'}
+                      variant={mediaTab === 'comparisons' ? 'secondary' : 'ghost'}
                       size="sm"
-                      className="h-7 px-2"
-                      onClick={() => handleViewModeChange('timeline')}
+                      className="h-7 px-3 flex-1"
+                      onClick={() => setMediaTab('comparisons')}
                     >
-                      <AlignLeft className="h-3.5 w-3.5 mr-1" />
-                      Timeline
-                    </Button>
-                    <Button
-                      variant={photoViewMode === 'category' ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className="h-7 px-2"
-                      onClick={() => handleViewModeChange('category')}
-                    >
-                      <Columns className="h-3.5 w-3.5 mr-1" />
-                      Category
+                      <Layers className="h-3.5 w-3.5 mr-1" />
+                      Comparisons
                     </Button>
                   </div>
 
-                  {/* Render based on view mode */}
-                  {photoViewMode === 'gallery' && <PhotoGrid jobId={job.id} />}
-                  {photoViewMode === 'timeline' && <PhotoTimeline jobId={job.id} />}
-                  {photoViewMode === 'category' && <CategoryOrganizer jobId={job.id} />}
+                  {/* Photos Tab Content */}
+                  {mediaTab === 'photos' && (
+                    <>
+                      {/* View mode toggle */}
+                      <div className="flex items-center gap-1 mb-3 p-1 bg-muted/50 rounded-lg w-fit">
+                        <Button
+                          variant={photoViewMode === 'gallery' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-7 px-2"
+                          onClick={() => handleViewModeChange('gallery')}
+                        >
+                          <Grid3X3 className="h-3.5 w-3.5 mr-1" />
+                          Grid
+                        </Button>
+                        <Button
+                          variant={photoViewMode === 'timeline' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-7 px-2"
+                          onClick={() => handleViewModeChange('timeline')}
+                        >
+                          <AlignLeft className="h-3.5 w-3.5 mr-1" />
+                          Timeline
+                        </Button>
+                        <Button
+                          variant={photoViewMode === 'category' ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="h-7 px-2"
+                          onClick={() => handleViewModeChange('category')}
+                        >
+                          <Columns className="h-3.5 w-3.5 mr-1" />
+                          Category
+                        </Button>
+                      </div>
+
+                      {/* Render based on view mode */}
+                      {photoViewMode === 'gallery' && <PhotoGrid jobId={job.id} />}
+                      {photoViewMode === 'timeline' && <PhotoTimeline jobId={job.id} />}
+                      {photoViewMode === 'category' && <CategoryOrganizer jobId={job.id} />}
+                    </>
+                  )}
+
+                  {/* Comparisons Tab Content */}
+                  {mediaTab === 'comparisons' && (
+                    <ComparisonsList jobId={job.id} />
+                  )}
                 </>
               )}
             </div>
