@@ -537,6 +537,7 @@ export type Database = {
           stripe_onboarding_complete: boolean | null
           timezone: string | null
           updated_at: string
+          visitor_hash_salt: string | null
           website: string | null
           zip: string | null
         }
@@ -564,6 +565,7 @@ export type Database = {
           stripe_onboarding_complete?: boolean | null
           timezone?: string | null
           updated_at?: string
+          visitor_hash_salt?: string | null
           website?: string | null
           zip?: string | null
         }
@@ -591,6 +593,7 @@ export type Database = {
           stripe_onboarding_complete?: boolean | null
           timezone?: string | null
           updated_at?: string
+          visitor_hash_salt?: string | null
           website?: string | null
           zip?: string | null
         }
@@ -1345,6 +1348,7 @@ export type Database = {
           id: string
           last_email_at: string | null
           last_email_opened_at: string | null
+          last_gallery_view_at: string | null
           last_name: string
           last_portal_access: string | null
           last_review_request_at: string | null
@@ -1370,6 +1374,7 @@ export type Database = {
           source: string | null
           state: string | null
           tags: string[] | null
+          total_photos_accessible: number | null
           total_reviews_given: number
           updated_at: string
           zip: string | null
@@ -1391,6 +1396,7 @@ export type Database = {
           id?: string
           last_email_at?: string | null
           last_email_opened_at?: string | null
+          last_gallery_view_at?: string | null
           last_name: string
           last_portal_access?: string | null
           last_review_request_at?: string | null
@@ -1416,6 +1422,7 @@ export type Database = {
           source?: string | null
           state?: string | null
           tags?: string[] | null
+          total_photos_accessible?: number | null
           total_reviews_given?: number
           updated_at?: string
           zip?: string | null
@@ -1437,6 +1444,7 @@ export type Database = {
           id?: string
           last_email_at?: string | null
           last_email_opened_at?: string | null
+          last_gallery_view_at?: string | null
           last_name?: string
           last_portal_access?: string | null
           last_review_request_at?: string | null
@@ -1462,6 +1470,7 @@ export type Database = {
           source?: string | null
           state?: string | null
           tags?: string[] | null
+          total_photos_accessible?: number | null
           total_reviews_given?: number
           updated_at?: string
           zip?: string | null
@@ -2244,6 +2253,200 @@ export type Database = {
           },
         ]
       }
+      gallery_brandings: {
+        Row: {
+          background_color: string | null
+          background_image_url: string | null
+          body_font: string | null
+          business_id: string
+          contact_info: string | null
+          created_at: string | null
+          favicon_url: string | null
+          footer_text: string | null
+          gallery_title_template: string | null
+          heading_font: string | null
+          id: string
+          logo_url: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          show_address: boolean | null
+          show_date: boolean | null
+          show_job_details: boolean | null
+          show_powered_by: boolean | null
+          text_color: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          background_color?: string | null
+          background_image_url?: string | null
+          body_font?: string | null
+          business_id: string
+          contact_info?: string | null
+          created_at?: string | null
+          favicon_url?: string | null
+          footer_text?: string | null
+          gallery_title_template?: string | null
+          heading_font?: string | null
+          id?: string
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          show_address?: boolean | null
+          show_date?: boolean | null
+          show_job_details?: boolean | null
+          show_powered_by?: boolean | null
+          text_color?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          background_color?: string | null
+          background_image_url?: string | null
+          body_font?: string | null
+          business_id?: string
+          contact_info?: string | null
+          created_at?: string | null
+          favicon_url?: string | null
+          footer_text?: string | null
+          gallery_title_template?: string | null
+          heading_font?: string | null
+          id?: string
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          show_address?: boolean | null
+          show_date?: boolean | null
+          show_job_details?: boolean | null
+          show_powered_by?: boolean | null
+          text_color?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gallery_brandings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gallery_share_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_ip_hash: string | null
+          actor_type: string
+          business_id: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          share_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_ip_hash?: string | null
+          actor_type: string
+          business_id: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          share_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_ip_hash?: string | null
+          actor_type?: string
+          business_id?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          share_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gallery_share_audit_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gallery_share_audit_log_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "photo_gallery_shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gallery_views: {
+        Row: {
+          business_id: string
+          device_type: string | null
+          downloaded_photos: string[] | null
+          expires_at: string | null
+          id: string
+          photos_viewed: number | null
+          referrer_domain: string | null
+          share_id: string
+          time_spent_seconds: number | null
+          viewed_at: string | null
+          visitor_email: string | null
+          visitor_fingerprint_hash: string | null
+          visitor_ip_hash: string | null
+        }
+        Insert: {
+          business_id: string
+          device_type?: string | null
+          downloaded_photos?: string[] | null
+          expires_at?: string | null
+          id?: string
+          photos_viewed?: number | null
+          referrer_domain?: string | null
+          share_id: string
+          time_spent_seconds?: number | null
+          viewed_at?: string | null
+          visitor_email?: string | null
+          visitor_fingerprint_hash?: string | null
+          visitor_ip_hash?: string | null
+        }
+        Update: {
+          business_id?: string
+          device_type?: string | null
+          downloaded_photos?: string[] | null
+          expires_at?: string | null
+          id?: string
+          photos_viewed?: number | null
+          referrer_domain?: string | null
+          share_id?: string
+          time_spent_seconds?: number | null
+          viewed_at?: string | null
+          visitor_email?: string | null
+          visitor_fingerprint_hash?: string | null
+          visitor_ip_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gallery_views_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gallery_views_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "photo_gallery_shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       geocode_cache: {
         Row: {
           address: string
@@ -2500,6 +2703,7 @@ export type Database = {
           customer_viewed_at: string | null
           discount_amount: number | null
           due_date: string | null
+          embedded_gallery_id: string | null
           id: string
           internal_notes: string | null
           invoice_number: string
@@ -2510,6 +2714,7 @@ export type Database = {
           public_token: string | null
           quote_id: string | null
           sent_at: string | null
+          show_photos: boolean | null
           status: string | null
           subtotal: number | null
           tax_amount: number | null
@@ -2527,6 +2732,7 @@ export type Database = {
           customer_viewed_at?: string | null
           discount_amount?: number | null
           due_date?: string | null
+          embedded_gallery_id?: string | null
           id?: string
           internal_notes?: string | null
           invoice_number: string
@@ -2537,6 +2743,7 @@ export type Database = {
           public_token?: string | null
           quote_id?: string | null
           sent_at?: string | null
+          show_photos?: boolean | null
           status?: string | null
           subtotal?: number | null
           tax_amount?: number | null
@@ -2554,6 +2761,7 @@ export type Database = {
           customer_viewed_at?: string | null
           discount_amount?: number | null
           due_date?: string | null
+          embedded_gallery_id?: string | null
           id?: string
           internal_notes?: string | null
           invoice_number?: string
@@ -2564,6 +2772,7 @@ export type Database = {
           public_token?: string | null
           quote_id?: string | null
           sent_at?: string | null
+          show_photos?: boolean | null
           status?: string | null
           subtotal?: number | null
           tax_amount?: number | null
@@ -2585,6 +2794,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_embedded_gallery_id_fkey"
+            columns: ["embedded_gallery_id"]
+            isOneToOne: false
+            referencedRelation: "photo_gallery_shares"
             referencedColumns: ["id"]
           },
           {
@@ -3103,6 +3319,7 @@ export type Database = {
       }
       jobs: {
         Row: {
+          active_gallery_share_id: string | null
           actual_arrival: string | null
           actual_end: string | null
           actual_start: string | null
@@ -3136,10 +3353,12 @@ export type Database = {
           estimated_duration_minutes: number | null
           feedback_received_at: string | null
           feedback_requested_at: string | null
+          gallery_view_count: number | null
           geofence_enforcement: string | null
           geofence_expanded_radius_meters: number | null
           geofence_expanded_until: string | null
           geofence_radius_meters: number | null
+          has_active_gallery: boolean | null
           has_after_photos: boolean | null
           has_before_after: boolean
           has_before_photos: boolean | null
@@ -3173,6 +3392,7 @@ export type Database = {
           zip: string | null
         }
         Insert: {
+          active_gallery_share_id?: string | null
           actual_arrival?: string | null
           actual_end?: string | null
           actual_start?: string | null
@@ -3206,10 +3426,12 @@ export type Database = {
           estimated_duration_minutes?: number | null
           feedback_received_at?: string | null
           feedback_requested_at?: string | null
+          gallery_view_count?: number | null
           geofence_enforcement?: string | null
           geofence_expanded_radius_meters?: number | null
           geofence_expanded_until?: string | null
           geofence_radius_meters?: number | null
+          has_active_gallery?: boolean | null
           has_after_photos?: boolean | null
           has_before_after?: boolean
           has_before_photos?: boolean | null
@@ -3243,6 +3465,7 @@ export type Database = {
           zip?: string | null
         }
         Update: {
+          active_gallery_share_id?: string | null
           actual_arrival?: string | null
           actual_end?: string | null
           actual_start?: string | null
@@ -3276,10 +3499,12 @@ export type Database = {
           estimated_duration_minutes?: number | null
           feedback_received_at?: string | null
           feedback_requested_at?: string | null
+          gallery_view_count?: number | null
           geofence_enforcement?: string | null
           geofence_expanded_radius_meters?: number | null
           geofence_expanded_until?: string | null
           geofence_radius_meters?: number | null
+          has_active_gallery?: boolean | null
           has_after_photos?: boolean | null
           has_before_after?: boolean
           has_before_photos?: boolean | null
@@ -3318,6 +3543,13 @@ export type Database = {
             columns: ["route_plan_id"]
             isOneToOne: false
             referencedRelation: "daily_route_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_active_gallery_share_id_fkey"
+            columns: ["active_gallery_share_id"]
+            isOneToOne: false
+            referencedRelation: "photo_gallery_shares"
             referencedColumns: ["id"]
           },
           {
@@ -4070,6 +4302,407 @@ export type Database = {
           },
         ]
       }
+      photo_comments: {
+        Row: {
+          admin_id: string | null
+          author_email: string | null
+          author_name: string
+          author_type: string
+          business_id: string
+          comment_text: string
+          created_at: string | null
+          customer_id: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          hidden_at: string | null
+          hidden_by: string | null
+          hidden_reason: string | null
+          id: string
+          is_hidden: boolean | null
+          is_question: boolean | null
+          is_read: boolean | null
+          is_resolved: boolean | null
+          job_media_id: string
+          parent_comment_id: string | null
+          reply_depth: number | null
+          share_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_id?: string | null
+          author_email?: string | null
+          author_name: string
+          author_type: string
+          business_id: string
+          comment_text: string
+          created_at?: string | null
+          customer_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
+          id?: string
+          is_hidden?: boolean | null
+          is_question?: boolean | null
+          is_read?: boolean | null
+          is_resolved?: boolean | null
+          job_media_id: string
+          parent_comment_id?: string | null
+          reply_depth?: number | null
+          share_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_id?: string | null
+          author_email?: string | null
+          author_name?: string
+          author_type?: string
+          business_id?: string
+          comment_text?: string
+          created_at?: string | null
+          customer_id?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hidden_reason?: string | null
+          id?: string
+          is_hidden?: boolean | null
+          is_question?: boolean | null
+          is_read?: boolean | null
+          is_resolved?: boolean | null
+          job_media_id?: string
+          parent_comment_id?: string | null
+          reply_depth?: number | null
+          share_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_comments_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_comments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_comments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_comments_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_comments_hidden_by_fkey"
+            columns: ["hidden_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_comments_job_media_id_fkey"
+            columns: ["job_media_id"]
+            isOneToOne: false
+            referencedRelation: "job_media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_comments_job_media_id_fkey"
+            columns: ["job_media_id"]
+            isOneToOne: false
+            referencedRelation: "media_search_index"
+            referencedColumns: ["media_id"]
+          },
+          {
+            foreignKeyName: "photo_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "photo_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_comments_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "photo_gallery_shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photo_gallery_shares: {
+        Row: {
+          allow_comments: boolean | null
+          allow_download: boolean | null
+          business_id: string
+          created_at: string | null
+          created_by: string
+          custom_message: string | null
+          custom_title: string | null
+          download_count: number | null
+          exclude_media_ids: string[] | null
+          expires_at: string | null
+          hide_watermark: boolean | null
+          id: string
+          include_annotations: boolean | null
+          include_categories: string[] | null
+          include_comparisons: boolean | null
+          is_active: boolean | null
+          is_permanent: boolean | null
+          job_id: string
+          last_viewed_at: string | null
+          permanent_approved_at: string | null
+          permanent_approved_by: string | null
+          require_email: boolean | null
+          revoked_at: string | null
+          revoked_by: string | null
+          share_token: string
+          token_hash: string
+          unique_visitors: number | null
+          updated_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          allow_comments?: boolean | null
+          allow_download?: boolean | null
+          business_id: string
+          created_at?: string | null
+          created_by: string
+          custom_message?: string | null
+          custom_title?: string | null
+          download_count?: number | null
+          exclude_media_ids?: string[] | null
+          expires_at?: string | null
+          hide_watermark?: boolean | null
+          id?: string
+          include_annotations?: boolean | null
+          include_categories?: string[] | null
+          include_comparisons?: boolean | null
+          is_active?: boolean | null
+          is_permanent?: boolean | null
+          job_id: string
+          last_viewed_at?: string | null
+          permanent_approved_at?: string | null
+          permanent_approved_by?: string | null
+          require_email?: boolean | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          share_token: string
+          token_hash: string
+          unique_visitors?: number | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          allow_comments?: boolean | null
+          allow_download?: boolean | null
+          business_id?: string
+          created_at?: string | null
+          created_by?: string
+          custom_message?: string | null
+          custom_title?: string | null
+          download_count?: number | null
+          exclude_media_ids?: string[] | null
+          expires_at?: string | null
+          hide_watermark?: boolean | null
+          id?: string
+          include_annotations?: boolean | null
+          include_categories?: string[] | null
+          include_comparisons?: boolean | null
+          is_active?: boolean | null
+          is_permanent?: boolean | null
+          job_id?: string
+          last_viewed_at?: string | null
+          permanent_approved_at?: string | null
+          permanent_approved_by?: string | null
+          require_email?: boolean | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          share_token?: string
+          token_hash?: string
+          unique_visitors?: number | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_gallery_shares_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_gallery_shares_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_gallery_shares_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_gallery_shares_permanent_approved_by_fkey"
+            columns: ["permanent_approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_gallery_shares_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photo_reports: {
+        Row: {
+          business_id: string
+          completed_at: string | null
+          created_at: string | null
+          created_by: string
+          error_code: string | null
+          error_message: string | null
+          expires_at: string | null
+          file_size_bytes: number | null
+          file_url: string | null
+          id: string
+          idempotency_key: string | null
+          include_annotations: boolean | null
+          include_comparisons: boolean | null
+          include_descriptions: boolean | null
+          include_gps: boolean | null
+          include_media_ids: string[] | null
+          include_timestamps: boolean | null
+          job_id: string
+          layout: string | null
+          max_retries: number | null
+          orientation: string | null
+          page_count: number | null
+          paper_size: string | null
+          photos_per_page: number | null
+          queue_position: number | null
+          report_type: string
+          retry_count: number | null
+          started_at: string | null
+          status: string | null
+          storage_bucket: string | null
+          storage_path: string | null
+          title: string
+        }
+        Insert: {
+          business_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          created_by: string
+          error_code?: string | null
+          error_message?: string | null
+          expires_at?: string | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          id?: string
+          idempotency_key?: string | null
+          include_annotations?: boolean | null
+          include_comparisons?: boolean | null
+          include_descriptions?: boolean | null
+          include_gps?: boolean | null
+          include_media_ids?: string[] | null
+          include_timestamps?: boolean | null
+          job_id: string
+          layout?: string | null
+          max_retries?: number | null
+          orientation?: string | null
+          page_count?: number | null
+          paper_size?: string | null
+          photos_per_page?: number | null
+          queue_position?: number | null
+          report_type: string
+          retry_count?: number | null
+          started_at?: string | null
+          status?: string | null
+          storage_bucket?: string | null
+          storage_path?: string | null
+          title: string
+        }
+        Update: {
+          business_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string
+          error_code?: string | null
+          error_message?: string | null
+          expires_at?: string | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          id?: string
+          idempotency_key?: string | null
+          include_annotations?: boolean | null
+          include_comparisons?: boolean | null
+          include_descriptions?: boolean | null
+          include_gps?: boolean | null
+          include_media_ids?: string[] | null
+          include_timestamps?: boolean | null
+          job_id?: string
+          layout?: string | null
+          max_retries?: number | null
+          orientation?: string | null
+          page_count?: number | null
+          paper_size?: string | null
+          photos_per_page?: number | null
+          queue_position?: number | null
+          report_type?: string
+          retry_count?: number | null
+          started_at?: string | null
+          status?: string | null
+          storage_bucket?: string | null
+          storage_path?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_reports_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_reports_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_reports_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       portal_access_audit: {
         Row: {
           business_id: string
@@ -4418,12 +5051,14 @@ export type Database = {
           customer_id: string
           customer_viewed_at: string | null
           discount_amount: number | null
+          embedded_gallery_id: string | null
           id: string
           internal_notes: string | null
           notes: string | null
           public_token: string | null
           quote_number: string
           sent_at: string | null
+          show_photos: boolean | null
           signature_url: string | null
           status: string | null
           subtotal: number | null
@@ -4445,12 +5080,14 @@ export type Database = {
           customer_id: string
           customer_viewed_at?: string | null
           discount_amount?: number | null
+          embedded_gallery_id?: string | null
           id?: string
           internal_notes?: string | null
           notes?: string | null
           public_token?: string | null
           quote_number: string
           sent_at?: string | null
+          show_photos?: boolean | null
           signature_url?: string | null
           status?: string | null
           subtotal?: number | null
@@ -4472,12 +5109,14 @@ export type Database = {
           customer_id?: string
           customer_viewed_at?: string | null
           discount_amount?: number | null
+          embedded_gallery_id?: string | null
           id?: string
           internal_notes?: string | null
           notes?: string | null
           public_token?: string | null
           quote_number?: string
           sent_at?: string | null
+          show_photos?: boolean | null
           signature_url?: string | null
           status?: string | null
           subtotal?: number | null
@@ -4502,6 +5141,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_embedded_gallery_id_fkey"
+            columns: ["embedded_gallery_id"]
+            isOneToOne: false
+            referencedRelation: "photo_gallery_shares"
             referencedColumns: ["id"]
           },
         ]
@@ -4552,6 +5198,78 @@ export type Database = {
             columns: ["annotation_id"]
             isOneToOne: false
             referencedRelation: "media_annotations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_generation_queue: {
+        Row: {
+          attempts: number | null
+          business_id: string
+          completed_at: string | null
+          created_at: string | null
+          error_history: Json | null
+          id: string
+          last_error: string | null
+          lock_expires_at: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number | null
+          priority: number | null
+          report_id: string
+          started_at: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          business_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          error_history?: Json | null
+          id?: string
+          last_error?: string | null
+          lock_expires_at?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number | null
+          priority?: number | null
+          report_id: string
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          business_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          error_history?: Json | null
+          id?: string
+          last_error?: string | null
+          lock_expires_at?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number | null
+          priority?: number | null
+          report_id?: string
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_generation_queue_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_generation_queue_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: true
+            referencedRelation: "photo_reports"
             referencedColumns: ["id"]
           },
         ]
@@ -5928,8 +6646,23 @@ export type Database = {
         }[]
       }
       cleanup_expired_annotation_locks: { Args: never; Returns: number }
+      cleanup_expired_gallery_data: {
+        Args: never
+        Returns: {
+          reports_expired: number
+          shares_deactivated: number
+          views_deleted: number
+        }[]
+      }
       cleanup_expired_rate_limits: { Args: never; Returns: undefined }
       generate_comparison_share_token: { Args: never; Returns: string }
+      generate_secure_share_token: {
+        Args: never
+        Returns: {
+          token: string
+          token_hash: string
+        }[]
+      }
       generate_service_request_number: {
         Args: { bus_id: string }
         Returns: string
@@ -5956,11 +6689,26 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      has_any_role: {
+        Args: {
+          p_roles: Database["public"]["Enums"]["app_role"][]
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      hash_visitor_identifier: {
+        Args: { p_business_id: string; p_identifier: string }
+        Returns: string
+      }
+      increment_gallery_views_atomic: {
+        Args: { p_fingerprint_hash: string; p_share_id: string }
         Returns: boolean
       }
       rebuild_media_search_text: {
@@ -5972,6 +6720,7 @@ export type Database = {
         Args: { p_media_id: string; p_user_id: string }
         Returns: boolean
       }
+      release_stale_queue_locks: { Args: never; Returns: number }
       save_annotation_version: {
         Args: { p_annotation_data: Json; p_media_id: string; p_user_id: string }
         Returns: Json
