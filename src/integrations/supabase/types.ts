@@ -695,6 +695,105 @@ export type Database = {
           },
         ]
       }
+      customer_media_uploads: {
+        Row: {
+          business_id: string
+          converted_at: string | null
+          converted_to_job_media_id: string | null
+          created_at: string
+          customer_account_id: string | null
+          customer_id: string | null
+          file_size_bytes: number
+          id: string
+          job_request_id: string | null
+          mime_type: string
+          original_filename: string
+          rejection_reason: string | null
+          scan_completed_at: string | null
+          scan_result: Json | null
+          scan_status: string
+          storage_bucket: string
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          converted_at?: string | null
+          converted_to_job_media_id?: string | null
+          created_at?: string
+          customer_account_id?: string | null
+          customer_id?: string | null
+          file_size_bytes: number
+          id?: string
+          job_request_id?: string | null
+          mime_type: string
+          original_filename: string
+          rejection_reason?: string | null
+          scan_completed_at?: string | null
+          scan_result?: Json | null
+          scan_status?: string
+          storage_bucket?: string
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          converted_at?: string | null
+          converted_to_job_media_id?: string | null
+          created_at?: string
+          customer_account_id?: string | null
+          customer_id?: string | null
+          file_size_bytes?: number
+          id?: string
+          job_request_id?: string | null
+          mime_type?: string
+          original_filename?: string
+          rejection_reason?: string | null
+          scan_completed_at?: string | null
+          scan_result?: Json | null
+          scan_status?: string
+          storage_bucket?: string
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_media_uploads_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_media_uploads_converted_to_job_media_id_fkey"
+            columns: ["converted_to_job_media_id"]
+            isOneToOne: false
+            referencedRelation: "job_media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_media_uploads_customer_account_id_fkey"
+            columns: ["customer_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_media_uploads_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_media_uploads_job_request_id_fkey"
+            columns: ["job_request_id"]
+            isOneToOne: false
+            referencedRelation: "customer_service_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_payment_methods: {
         Row: {
           brand: string | null
@@ -2302,6 +2401,167 @@ export type Database = {
           },
         ]
       }
+      job_media: {
+        Row: {
+          altitude: number | null
+          aperture: string | null
+          business_id: string
+          camera_make: string | null
+          camera_model: string | null
+          captured_at: string | null
+          category: Database["public"]["Enums"]["media_category"]
+          created_at: string
+          customer_id: string | null
+          deleted_at: string | null
+          description: string | null
+          duration_seconds: number | null
+          file_extension: string
+          file_size_bytes: number
+          focal_length: string | null
+          height: number | null
+          id: string
+          is_cover_photo: boolean | null
+          is_visible: boolean | null
+          iso: number | null
+          job_id: string
+          latitude: number | null
+          longitude: number | null
+          media_type: string
+          mime_type: string
+          perceptual_hash: string | null
+          processing_error: string | null
+          shutter_speed: string | null
+          sort_order: number | null
+          status: Database["public"]["Enums"]["media_status"]
+          storage_bucket: string
+          storage_path: string
+          thumbnail_url_lg: string | null
+          thumbnail_url_md: string | null
+          thumbnail_url_sm: string | null
+          updated_at: string
+          upload_device: string | null
+          upload_source: string
+          uploaded_by: string | null
+          url: string | null
+          width: number | null
+        }
+        Insert: {
+          altitude?: number | null
+          aperture?: string | null
+          business_id: string
+          camera_make?: string | null
+          camera_model?: string | null
+          captured_at?: string | null
+          category?: Database["public"]["Enums"]["media_category"]
+          created_at?: string
+          customer_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          file_extension: string
+          file_size_bytes: number
+          focal_length?: string | null
+          height?: number | null
+          id?: string
+          is_cover_photo?: boolean | null
+          is_visible?: boolean | null
+          iso?: number | null
+          job_id: string
+          latitude?: number | null
+          longitude?: number | null
+          media_type?: string
+          mime_type: string
+          perceptual_hash?: string | null
+          processing_error?: string | null
+          shutter_speed?: string | null
+          sort_order?: number | null
+          status?: Database["public"]["Enums"]["media_status"]
+          storage_bucket?: string
+          storage_path: string
+          thumbnail_url_lg?: string | null
+          thumbnail_url_md?: string | null
+          thumbnail_url_sm?: string | null
+          updated_at?: string
+          upload_device?: string | null
+          upload_source?: string
+          uploaded_by?: string | null
+          url?: string | null
+          width?: number | null
+        }
+        Update: {
+          altitude?: number | null
+          aperture?: string | null
+          business_id?: string
+          camera_make?: string | null
+          camera_model?: string | null
+          captured_at?: string | null
+          category?: Database["public"]["Enums"]["media_category"]
+          created_at?: string
+          customer_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          file_extension?: string
+          file_size_bytes?: number
+          focal_length?: string | null
+          height?: number | null
+          id?: string
+          is_cover_photo?: boolean | null
+          is_visible?: boolean | null
+          iso?: number | null
+          job_id?: string
+          latitude?: number | null
+          longitude?: number | null
+          media_type?: string
+          mime_type?: string
+          perceptual_hash?: string | null
+          processing_error?: string | null
+          shutter_speed?: string | null
+          sort_order?: number | null
+          status?: Database["public"]["Enums"]["media_status"]
+          storage_bucket?: string
+          storage_path?: string
+          thumbnail_url_lg?: string | null
+          thumbnail_url_md?: string | null
+          thumbnail_url_sm?: string | null
+          updated_at?: string
+          upload_device?: string | null
+          upload_source?: string
+          uploaded_by?: string | null
+          url?: string | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_media_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_media_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_media_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_media_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_modification_requests: {
         Row: {
           business_id: string
@@ -2516,6 +2776,7 @@ export type Database = {
           clock_out_location_lng: number | null
           clock_out_override: boolean | null
           clock_out_time: string | null
+          cover_photo_url: string | null
           created_at: string
           customer_id: string
           customer_photos: string[] | null
@@ -2530,12 +2791,15 @@ export type Database = {
           geofence_expanded_radius_meters: number | null
           geofence_expanded_until: string | null
           geofence_radius_meters: number | null
+          has_after_photos: boolean | null
+          has_before_photos: boolean | null
           id: string
           internal_notes: string | null
           is_clocked_in: boolean | null
           job_number: string
           latitude: number | null
           longitude: number | null
+          media_count: number | null
           notes: string | null
           priority: string | null
           quote_id: string | null
@@ -2579,6 +2843,7 @@ export type Database = {
           clock_out_location_lng?: number | null
           clock_out_override?: boolean | null
           clock_out_time?: string | null
+          cover_photo_url?: string | null
           created_at?: string
           customer_id: string
           customer_photos?: string[] | null
@@ -2593,12 +2858,15 @@ export type Database = {
           geofence_expanded_radius_meters?: number | null
           geofence_expanded_until?: string | null
           geofence_radius_meters?: number | null
+          has_after_photos?: boolean | null
+          has_before_photos?: boolean | null
           id?: string
           internal_notes?: string | null
           is_clocked_in?: boolean | null
           job_number: string
           latitude?: number | null
           longitude?: number | null
+          media_count?: number | null
           notes?: string | null
           priority?: string | null
           quote_id?: string | null
@@ -2642,6 +2910,7 @@ export type Database = {
           clock_out_location_lng?: number | null
           clock_out_override?: boolean | null
           clock_out_time?: string | null
+          cover_photo_url?: string | null
           created_at?: string
           customer_id?: string
           customer_photos?: string[] | null
@@ -2656,12 +2925,15 @@ export type Database = {
           geofence_expanded_radius_meters?: number | null
           geofence_expanded_until?: string | null
           geofence_radius_meters?: number | null
+          has_after_photos?: boolean | null
+          has_before_photos?: boolean | null
           id?: string
           internal_notes?: string | null
           is_clocked_in?: boolean | null
           job_number?: string
           latitude?: number | null
           longitude?: number | null
+          media_count?: number | null
           notes?: string | null
           priority?: string | null
           quote_id?: string | null
@@ -4938,6 +5210,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      set_job_cover_photo: {
+        Args: { p_job_id: string; p_media_id: string }
+        Returns: boolean
+      }
       setup_business_for_user: {
         Args: {
           _email?: string
@@ -4991,6 +5267,15 @@ export type Database = {
     }
     Enums: {
       app_role: "owner" | "admin" | "technician" | "viewer"
+      media_category:
+        | "before"
+        | "during"
+        | "after"
+        | "damage"
+        | "equipment"
+        | "materials"
+        | "general"
+      media_status: "processing" | "ready" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -5119,6 +5404,16 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["owner", "admin", "technician", "viewer"],
+      media_category: [
+        "before",
+        "during",
+        "after",
+        "damage",
+        "equipment",
+        "materials",
+        "general",
+      ],
+      media_status: ["processing", "ready", "failed"],
     },
   },
 } as const
