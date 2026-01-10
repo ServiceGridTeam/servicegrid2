@@ -152,3 +152,12 @@ verify_jwt = false
 
 [functions.check-upload-rate-limit]
 verify_jwt = false
+
+[functions.cleanup-orphaned-media]
+verify_jwt = false
+
+[functions.cleanup-unconverted-uploads]
+verify_jwt = false
+
+[functions.media-metrics]
+verify_jwt = false
