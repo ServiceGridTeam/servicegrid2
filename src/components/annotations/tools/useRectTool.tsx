@@ -1,11 +1,14 @@
 /**
  * Rectangle Tool - Draw rectangles on the annotation canvas
  * Part of Field Photo Documentation System
+ * 
+ * Updated to use Canvas Abstraction Layer
  */
 
 import { useState, useCallback, useRef } from 'react';
 import Konva from 'konva';
 import type { RectAnnotation } from '@/types/annotations';
+import type { CanvasPointerEvent, CanvasPoint } from '@/types/canvas-events';
 
 interface UseRectToolProps {
   stageRef: React.RefObject<Konva.Stage>;
@@ -28,6 +31,9 @@ interface RectToolHandlers {
   handleMouseDown: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
   handleMouseMove: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
   handleMouseUp: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
+  handlePointerDown: (e: CanvasPointerEvent) => void;
+  handlePointerMove: (e: CanvasPointerEvent) => void;
+  handlePointerUp: (e: CanvasPointerEvent) => void;
   state: RectToolState;
 }
 
@@ -42,9 +48,9 @@ export function useRectTool({
     preview: null,
   });
   
-  const startPointRef = useRef<{ x: number; y: number } | null>(null);
+  const startPointRef = useRef<CanvasPoint | null>(null);
 
-  const getPointerPosition = useCallback(() => {
+  const getPointerPosition = useCallback((): CanvasPoint | null => {
     const stage = stageRef.current;
     if (!stage) return null;
     const pos = stage.getPointerPosition();
@@ -57,36 +63,30 @@ export function useRectTool({
     };
   }, [stageRef]);
 
-  const handleMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    const pos = getPointerPosition();
-    if (!pos) return;
-
-    startPointRef.current = pos;
+  // Abstract handler using CanvasPointerEvent
+  const handlePointerDown = useCallback((e: CanvasPointerEvent) => {
+    startPointRef.current = { x: e.x, y: e.y };
     setState({
       isDrawing: true,
       preview: {
-        x: pos.x,
-        y: pos.y,
+        x: e.x,
+        y: e.y,
         width: 0,
         height: 0,
       },
     });
-  }, [getPointerPosition]);
+  }, []);
 
-  const handleMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+  const handlePointerMove = useCallback((e: CanvasPointerEvent) => {
     if (!state.isDrawing || !startPointRef.current) return;
 
-    const pos = getPointerPosition();
-    if (!pos) return;
-
     const start = startPointRef.current;
-    const isShiftHeld = (e.evt as MouseEvent).shiftKey;
     
-    let width = pos.x - start.x;
-    let height = pos.y - start.y;
+    let width = e.x - start.x;
+    let height = e.y - start.y;
     
     // If shift is held, make it a square
-    if (isShiftHeld) {
+    if (e.shiftKey) {
       const size = Math.max(Math.abs(width), Math.abs(height));
       width = width >= 0 ? size : -size;
       height = height >= 0 ? size : -size;
@@ -105,9 +105,9 @@ export function useRectTool({
         height: Math.abs(height),
       },
     });
-  }, [state.isDrawing, getPointerPosition]);
+  }, [state.isDrawing]);
 
-  const handleMouseUp = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+  const handlePointerUp = useCallback((e: CanvasPointerEvent) => {
     if (!state.isDrawing || !state.preview) {
       setState({ isDrawing: false, preview: null });
       return;
@@ -135,10 +135,48 @@ export function useRectTool({
     startPointRef.current = null;
   }, [state.isDrawing, state.preview, color, strokeWidth, onComplete]);
 
+  // Konva-specific handlers (adapters)
+  const handleMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    const pos = getPointerPosition();
+    if (!pos) return;
+    handlePointerDown({ ...createBaseEvent(e), x: pos.x, y: pos.y });
+  }, [getPointerPosition, handlePointerDown]);
+
+  const handleMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    const pos = getPointerPosition();
+    if (!pos) return;
+    handlePointerMove({ ...createBaseEvent(e), x: pos.x, y: pos.y });
+  }, [getPointerPosition, handlePointerMove]);
+
+  const handleMouseUp = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    const pos = getPointerPosition();
+    if (!pos) return;
+    handlePointerUp({ ...createBaseEvent(e), x: pos.x, y: pos.y });
+  }, [getPointerPosition, handlePointerUp]);
+
   return {
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
     state,
+  };
+}
+
+// Helper to create base event properties
+function createBaseEvent(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): Omit<CanvasPointerEvent, 'x' | 'y'> {
+  const nativeEvent = e.evt;
+  const mouseEvent = nativeEvent as MouseEvent;
+  return {
+    nativeEvent,
+    shiftKey: mouseEvent.shiftKey ?? false,
+    ctrlKey: mouseEvent.ctrlKey ?? false,
+    metaKey: mouseEvent.metaKey ?? false,
+    altKey: mouseEvent.altKey ?? false,
+    targetId: null,
+    isBackground: true,
+    preventDefault: () => nativeEvent.preventDefault(),
   };
 }

@@ -1,13 +1,17 @@
 /**
  * Arrow Tool Hook - Draw arrows on canvas
  * Part 3 of Field Photo Documentation System
+ * 
+ * Updated to use Canvas Abstraction Layer
  */
 
 import { useState, useCallback, useMemo } from 'react';
 import { Arrow } from 'react-konva';
 import Konva from 'konva';
 import { ArrowAnnotation } from '@/types/annotations';
+import type { CanvasPointerEvent } from '@/types/canvas-events';
 import { generateAnnotationId } from '@/lib/annotationValidation';
+import { adaptKonvaEvent } from '@/lib/canvas-event-adapter';
 
 interface UseArrowToolProps {
   stageRef: React.RefObject<Konva.Stage>;
@@ -40,55 +44,33 @@ export function useArrowTool({
     endY: 0,
   });
 
-  const getPointerPosition = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    const stage = stageRef.current;
-    if (!stage) return null;
-
-    const pos = stage.getPointerPosition();
-    if (!pos) return null;
-
-    // Convert to unscaled coordinates
-    return {
-      x: pos.x / scale,
-      y: pos.y / scale,
-    };
-  }, [stageRef, scale]);
-
-  const handleMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    const pos = getPointerPosition(e);
-    if (!pos) return;
-
+  // Abstract handler using CanvasPointerEvent
+  const handlePointerDown = useCallback((e: CanvasPointerEvent) => {
     setDrawState({
       isDrawing: true,
-      startX: pos.x,
-      startY: pos.y,
-      endX: pos.x,
-      endY: pos.y,
+      startX: e.x,
+      startY: e.y,
+      endX: e.x,
+      endY: e.y,
     });
-  }, [getPointerPosition]);
+  }, []);
 
-  const handleMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+  const handlePointerMove = useCallback((e: CanvasPointerEvent) => {
     if (!drawState.isDrawing) return;
-
-    const pos = getPointerPosition(e);
-    if (!pos) return;
 
     setDrawState(prev => ({
       ...prev,
-      endX: pos.x,
-      endY: pos.y,
+      endX: e.x,
+      endY: e.y,
     }));
-  }, [drawState.isDrawing, getPointerPosition]);
+  }, [drawState.isDrawing]);
 
-  const handleMouseUp = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+  const handlePointerUp = useCallback((e: CanvasPointerEvent) => {
     if (!drawState.isDrawing) return;
 
-    const pos = getPointerPosition(e);
-    if (!pos) return;
-
     // Only create arrow if there's meaningful movement
-    const dx = pos.x - drawState.startX;
-    const dy = pos.y - drawState.startY;
+    const dx = e.x - drawState.startX;
+    const dy = e.y - drawState.startY;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     if (distance > 10) {
@@ -97,7 +79,7 @@ export function useArrowTool({
         type: 'arrow',
         x: drawState.startX,
         y: drawState.startY,
-        points: [drawState.startX, drawState.startY, pos.x, pos.y],
+        points: [drawState.startX, drawState.startY, e.x, e.y],
         color,
         strokeWidth,
         pointerLength: 10,
@@ -115,7 +97,20 @@ export function useArrowTool({
       endX: 0,
       endY: 0,
     });
-  }, [drawState, color, strokeWidth, onComplete, getPointerPosition]);
+  }, [drawState, color, strokeWidth, onComplete]);
+
+  // Konva-specific handlers (adapters)
+  const handleMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    handlePointerDown(adaptKonvaEvent(e, scale));
+  }, [handlePointerDown, scale]);
+
+  const handleMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    handlePointerMove(adaptKonvaEvent(e, scale));
+  }, [handlePointerMove, scale]);
+
+  const handleMouseUp = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    handlePointerUp(adaptKonvaEvent(e, scale));
+  }, [handlePointerUp, scale]);
 
   // Preview element while drawing
   const previewElement = useMemo(() => {
@@ -140,9 +135,14 @@ export function useArrowTool({
   }, [drawState, color, strokeWidth, scale]);
 
   return {
+    // Konva-specific handlers for backward compatibility
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
+    // Abstract handlers for future renderer implementations
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
     previewElement,
     isDrawing: drawState.isDrawing,
   };

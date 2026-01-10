@@ -1,11 +1,14 @@
 /**
  * Measurement Tool - Draw measurement lines with length display
  * Part of Field Photo Documentation System
+ * 
+ * Updated to use Canvas Abstraction Layer
  */
 
 import { useState, useCallback, useRef } from 'react';
 import Konva from 'konva';
 import type { MeasurementAnnotation, MeasurementUnit } from '@/types/annotations';
+import type { CanvasPointerEvent, CanvasPoint } from '@/types/canvas-events';
 
 interface UseMeasurementToolProps {
   stageRef: React.RefObject<Konva.Stage>;
@@ -30,6 +33,9 @@ interface MeasurementToolHandlers {
   handleMouseDown: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
   handleMouseMove: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
   handleMouseUp: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
+  handlePointerDown: (e: CanvasPointerEvent) => void;
+  handlePointerMove: (e: CanvasPointerEvent) => void;
+  handlePointerUp: (e: CanvasPointerEvent) => void;
   state: MeasurementToolState;
 }
 
@@ -46,9 +52,9 @@ export function useMeasurementTool({
     preview: null,
   });
   
-  const startPointRef = useRef<{ x: number; y: number } | null>(null);
+  const startPointRef = useRef<CanvasPoint | null>(null);
 
-  const getPointerPosition = useCallback(() => {
+  const getPointerPosition = useCallback((): CanvasPoint | null => {
     const stage = stageRef.current;
     if (!stage) return null;
     const pos = stage.getPointerPosition();
@@ -66,38 +72,32 @@ export function useMeasurementTool({
     return pixelLength / scale;
   }, [scale]);
 
-  const handleMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    const pos = getPointerPosition();
-    if (!pos) return;
-
-    startPointRef.current = pos;
+  // Abstract handler using CanvasPointerEvent
+  const handlePointerDown = useCallback((e: CanvasPointerEvent) => {
+    startPointRef.current = { x: e.x, y: e.y };
     setState({
       isDrawing: true,
       preview: {
-        x: pos.x,
-        y: pos.y,
+        x: e.x,
+        y: e.y,
         points: [0, 0, 0, 0],
         length: 0,
       },
     });
-  }, [getPointerPosition]);
+  }, []);
 
-  const handleMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+  const handlePointerMove = useCallback((e: CanvasPointerEvent) => {
     if (!state.isDrawing || !startPointRef.current) return;
 
-    const pos = getPointerPosition();
-    if (!pos) return;
-
     const start = startPointRef.current;
-    const isShiftHeld = (e.evt as MouseEvent).shiftKey;
     
-    let endX = pos.x;
-    let endY = pos.y;
+    let endX = e.x;
+    let endY = e.y;
     
     // If shift is held, constrain to horizontal/vertical
-    if (isShiftHeld) {
-      const dx = Math.abs(pos.x - start.x);
-      const dy = Math.abs(pos.y - start.y);
+    if (e.shiftKey) {
+      const dx = Math.abs(e.x - start.x);
+      const dy = Math.abs(e.y - start.y);
       if (dx > dy) {
         endY = start.y; // Horizontal
       } else {
@@ -118,9 +118,9 @@ export function useMeasurementTool({
         length,
       },
     });
-  }, [state.isDrawing, getPointerPosition, calculateLength]);
+  }, [state.isDrawing, calculateLength]);
 
-  const handleMouseUp = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+  const handlePointerUp = useCallback((e: CanvasPointerEvent) => {
     if (!state.isDrawing || !state.preview) {
       setState({ isDrawing: false, preview: null });
       return;
@@ -150,11 +150,49 @@ export function useMeasurementTool({
     startPointRef.current = null;
   }, [state.isDrawing, state.preview, color, strokeWidth, unit, scale, onComplete]);
 
+  // Konva-specific handlers (adapters)
+  const handleMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    const pos = getPointerPosition();
+    if (!pos) return;
+    handlePointerDown({ ...createBaseEvent(e), x: pos.x, y: pos.y });
+  }, [getPointerPosition, handlePointerDown]);
+
+  const handleMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    const pos = getPointerPosition();
+    if (!pos) return;
+    handlePointerMove({ ...createBaseEvent(e), x: pos.x, y: pos.y });
+  }, [getPointerPosition, handlePointerMove]);
+
+  const handleMouseUp = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    const pos = getPointerPosition();
+    if (!pos) return;
+    handlePointerUp({ ...createBaseEvent(e), x: pos.x, y: pos.y });
+  }, [getPointerPosition, handlePointerUp]);
+
   return {
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
     state,
+  };
+}
+
+// Helper to create base event properties
+function createBaseEvent(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>): Omit<CanvasPointerEvent, 'x' | 'y'> {
+  const nativeEvent = e.evt;
+  const mouseEvent = nativeEvent as MouseEvent;
+  return {
+    nativeEvent,
+    shiftKey: mouseEvent.shiftKey ?? false,
+    ctrlKey: mouseEvent.ctrlKey ?? false,
+    metaKey: mouseEvent.metaKey ?? false,
+    altKey: mouseEvent.altKey ?? false,
+    targetId: null,
+    isBackground: true,
+    preventDefault: () => nativeEvent.preventDefault(),
   };
 }
 

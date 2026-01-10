@@ -1,11 +1,14 @@
 /**
  * Select Tool - Selection, movement, and deletion of annotation objects
  * Part of Field Photo Documentation System
+ * 
+ * Updated to use Canvas Abstraction Layer
  */
 
 import { useState, useCallback, useRef } from 'react';
 import Konva from 'konva';
 import type { AnnotationObject } from '@/types/annotations';
+import type { CanvasPointerEvent, CanvasPoint, CanvasKeyEvent } from '@/types/canvas-events';
 
 interface UseSelectToolProps {
   stageRef: React.RefObject<Konva.Stage>;
@@ -21,6 +24,10 @@ interface SelectToolHandlers {
   handleMouseMove: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
   handleMouseUp: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
   handleKeyDown: (e: KeyboardEvent) => void;
+  handlePointerDown: (e: CanvasPointerEvent) => void;
+  handlePointerMove: (e: CanvasPointerEvent) => void;
+  handlePointerUp: (e: CanvasPointerEvent) => void;
+  handleCanvasKeyDown: (e: CanvasKeyEvent) => void;
 }
 
 export function useSelectTool({
@@ -32,10 +39,10 @@ export function useSelectTool({
   deleteSelected,
 }: UseSelectToolProps): SelectToolHandlers {
   const [isDragging, setIsDragging] = useState(false);
-  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
-  const originalPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const dragStartRef = useRef<CanvasPoint | null>(null);
+  const originalPositionsRef = useRef<Map<string, CanvasPoint>>(new Map());
 
-  const getPointerPosition = useCallback(() => {
+  const getPointerPosition = useCallback((): CanvasPoint | null => {
     const stage = stageRef.current;
     if (!stage) return null;
     const pos = stage.getPointerPosition();
@@ -60,16 +67,13 @@ export function useSelectTool({
     return null;
   }, [annotations]);
 
-  const handleMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    const pos = getPointerPosition();
-    if (!pos) return;
-
-    const clickedObject = findObjectAtPoint(pos.x, pos.y);
-    const isShiftHeld = (e.evt as MouseEvent).shiftKey;
+  // Abstract handler using CanvasPointerEvent
+  const handlePointerDown = useCallback((e: CanvasPointerEvent) => {
+    const clickedObject = findObjectAtPoint(e.x, e.y);
 
     if (clickedObject) {
       // Clicked on an object
-      if (isShiftHeld) {
+      if (e.shiftKey) {
         // Multi-select: toggle selection
         if (selectedIds.includes(clickedObject.id)) {
           setSelectedIds(selectedIds.filter(id => id !== clickedObject.id));
@@ -84,7 +88,7 @@ export function useSelectTool({
         
         // Start dragging
         setIsDragging(true);
-        dragStartRef.current = pos;
+        dragStartRef.current = { x: e.x, y: e.y };
         
         // Store original positions of all selected objects
         originalPositionsRef.current.clear();
@@ -107,16 +111,13 @@ export function useSelectTool({
       // Clicked on empty area - deselect all
       setSelectedIds([]);
     }
-  }, [getPointerPosition, findObjectAtPoint, selectedIds, setSelectedIds, annotations]);
+  }, [findObjectAtPoint, selectedIds, setSelectedIds, annotations]);
 
-  const handleMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+  const handlePointerMove = useCallback((e: CanvasPointerEvent) => {
     if (!isDragging || !dragStartRef.current) return;
 
-    const pos = getPointerPosition();
-    if (!pos) return;
-
-    const dx = pos.x - dragStartRef.current.x;
-    const dy = pos.y - dragStartRef.current.y;
+    const dx = e.x - dragStartRef.current.x;
+    const dy = e.y - dragStartRef.current.y;
 
     // Update positions of all selected objects
     selectedIds.forEach(id => {
@@ -128,14 +129,14 @@ export function useSelectTool({
         });
       }
     });
-  }, [isDragging, getPointerPosition, selectedIds, updateObject]);
+  }, [isDragging, selectedIds, updateObject]);
 
-  const handleMouseUp = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+  const handlePointerUp = useCallback((e: CanvasPointerEvent) => {
     setIsDragging(false);
     dragStartRef.current = null;
   }, []);
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+  const handleCanvasKeyDown = useCallback((e: CanvasKeyEvent) => {
     if (e.key === 'Delete' || e.key === 'Backspace') {
       if (selectedIds.length > 0) {
         e.preventDefault();
@@ -149,11 +150,80 @@ export function useSelectTool({
     }
   }, [selectedIds, deleteSelected, setSelectedIds]);
 
+  // Konva-specific handlers (adapters)
+  const handleMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    const pos = getPointerPosition();
+    if (!pos) return;
+    
+    handlePointerDown({
+      x: pos.x,
+      y: pos.y,
+      nativeEvent: e.evt,
+      shiftKey: (e.evt as MouseEvent).shiftKey ?? false,
+      ctrlKey: (e.evt as MouseEvent).ctrlKey ?? false,
+      metaKey: (e.evt as MouseEvent).metaKey ?? false,
+      altKey: (e.evt as MouseEvent).altKey ?? false,
+      targetId: null,
+      isBackground: e.target === e.target.getStage(),
+      preventDefault: () => e.evt.preventDefault(),
+    });
+  }, [getPointerPosition, handlePointerDown]);
+
+  const handleMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    const pos = getPointerPosition();
+    if (!pos) return;
+    
+    handlePointerMove({
+      x: pos.x,
+      y: pos.y,
+      nativeEvent: e.evt,
+      shiftKey: (e.evt as MouseEvent).shiftKey ?? false,
+      ctrlKey: (e.evt as MouseEvent).ctrlKey ?? false,
+      metaKey: (e.evt as MouseEvent).metaKey ?? false,
+      altKey: (e.evt as MouseEvent).altKey ?? false,
+      targetId: null,
+      isBackground: true,
+      preventDefault: () => e.evt.preventDefault(),
+    });
+  }, [getPointerPosition, handlePointerMove]);
+
+  const handleMouseUp = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    handlePointerUp({
+      x: 0,
+      y: 0,
+      nativeEvent: e.evt,
+      shiftKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      altKey: false,
+      targetId: null,
+      isBackground: true,
+      preventDefault: () => e.evt.preventDefault(),
+    });
+  }, [handlePointerUp]);
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    handleCanvasKeyDown({
+      key: e.key,
+      shiftKey: e.shiftKey,
+      ctrlKey: e.ctrlKey,
+      metaKey: e.metaKey,
+      altKey: e.altKey,
+      preventDefault: () => e.preventDefault(),
+    });
+  }, [handleCanvasKeyDown]);
+
   return {
+    // Konva-specific handlers for backward compatibility
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
     handleKeyDown,
+    // Abstract handlers for future renderer implementations
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handleCanvasKeyDown,
   };
 }
 

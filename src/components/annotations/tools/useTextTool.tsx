@@ -1,13 +1,17 @@
 /**
  * Text Tool Hook - Add text annotations to canvas
  * Part 3 of Field Photo Documentation System
+ * 
+ * Updated to use Canvas Abstraction Layer
  */
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Text } from 'react-konva';
 import Konva from 'konva';
 import { TextAnnotation } from '@/types/annotations';
+import type { CanvasPointerEvent, CanvasPoint } from '@/types/canvas-events';
 import { generateAnnotationId, sanitizeTextContent } from '@/lib/annotationValidation';
+import { adaptKonvaEvent } from '@/lib/canvas-event-adapter';
 
 interface UseTextToolProps {
   stageRef: React.RefObject<Konva.Stage>;
@@ -40,7 +44,7 @@ export function useTextTool({
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const getPointerPosition = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+  const getPointerPosition = useCallback((): CanvasPoint | null => {
     const stage = stageRef.current;
     if (!stage) return null;
 
@@ -53,24 +57,6 @@ export function useTextTool({
       y: pos.y / scale,
     };
   }, [stageRef, scale]);
-
-  const handleMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-    // If already editing, complete the current text first
-    if (editState.isEditing) {
-      completeText();
-      return;
-    }
-
-    const pos = getPointerPosition(e);
-    if (!pos) return;
-
-    setEditState({
-      isEditing: true,
-      x: pos.x,
-      y: pos.y,
-      text: '',
-    });
-  }, [editState.isEditing, getPointerPosition]);
 
   const completeText = useCallback(() => {
     if (!editState.isEditing) return;
@@ -103,6 +89,41 @@ export function useTextTool({
       text: '',
     });
   }, [editState, fontSize, color, onComplete]);
+
+  // Abstract handler using CanvasPointerEvent
+  const handlePointerDown = useCallback((e: CanvasPointerEvent) => {
+    // If already editing, complete the current text first
+    if (editState.isEditing) {
+      completeText();
+      return;
+    }
+
+    setEditState({
+      isEditing: true,
+      x: e.x,
+      y: e.y,
+      text: '',
+    });
+  }, [editState.isEditing, completeText]);
+
+  // Konva-specific handler (adapter)
+  const handleMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    const pos = getPointerPosition();
+    if (!pos) return;
+    
+    handlePointerDown({
+      x: pos.x,
+      y: pos.y,
+      nativeEvent: e.evt,
+      shiftKey: (e.evt as MouseEvent).shiftKey ?? false,
+      ctrlKey: (e.evt as MouseEvent).ctrlKey ?? false,
+      metaKey: (e.evt as MouseEvent).metaKey ?? false,
+      altKey: (e.evt as MouseEvent).altKey ?? false,
+      targetId: null,
+      isBackground: true,
+      preventDefault: () => e.evt.preventDefault(),
+    });
+  }, [getPointerPosition, handlePointerDown]);
 
   // Handle escape to cancel, enter to complete
   useEffect(() => {
@@ -190,9 +211,14 @@ export function useTextTool({
   }, [editState, fontSize, color, scale]);
 
   return {
+    // Konva-specific handler for backward compatibility
     handleMouseDown,
     handleMouseMove: () => {}, // Text tool doesn't need mouse move
     handleMouseUp: () => {}, // Text tool doesn't need mouse up
+    // Abstract handler for future renderer implementations
+    handlePointerDown,
+    handlePointerMove: () => {},
+    handlePointerUp: () => {},
     previewElement,
     textInputOverlay,
     isEditing: editState.isEditing,
