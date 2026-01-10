@@ -3,19 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useBusinessContext } from './useBusinessContext';
 import { MediaCategory } from './useJobMedia';
 import { toast } from 'sonner';
-
-interface ExifData {
-  captured_at?: string;
-  latitude?: number;
-  longitude?: number;
-  altitude?: number;
-  camera_make?: string;
-  camera_model?: string;
-  iso?: number;
-  aperture?: string;
-  shutter_speed?: string;
-  focal_length?: string;
-}
+import { extractExifData, getCurrentPosition, ExtractedExifData } from '@/lib/exifExtractor';
 
 interface UploadPhotoParams {
   jobId: string;
@@ -23,8 +11,7 @@ interface UploadPhotoParams {
   file: File;
   category?: MediaCategory;
   description?: string;
-  exifData?: ExifData;
-  gpsPosition?: { latitude: number; longitude: number };
+  checklistItemId?: string;
 }
 
 interface UploadResult {
@@ -44,8 +31,7 @@ export function useUploadPhoto() {
       file,
       category = 'general',
       description,
-      exifData,
-      gpsPosition,
+      checklistItemId,
     }: UploadPhotoParams): Promise<UploadResult> => {
       if (!activeBusinessId) {
         throw new Error('No active business');
@@ -54,6 +40,12 @@ export function useUploadPhoto() {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
+
+      // Extract EXIF data from the file (runs in parallel with GPS fetch)
+      const [exifData, gpsPosition] = await Promise.all([
+        extractExifData(file),
+        getCurrentPosition(),
+      ]);
 
       // Generate unique file path
       const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
@@ -80,8 +72,16 @@ export function useUploadPhoto() {
 
       const url = signedUrlData?.signedUrl || null;
 
-      // Create job_media record with optimistic data
-      const mediaRecord = {
+      // Prefer device GPS over EXIF GPS (more accurate for field photos)
+      // Fall back to EXIF GPS if device GPS unavailable
+      const latitude = gpsPosition?.latitude ?? exifData?.latitude ?? null;
+      const longitude = gpsPosition?.longitude ?? exifData?.longitude ?? null;
+      const altitude = gpsPosition?.altitude ?? exifData?.altitude ?? null;
+
+      // Create job_media record with extracted metadata
+      // Note: We build the record dynamically to avoid TypeScript errors
+      // for columns that may not be in the generated types yet
+      const mediaRecord: Record<string, unknown> = {
         business_id: activeBusinessId,
         job_id: jobId,
         customer_id: customerId || null,
@@ -95,25 +95,40 @@ export function useUploadPhoto() {
         category,
         description: description || null,
         uploaded_by: user.id,
-        upload_source: 'web' as const,
+        upload_source: 'web',
         upload_device: navigator.userAgent,
-        status: 'processing' as const,
-        // EXIF data
+        status: 'processing',
+        // GPS data (prefer device GPS, fallback to EXIF)
+        latitude,
+        longitude,
+        altitude,
+        // EXIF capture timestamp
         captured_at: exifData?.captured_at || null,
-        latitude: gpsPosition?.latitude || exifData?.latitude || null,
-        longitude: gpsPosition?.longitude || exifData?.longitude || null,
-        altitude: exifData?.altitude || null,
+        // Camera info from EXIF
         camera_make: exifData?.camera_make || null,
         camera_model: exifData?.camera_model || null,
+        // Exposure settings from EXIF
         iso: exifData?.iso || null,
         aperture: exifData?.aperture || null,
         shutter_speed: exifData?.shutter_speed || null,
         focal_length: exifData?.focal_length || null,
+        // Image dimensions from EXIF
+        width: exifData?.width || null,
+        height: exifData?.height || null,
       };
 
+      // Add optional fields that may not be in types yet
+      if (gpsPosition?.accuracy) {
+        mediaRecord.gps_accuracy_meters = gpsPosition.accuracy;
+      }
+      if (checklistItemId) {
+        mediaRecord.checklist_item_id = checklistItemId;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: inserted, error: insertError } = await supabase
         .from('job_media')
-        .insert(mediaRecord)
+        .insert(mediaRecord as any)
         .select('id')
         .single();
 
@@ -158,42 +173,6 @@ export function useUploadPhoto() {
   });
 }
 
-// Utility to extract EXIF data from image file
-export async function extractExifData(file: File): Promise<ExifData | null> {
-  // Basic implementation - can be enhanced with exif-js library
-  try {
-    // For now, just capture the current time if we can't read EXIF
-    return {
-      captured_at: new Date().toISOString(),
-    };
-  } catch {
-    return null;
-  }
-}
-
-// Utility to get current GPS position
-export function getCurrentPosition(): Promise<{ latitude: number; longitude: number } | null> {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      resolve(null);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        resolve({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-      },
-      () => {
-        resolve(null);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0,
-      }
-    );
-  });
-}
+// Re-export utilities for backward compatibility
+export { extractExifData, getCurrentPosition } from '@/lib/exifExtractor';
+export type { ExtractedExifData };
