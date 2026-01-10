@@ -10,10 +10,10 @@ import {
   extractVideoMetadata,
   extractVideoThumbnail 
 } from "@/lib/videoUtils";
+import { usePhotoSettings } from "@/hooks/usePhotoSettings";
 import { toast } from "sonner";
 
-const MAX_DURATION_SECONDS = 60;
-const WARNING_THRESHOLD_SECONDS = 50;
+const WARNING_THRESHOLD_OFFSET = 10; // Show warning X seconds before max
 
 interface VideoRecordButtonProps {
   onVideoRecorded: (file: File, thumbnailBlob: Blob, durationSeconds: number) => void;
@@ -28,6 +28,11 @@ export function VideoRecordButton({ onVideoRecorded, disabled }: VideoRecordButt
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  
+  // Get photo settings for max duration
+  const { photoSettings } = usePhotoSettings();
+  const maxDuration = photoSettings.max_video_duration_seconds;
+  const warningThreshold = maxDuration - WARNING_THRESHOLD_OFFSET;
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -105,20 +110,20 @@ export function VideoRecordButton({ onVideoRecorded, disabled }: VideoRecordButt
     if (!isRecording || isPaused) return;
     
     const elapsed = (Date.now() - startTimeRef.current) / 1000 + pausedDurationRef.current;
-    setDuration(Math.min(elapsed, MAX_DURATION_SECONDS));
+    setDuration(Math.min(elapsed, maxDuration));
     
-    if (elapsed >= MAX_DURATION_SECONDS) {
+    if (elapsed >= maxDuration) {
       stopRecording();
-      toast.info("Maximum recording time reached (60 seconds)");
+      toast.info(`Maximum recording time reached (${maxDuration} seconds)`);
       return;
     }
     
-    if (elapsed >= WARNING_THRESHOLD_SECONDS && elapsed < WARNING_THRESHOLD_SECONDS + 0.5) {
-      toast.warning("10 seconds remaining");
+    if (elapsed >= warningThreshold && elapsed < warningThreshold + 0.5) {
+      toast.warning(`${WARNING_THRESHOLD_OFFSET} seconds remaining`);
     }
     
     timerRef.current = requestAnimationFrame(updateTimer);
-  }, [isRecording, isPaused]);
+  }, [isRecording, isPaused, maxDuration, warningThreshold]);
 
   useEffect(() => {
     if (isRecording && !isPaused) {
@@ -297,11 +302,11 @@ export function VideoRecordButton({ onVideoRecorded, disabled }: VideoRecordButt
             {(isRecording || recordedBlob) && (
               <div className={cn(
                 "absolute top-4 left-4 px-3 py-1.5 rounded-full font-mono text-lg",
-                duration >= WARNING_THRESHOLD_SECONDS && isRecording
+                duration >= warningThreshold && isRecording
                   ? "bg-destructive text-destructive-foreground animate-pulse"
                   : "bg-black/50 text-white"
               )}>
-                {formatDuration(duration)} / {formatDuration(MAX_DURATION_SECONDS)}
+                {formatDuration(duration)} / {formatDuration(maxDuration)}
               </div>
             )}
 

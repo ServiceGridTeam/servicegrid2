@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import {
   Camera,
   X,
@@ -8,6 +8,7 @@ import {
   Grid3x3,
   Check,
   Loader2,
+  MapPinOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -15,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { GPSAccuracyIndicator } from "./GPSAccuracyIndicator";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { usePhotoSettings } from "@/hooks/usePhotoSettings";
 import { toast } from "sonner";
 import type { MediaCategory } from "@/hooks/useJobMedia";
 
@@ -25,7 +27,7 @@ interface CameraCaptureProps {
   defaultCategory?: MediaCategory;
 }
 
-const CATEGORIES: { value: MediaCategory; label: string }[] = [
+const ALL_CATEGORIES: { value: MediaCategory; label: string }[] = [
   { value: "before", label: "Before" },
   { value: "during", label: "During" },
   { value: "after", label: "After" },
@@ -62,8 +64,20 @@ export function CameraCapture({
   // Geolocation
   const { latitude, longitude, accuracy, getCurrentPosition } = useGeolocation();
 
+  // Photo settings
+  const { photoSettings } = usePhotoSettings();
+
   // Check if flash is supported
   const [flashSupported, setFlashSupported] = useState(false);
+
+  // Filter categories based on business settings
+  const filteredCategories = useMemo(() => {
+    const allowed = photoSettings.allowed_categories;
+    return ALL_CATEGORIES.filter((cat) => allowed.includes(cat.value));
+  }, [photoSettings.allowed_categories]);
+
+  // Check if GPS is required but unavailable
+  const gpsBlocked = photoSettings.require_gps && (latitude === null || longitude === null);
 
   // Stop camera stream
   const stopStream = useCallback(() => {
@@ -380,9 +394,17 @@ export function CameraCapture({
 
           {/* Bottom controls */}
           <div className="bg-background p-4 space-y-4">
+            {/* GPS Required Warning */}
+            {gpsBlocked && (
+              <div className="flex items-center justify-center gap-2 px-4 py-2 bg-destructive/10 text-destructive rounded-lg">
+                <MapPinOff className="h-4 w-4" />
+                <span className="text-sm font-medium">GPS required - Enable location to capture</span>
+              </div>
+            )}
+
             {/* Category pills */}
             <div className="flex flex-wrap justify-center gap-2">
-              {CATEGORIES.map((cat) => (
+              {filteredCategories.map((cat) => (
                 <button
                   key={cat.value}
                   onClick={() => setSelectedCategory(cat.value)}
@@ -413,9 +435,9 @@ export function CameraCapture({
               {!capturedUrl ? (
                 <Button
                   size="lg"
-                  className="rounded-full h-16 w-16 bg-white hover:bg-white/90 text-black"
+                  className="rounded-full h-16 w-16 bg-white hover:bg-white/90 text-black disabled:opacity-50"
                   onClick={capturePhoto}
-                  disabled={isCapturing || hasPermission === false}
+                  disabled={isCapturing || hasPermission === false || gpsBlocked}
                 >
                   {isCapturing ? (
                     <Loader2 className="h-6 w-6 animate-spin" />

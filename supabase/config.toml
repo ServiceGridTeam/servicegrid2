@@ -161,3 +161,6 @@ verify_jwt = false
 
 [functions.media-metrics]
 verify_jwt = false
+
+[functions.convert-customer-uploads]
+verify_jwt = false

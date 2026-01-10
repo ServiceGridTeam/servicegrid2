@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusinessContext } from './useBusinessContext';
+import { usePhotoSettings } from './usePhotoSettings';
 import { MediaCategory } from './useJobMedia';
 import { toast } from 'sonner';
 import { extractExifData, getCurrentPosition, ExtractedExifData } from '@/lib/exifExtractor';
@@ -39,6 +40,7 @@ interface OptimisticMediaEntry {
 export function useUploadPhoto() {
   const queryClient = useQueryClient();
   const { activeBusinessId } = useBusinessContext();
+  const { photoSettings } = usePhotoSettings();
 
   return useMutation({
     mutationFn: async ({
@@ -52,6 +54,12 @@ export function useUploadPhoto() {
     }: UploadPhotoParams): Promise<UploadResult> => {
       if (!activeBusinessId) {
         throw new Error('No active business');
+      }
+
+      // Check file size limit
+      const maxSizeBytes = photoSettings.max_photo_size_mb * 1024 * 1024;
+      if (file.size > maxSizeBytes) {
+        throw new Error(`File too large. Maximum size is ${photoSettings.max_photo_size_mb}MB`);
       }
 
       // Get current user
