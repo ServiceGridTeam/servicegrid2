@@ -17,6 +17,7 @@ import {
   Megaphone,
   Inbox,
   Star,
+  Camera,
   LucideIcon,
 } from 'lucide-react';
 import type { AppRole } from './permissions';
@@ -104,6 +105,12 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
     url: '/reviews',
     icon: Star,
     minRole: 'admin',
+  },
+  {
+    title: 'Photos',
+    url: '/photos',
+    icon: Camera,
+    minRole: 'technician',
   },
 ];
 

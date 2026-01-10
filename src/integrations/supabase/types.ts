@@ -772,6 +772,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "customer_media_uploads_converted_to_job_media_id_fkey"
+            columns: ["converted_to_job_media_id"]
+            isOneToOne: false
+            referencedRelation: "media_search_index"
+            referencedColumns: ["media_id"]
+          },
+          {
             foreignKeyName: "customer_media_uploads_customer_account_id_fkey"
             columns: ["customer_account_id"]
             isOneToOne: false
@@ -2627,6 +2634,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "job_media_tags_job_media_id_fkey"
+            columns: ["job_media_id"]
+            isOneToOne: false
+            referencedRelation: "media_search_index"
+            referencedColumns: ["media_id"]
+          },
+          {
             foreignKeyName: "job_media_tags_tag_id_fkey"
             columns: ["tag_id"]
             isOneToOne: false
@@ -3194,6 +3208,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      media_search_refresh_queue: {
+        Row: {
+          id: number
+          last_refresh_at: string | null
+          needs_refresh: boolean | null
+        }
+        Insert: {
+          id?: number
+          last_refresh_at?: string | null
+          needs_refresh?: boolean | null
+        }
+        Update: {
+          id?: number
+          last_refresh_at?: string | null
+          needs_refresh?: boolean | null
+        }
+        Relationships: []
       }
       media_tags: {
         Row: {
@@ -5382,7 +5414,58 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      media_search_index: {
+        Row: {
+          address_summary: string | null
+          business_id: string | null
+          captured_date: string | null
+          category: Database["public"]["Enums"]["media_category"] | null
+          created_at: string | null
+          customer_id: string | null
+          customer_name: string | null
+          has_gps: boolean | null
+          job_id: string | null
+          job_number: string | null
+          job_title: string | null
+          media_id: string | null
+          media_type: string | null
+          media_url: string | null
+          search_vector: unknown
+          tags: string[] | null
+          thumbnail_url: string | null
+          uploaded_by: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_media_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_media_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_media_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_media_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       accept_team_invite: { Args: { _token: string }; Returns: Json }
@@ -5429,6 +5512,14 @@ export type Database = {
           is_primary: boolean
         }[]
       }
+      get_photo_facets: {
+        Args: { p_business_id: string; p_query?: string }
+        Returns: {
+          facet_count: number
+          facet_type: string
+          facet_value: string
+        }[]
+      }
       get_user_business_id: { Args: never; Returns: string }
       get_user_business_ids: { Args: { p_user_id?: string }; Returns: string[] }
       get_user_role_in_business: {
@@ -5445,6 +5536,38 @@ export type Database = {
       rebuild_media_search_text: {
         Args: { p_media_id: string }
         Returns: undefined
+      }
+      refresh_media_search_index: { Args: never; Returns: undefined }
+      search_photos: {
+        Args: {
+          p_business_id: string
+          p_categories?: string[]
+          p_customer_id?: string
+          p_date_from?: string
+          p_date_to?: string
+          p_has_gps?: boolean
+          p_job_id?: string
+          p_page?: number
+          p_per_page?: number
+          p_query?: string
+          p_tags?: string[]
+        }
+        Returns: {
+          captured_date: string
+          category: string
+          customer_id: string
+          customer_name: string
+          has_gps: boolean
+          job_id: string
+          job_number: string
+          job_title: string
+          media_id: string
+          media_type: string
+          media_url: string
+          tags: string[]
+          thumbnail_url: string
+          total_count: number
+        }[]
       }
       set_job_cover_photo: {
         Args: { p_job_id: string; p_media_id: string }

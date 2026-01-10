@@ -29,6 +29,7 @@ import Settings from "./pages/Settings";
 import Requests from "./pages/Requests";
 import Inbox from "./pages/Inbox";
 import Reviews from "./pages/Reviews";
+import Photos from "./pages/Photos";
 import OAuthCallback from "./pages/OAuthCallback";
 import NotFound from "./pages/NotFound";
 import PublicQuote from "./pages/PublicQuote";
@@ -121,6 +122,7 @@ const App = () => (
               <Route path="/payments" element={<Payments />} />
               <Route path="/team" element={<Team />} />
               <Route path="/reviews" element={<Reviews />} />
+              <Route path="/photos" element={<Photos />} />
               <Route path="/settings" element={<Settings />} />
               {/* Marketing routes */}
               <Route path="/marketing/templates" element={<Templates />} />
