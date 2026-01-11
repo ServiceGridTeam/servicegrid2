@@ -1,12 +1,13 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Calendar, FileText, User } from 'lucide-react';
+import { LayoutDashboard, Calendar, FileText, User, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePortalBasePath } from '@/hooks/usePortalBasePath';
 
 const navItemsConfig = [
   { path: '', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { path: '/schedule', label: 'Schedule', icon: Calendar },
+  { path: '/subscriptions', label: 'Subscriptions', icon: RefreshCw },
   { path: '/documents', label: 'Documents', icon: FileText },
   { path: '/account', label: 'Account', icon: User },
 ];

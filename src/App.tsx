@@ -49,7 +49,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import EmailPreferences from "./pages/EmailPreferences";
 import { Templates, TemplateEdit, TemplatePreview, Sequences, SequenceEdit, Campaigns, CampaignEdit, CampaignReport } from "./pages/marketing";
-import { PortalLogin, MagicLinkLanding, PortalDashboard, PortalDocuments, PortalQuoteDetail, PortalInvoiceDetail, PortalSchedule, PortalJobDetail, PortalServiceRequest, PortalAccount } from "./pages/portal";
+import { PortalLogin, MagicLinkLanding, PortalDashboard, PortalDocuments, PortalQuoteDetail, PortalInvoiceDetail, PortalSchedule, PortalJobDetail, PortalServiceRequest, PortalAccount, PortalSubscriptions } from "./pages/portal";
 import { PortalLayout } from "./components/portal";
 import { PreviewPortalLayout } from "./components/portal/PreviewPortalLayout";
 
@@ -72,6 +72,7 @@ const App = () => (
               <Route path="quotes/:id" element={<PortalQuoteDetail />} />
               <Route path="invoices/:id" element={<PortalInvoiceDetail />} />
               <Route path="schedule" element={<PortalSchedule />} />
+              <Route path="subscriptions" element={<PortalSubscriptions />} />
               <Route path="jobs/:id" element={<PortalJobDetail />} />
               <Route path="request-service" element={<PortalServiceRequest />} />
               <Route path="account" element={<PortalAccount />} />
@@ -84,6 +85,7 @@ const App = () => (
               <Route path="quotes/:id" element={<PortalQuoteDetail />} />
               <Route path="invoices/:id" element={<PortalInvoiceDetail />} />
               <Route path="schedule" element={<PortalSchedule />} />
+              <Route path="subscriptions" element={<PortalSubscriptions />} />
               <Route path="jobs/:id" element={<PortalJobDetail />} />
             </Route>
             
