@@ -100,7 +100,6 @@ function ScheduleRow({ schedule, subscriptionId }: ScheduleRowProps) {
     await skipVisit.mutateAsync({
       scheduleId: schedule.id,
       reason: skipReason || undefined,
-      subscriptionId,
     });
     setIsSkipOpen(false);
     setSkipReason("");

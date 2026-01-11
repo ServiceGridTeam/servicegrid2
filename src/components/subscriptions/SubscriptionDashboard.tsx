@@ -90,7 +90,7 @@ export function SubscriptionDashboard() {
         >
           <StatCard
             title="Active Subscriptions"
-            value={stats?.active_count ?? 0}
+            value={stats?.activeCount ?? 0}
             icon={<RefreshCw className="h-4 w-4" />}
             isLoading={statsLoading}
           />
@@ -102,7 +102,7 @@ export function SubscriptionDashboard() {
         >
           <StatCard
             title="Monthly Recurring Revenue"
-            value={formatCurrency(stats?.monthly_recurring_revenue ?? 0)}
+            value={formatCurrency(stats?.monthlyRecurringRevenue ?? 0)}
             icon={<DollarSign className="h-4 w-4" />}
             isLoading={statsLoading}
           />
@@ -114,7 +114,7 @@ export function SubscriptionDashboard() {
         >
           <StatCard
             title="Upcoming Services"
-            value={stats?.upcoming_services_count ?? 0}
+            value={stats?.upcomingServicesCount ?? 0}
             description="Next 14 days"
             icon={<Calendar className="h-4 w-4" />}
             isLoading={statsLoading}
@@ -127,7 +127,7 @@ export function SubscriptionDashboard() {
         >
           <StatCard
             title="Paused"
-            value={stats?.paused_count ?? 0}
+            value={stats?.pausedCount ?? 0}
             icon={<Pause className="h-4 w-4" />}
             isLoading={statsLoading}
           />
@@ -160,27 +160,22 @@ export function SubscriptionDashboard() {
                 {upcomingServices.map((service) => (
                   <Link 
                     key={service.id} 
-                    to={`/subscriptions/${service.subscription_id}`}
+                    to={`/subscriptions/${service.subscriptionId}`}
                     className="block"
                   >
                     <div className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="space-y-1 min-w-0">
-                        <p className="font-medium truncate">{service.subscription_name}</p>
+                        <p className="font-medium truncate">{service.subscriptionName}</p>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <User className="h-3 w-3" />
-                          <span className="truncate">{service.customer_name}</span>
+                          <span className="truncate">{service.customerName}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="text-right">
                           <p className="text-sm font-medium">
-                            {format(new Date(service.scheduled_date), "MMM d")}
+                            {format(new Date(service.scheduledDate), "MMM d")}
                           </p>
-                          {service.scheduled_time_start && (
-                            <p className="text-xs text-muted-foreground">
-                              {service.scheduled_time_start}
-                            </p>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -217,8 +212,8 @@ export function SubscriptionDashboard() {
             ) : (
               <div className="space-y-3">
                 {recentEvents.map((event) => {
-                  const eventConfig = eventTypeLabels[event.event_type] || {
-                    label: event.event_type,
+                  const eventConfig = eventTypeLabels[event.eventType] || {
+                    label: event.eventType,
                     icon: <Clock className="h-3 w-3" />,
                   };
                   
@@ -233,14 +228,9 @@ export function SubscriptionDashboard() {
                             {eventConfig.label}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(event.created_at), "MMM d, h:mm a")}
+                            {format(new Date(event.createdAt), "MMM d, h:mm a")}
                           </span>
                         </div>
-                        {event.notes && (
-                          <p className="text-sm text-muted-foreground mt-1 truncate">
-                            {event.notes}
-                          </p>
-                        )}
                       </div>
                     </div>
                   );
