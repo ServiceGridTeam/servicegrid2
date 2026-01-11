@@ -13,6 +13,7 @@ import { FeedbackPrompt } from '@/components/portal/FeedbackPrompt';
 import { FeedbackForm } from '@/components/portal/FeedbackForm';
 import { RescheduleRequestDialog } from '@/components/portal/RescheduleRequestDialog';
 import { PortalPhotoGrid } from '@/components/portal/PortalPhotoGrid';
+import { PortalGallerySection } from '@/components/portal/PortalGallerySection';
 import { supabase } from '@/integrations/supabase/client';
 import { usePortalSession } from '@/hooks/usePortalSession';
 import { useCustomerFeedback } from '@/hooks/useCustomerFeedback';
@@ -204,6 +205,9 @@ export default function PortalJobDetail() {
             {/* Job Photos - Privacy-safe display */}
             <Separator />
             <PortalPhotoGrid jobId={job.id} businessId={activeBusinessId || ''} />
+
+            {/* Gallery Access Section */}
+            <PortalGallerySection jobId={job.id} />
 
             {/* Reschedule Button */}
             {canReschedule && (
