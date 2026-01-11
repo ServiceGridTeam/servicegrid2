@@ -1071,6 +1071,253 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_activities: {
+        Row: {
+          activity_type: Database["public"]["Enums"]["conversation_activity_type"]
+          actor_id: string | null
+          actor_name: string | null
+          conversation_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          new_value: Json | null
+          old_value: Json | null
+        }
+        Insert: {
+          activity_type: Database["public"]["Enums"]["conversation_activity_type"]
+          actor_id?: string | null
+          actor_name?: string | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          old_value?: Json | null
+        }
+        Update: {
+          activity_type?: Database["public"]["Enums"]["conversation_activity_type"]
+          actor_id?: string | null
+          actor_name?: string | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          old_value?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_activities_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_activities_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_participants: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          customer_account_id: string | null
+          id: string
+          joined_at: string
+          last_read_at: string | null
+          last_read_message_id: string | null
+          left_at: string | null
+          notifications_enabled: boolean
+          profile_id: string | null
+          unread_count: number
+          unread_mention_count: number
+          updated_at: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          customer_account_id?: string | null
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          last_read_message_id?: string | null
+          left_at?: string | null
+          notifications_enabled?: boolean
+          profile_id?: string | null
+          unread_count?: number
+          unread_mention_count?: number
+          updated_at?: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          customer_account_id?: string | null
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          last_read_message_id?: string | null
+          left_at?: string | null
+          notifications_enabled?: boolean
+          profile_id?: string | null
+          unread_count?: number
+          unread_mention_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_participants_customer_account_id_fkey"
+            columns: ["customer_account_id"]
+            isOneToOne: false
+            referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_participants_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          assigned_at: string | null
+          assigned_to: string | null
+          business_id: string
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          id: string
+          invoice_id: string | null
+          job_id: string | null
+          last_message_at: string | null
+          last_message_preview: string | null
+          last_message_sender_id: string | null
+          last_message_sender_name: string | null
+          message_count: number
+          metadata: Json | null
+          quote_id: string | null
+          status: Database["public"]["Enums"]["conversation_status"]
+          title: string | null
+          type: Database["public"]["Enums"]["conversation_type"]
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_to?: string | null
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          id?: string
+          invoice_id?: string | null
+          job_id?: string | null
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          last_message_sender_id?: string | null
+          last_message_sender_name?: string | null
+          message_count?: number
+          metadata?: Json | null
+          quote_id?: string | null
+          status?: Database["public"]["Enums"]["conversation_status"]
+          title?: string | null
+          type: Database["public"]["Enums"]["conversation_type"]
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_to?: string | null
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          id?: string
+          invoice_id?: string | null
+          job_id?: string | null
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          last_message_sender_id?: string | null
+          last_message_sender_name?: string | null
+          message_count?: number
+          metadata?: Json | null
+          quote_id?: string | null
+          status?: Database["public"]["Enums"]["conversation_status"]
+          title?: string | null
+          type?: Database["public"]["Enums"]["conversation_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_last_message_sender_id_fkey"
+            columns: ["last_message_sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cron_locks: {
         Row: {
           expires_at: string
@@ -4483,6 +4730,147 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_read_receipts: {
+        Row: {
+          id: string
+          message_id: string
+          read_at: string
+          reader_customer_id: string | null
+          reader_profile_id: string | null
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          read_at?: string
+          reader_customer_id?: string | null
+          reader_profile_id?: string | null
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          read_at?: string
+          reader_customer_id?: string | null
+          reader_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_read_receipts_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_read_receipts_reader_customer_id_fkey"
+            columns: ["reader_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_read_receipts_reader_profile_id_fkey"
+            columns: ["reader_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          attachments: Json | null
+          content: string
+          content_html: string | null
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          entity_references: Json | null
+          id: string
+          is_deleted: boolean
+          is_edited: boolean
+          mentions: Json | null
+          metadata: Json | null
+          reply_to_id: string | null
+          sender_customer_id: string | null
+          sender_name: string
+          sender_profile_id: string | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          attachments?: Json | null
+          content: string
+          content_html?: string | null
+          conversation_id: string
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          entity_references?: Json | null
+          id?: string
+          is_deleted?: boolean
+          is_edited?: boolean
+          mentions?: Json | null
+          metadata?: Json | null
+          reply_to_id?: string | null
+          sender_customer_id?: string | null
+          sender_name: string
+          sender_profile_id?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          attachments?: Json | null
+          content?: string
+          content_html?: string | null
+          conversation_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          entity_references?: Json | null
+          id?: string
+          is_deleted?: boolean
+          is_edited?: boolean
+          mentions?: Json | null
+          metadata?: Json | null
+          reply_to_id?: string | null
+          sender_customer_id?: string | null
+          sender_name?: string
+          sender_profile_id?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_customer_id_fkey"
+            columns: ["sender_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_profile_id_fkey"
+            columns: ["sender_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -8137,6 +8525,17 @@ export type Database = {
     }
     Enums: {
       app_role: "owner" | "admin" | "technician" | "viewer"
+      conversation_activity_type:
+        | "created"
+        | "assigned"
+        | "reassigned"
+        | "participant_joined"
+        | "participant_left"
+        | "status_changed"
+        | "archived"
+        | "unarchived"
+      conversation_status: "active" | "archived" | "resolved"
+      conversation_type: "customer_thread" | "team_chat" | "job_discussion"
       media_category:
         | "before"
         | "during"
@@ -8274,6 +8673,18 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["owner", "admin", "technician", "viewer"],
+      conversation_activity_type: [
+        "created",
+        "assigned",
+        "reassigned",
+        "participant_joined",
+        "participant_left",
+        "status_changed",
+        "archived",
+        "unarchived",
+      ],
+      conversation_status: ["active", "archived", "resolved"],
+      conversation_type: ["customer_thread", "team_chat", "job_discussion"],
       media_category: [
         "before",
         "during",
