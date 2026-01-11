@@ -40,7 +40,9 @@ import {
   canEditMessage,
   canDeleteMessage,
   triggerHaptic,
+  type Attachment,
 } from '@/lib/messageUtils';
+import { AttachmentPreview } from './AttachmentPreview';
 import type { MessageWithDetails } from '@/hooks/useMessages';
 
 interface MessageBubbleProps {
@@ -209,6 +211,14 @@ export function MessageBubble({
                   <p className="text-sm whitespace-pre-wrap break-words">
                     {message.content}
                   </p>
+                )}
+                
+                {/* Attachments */}
+                {message.attachments && Array.isArray(message.attachments) && message.attachments.length > 0 && (
+                  <AttachmentPreview 
+                    attachments={message.attachments as unknown as Attachment[]} 
+                    isOwn={isOwn}
+                  />
                 )}
               </>
             )}

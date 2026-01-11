@@ -50,7 +50,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import EmailPreferences from "./pages/EmailPreferences";
 import { Templates, TemplateEdit, TemplatePreview, Sequences, SequenceEdit, Campaigns, CampaignEdit, CampaignReport } from "./pages/marketing";
-import { PortalLogin, MagicLinkLanding, PortalDashboard, PortalDocuments, PortalQuoteDetail, PortalInvoiceDetail, PortalSchedule, PortalJobDetail, PortalServiceRequest, PortalAccount, PortalSubscriptions } from "./pages/portal";
+import { PortalLogin, MagicLinkLanding, PortalDashboard, PortalDocuments, PortalQuoteDetail, PortalInvoiceDetail, PortalSchedule, PortalJobDetail, PortalServiceRequest, PortalAccount, PortalSubscriptions, PortalMessages } from "./pages/portal";
 import { PortalLayout } from "./components/portal";
 import { PreviewPortalLayout } from "./components/portal/PreviewPortalLayout";
 
@@ -76,6 +76,7 @@ const App = () => (
               <Route path="subscriptions" element={<PortalSubscriptions />} />
               <Route path="jobs/:id" element={<PortalJobDetail />} />
               <Route path="request-service" element={<PortalServiceRequest />} />
+              <Route path="messages" element={<PortalMessages />} />
               <Route path="account" element={<PortalAccount />} />
             </Route>
             
