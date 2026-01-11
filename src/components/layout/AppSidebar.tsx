@@ -28,6 +28,7 @@ import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { useBusinessMemberships } from "@/hooks/useBusinessMemberships";
 import { usePendingRequestsCount } from "@/hooks/useJobRequests";
 import { usePendingModificationsCount } from "@/hooks/useJobModificationRequests";
+import { useUnreadConversationsCount } from "@/hooks/useConversations";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,9 +44,11 @@ export function AppSidebar() {
   const { data: memberships = [] } = useBusinessMemberships();
   const { data: pendingRequestsCount } = usePendingRequestsCount();
   const { data: pendingModificationsCount } = usePendingModificationsCount();
+  const { data: unreadMessages } = useUnreadConversationsCount();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const totalPendingCount = (pendingRequestsCount || 0) + (pendingModificationsCount || 0);
+  const messagesUnreadCount = unreadMessages?.totalUnread || 0;
   const hasMultipleBusinesses = memberships.length > 1;
 
   // Track previous role for animation key
@@ -223,7 +226,12 @@ export function AppSidebar() {
                                   {totalPendingCount > 99 ? "99+" : totalPendingCount}
                                 </Badge>
                               )}
-                              {!collapsed && isActive(item.url) && item.url !== "/requests" && (
+                              {!collapsed && item.url === "/messages" && messagesUnreadCount > 0 && (
+                                <Badge variant="default" className="ml-auto h-5 min-w-5 px-1 text-xs bg-primary">
+                                  {messagesUnreadCount > 99 ? "99+" : messagesUnreadCount}
+                                </Badge>
+                              )}
+                              {!collapsed && isActive(item.url) && item.url !== "/requests" && item.url !== "/messages" && (
                                 <ChevronRight className="ml-auto h-4 w-4 text-foreground" />
                               )}
                             </NavLink>
