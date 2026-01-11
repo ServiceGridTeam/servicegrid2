@@ -28,6 +28,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Copy, Check, Link2, ExternalLink, Loader2 } from 'lucide-react';
 import { useCreateGalleryShare, useUpdateGalleryShare } from '@/hooks/useGalleryShares';
+import { useGallerySharingSettings } from '@/hooks/useGallerySharingSettings';
 import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -60,6 +61,7 @@ export function GalleryShareDialog({
   const { toast } = useToast();
   const createShare = useCreateGalleryShare();
   const updateShare = useUpdateGalleryShare();
+  const { settings: featureFlags } = useGallerySharingSettings();
   const isEditing = !!existingShare;
 
   // Form state
@@ -291,11 +293,13 @@ export function GalleryShareDialog({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {EXPIRATION_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
+                      {EXPIRATION_OPTIONS
+                        .filter(opt => opt.value !== 'never' || featureFlags.permanent_shares_enabled)
+                        .map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   {expiresInDays === 'never' && (
@@ -326,18 +330,20 @@ export function GalleryShareDialog({
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Allow Comments</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Let customers leave comments on photos
-                  </p>
+              {featureFlags.gallery_comments_enabled && (
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Allow Comments</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Let customers leave comments on photos
+                    </p>
+                  </div>
+                  <Switch
+                    checked={allowComments}
+                    onCheckedChange={setAllowComments}
+                  />
                 </div>
-                <Switch
-                  checked={allowComments}
-                  onCheckedChange={setAllowComments}
-                />
-              </div>
+              )}
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">

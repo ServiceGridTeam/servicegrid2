@@ -32,6 +32,7 @@ import { FileText, Loader2, Image as ImageIcon } from 'lucide-react';
 import { useJobMedia } from '@/hooks/useJobMedia';
 import { useBusiness } from '@/hooks/useBusiness';
 import { useCreateReport, defaultReportConfig } from '@/hooks/usePhotoReports';
+import { useGallerySharingSettings } from '@/hooks/useGallerySharingSettings';
 
 interface PhotoReportDialogProps {
   open: boolean;
@@ -73,6 +74,10 @@ export function PhotoReportDialog({
   const { data: business } = useBusiness();
   const { media, isLoading: isLoadingMedia } = useJobMedia({ jobId });
   const createReport = useCreateReport();
+  const { settings: featureFlags } = useGallerySharingSettings();
+
+  // If PDF reports are disabled, don't render the dialog content
+  const isReportsEnabled = featureFlags.pdf_reports_enabled;
 
   // Form state
   const [title, setTitle] = useState('Photo Report');
@@ -173,6 +178,30 @@ export function PhotoReportDialog({
   };
 
   const isLoading = createReport.isPending;
+
+  // PDF Reports feature is disabled
+  if (!isReportsEnabled) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              PDF Reports Disabled
+            </DialogTitle>
+            <DialogDescription>
+              PDF report generation is currently disabled. Contact your administrator to enable this feature in Settings.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

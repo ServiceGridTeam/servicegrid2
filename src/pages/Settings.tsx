@@ -20,6 +20,7 @@ import { PhoneIntegrationCard } from "@/components/settings/PhoneIntegrationCard
 import { PhoneSettingsForm } from "@/components/settings/PhoneSettingsForm";
 import { EmailBrandingCard } from "@/components/settings/EmailBrandingCard";
 import { PhotoSettingsCard } from "@/components/settings/PhotoSettingsCard";
+import { GallerySharingSettingsCard } from "@/components/settings/GallerySharingSettingsCard";
 import { TagManager } from "@/components/tags/TagManager";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { EmailConnectionCard, EmailRulesManager } from "@/components/email";
@@ -497,6 +498,10 @@ export default function Settings() {
             </p>
           </div>
           <PhotoSettingsCard />
+          
+          <div className="mt-4">
+            <GallerySharingSettingsCard />
+          </div>
           
           <RoleGate 
             minRole="admin" 
