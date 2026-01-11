@@ -18,11 +18,14 @@ import {
   Link2,
   Share2,
   Settings,
+  MessageSquare,
 } from 'lucide-react';
 import { useActiveGalleryShare } from '@/hooks/useGalleryShares';
+import { useUnreadCommentCount } from '@/hooks/useGalleryCommentsModeration';
 import { useToast } from '@/hooks/use-toast';
 import { GalleryShareDialog } from './GalleryShareDialog';
 import { GallerySharesList } from './GallerySharesList';
+import { GalleryCommentsDialog } from './GalleryCommentsDialog';
 import {
   Dialog,
   DialogContent,
@@ -36,11 +39,13 @@ interface GalleryShareCardProps {
 
 export function GalleryShareCard({ jobId }: GalleryShareCardProps) {
   const { data: activeShare, isLoading } = useActiveGalleryShare(jobId);
+  const { data: unreadCount = 0 } = useUnreadCommentCount(jobId);
   const { toast } = useToast();
 
   const [copied, setCopied] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
+  const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
 
   const copyLink = async () => {
     if (!activeShare) return;
@@ -146,6 +151,26 @@ export function GalleryShareCard({ jobId }: GalleryShareCardProps) {
               </div>
             </div>
             <div className="flex items-center gap-1">
+              {/* Comments button with badge */}
+              {activeShare.allow_comments && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 relative"
+                  onClick={() => setCommentsDialogOpen(true)}
+                  title="View comments"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  {unreadCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-1 -right-1 h-4 w-4 p-0 text-[10px] flex items-center justify-center"
+                    >
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </Badge>
+                  )}
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="icon"
@@ -187,6 +212,13 @@ export function GalleryShareCard({ jobId }: GalleryShareCardProps) {
           <GallerySharesList jobId={jobId} />
         </DialogContent>
       </Dialog>
+
+      {/* Comments Moderation Dialog */}
+      <GalleryCommentsDialog
+        open={commentsDialogOpen}
+        onOpenChange={setCommentsDialogOpen}
+        jobId={jobId}
+      />
     </>
   );
 }

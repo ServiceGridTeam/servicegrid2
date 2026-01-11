@@ -4326,6 +4326,8 @@ export type Database = {
           parent_comment_id: string | null
           reply_depth: number | null
           share_id: string | null
+          staff_reply: string | null
+          staff_reply_at: string | null
           updated_at: string | null
         }
         Insert: {
@@ -4351,6 +4353,8 @@ export type Database = {
           parent_comment_id?: string | null
           reply_depth?: number | null
           share_id?: string | null
+          staff_reply?: string | null
+          staff_reply_at?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -4376,6 +4380,8 @@ export type Database = {
           parent_comment_id?: string | null
           reply_depth?: number | null
           share_id?: string | null
+          staff_reply?: string | null
+          staff_reply_at?: string | null
           updated_at?: string | null
         }
         Relationships: [

@@ -13,3 +13,6 @@ export { GalleryLightbox } from './GalleryLightbox';
 export { GalleryCommentsSection } from './GalleryCommentsSection';
 export { CommentThread } from './CommentThread';
 export { CommentForm } from './CommentForm';
+export { CommentModerationCard } from './CommentModerationCard';
+export { GalleryCommentsModeration } from './GalleryCommentsModeration';
+export { GalleryCommentsDialog } from './GalleryCommentsDialog';
