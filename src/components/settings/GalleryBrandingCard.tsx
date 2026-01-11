@@ -42,6 +42,7 @@ interface LocalBranding {
   primary_color: string;
   secondary_color: string;
   background_color: string;
+  text_color: string;
   heading_font: string;
   body_font: string;
   gallery_title_template: string;
@@ -67,6 +68,7 @@ export function GalleryBrandingCard() {
     primary_color: DEFAULT_BRANDING.primary_color,
     secondary_color: DEFAULT_BRANDING.secondary_color,
     background_color: DEFAULT_BRANDING.background_color || '#ffffff',
+    text_color: DEFAULT_BRANDING.text_color || '#1e293b',
     heading_font: DEFAULT_BRANDING.heading_font || 'Inter',
     body_font: DEFAULT_BRANDING.body_font || 'Inter',
     gallery_title_template: DEFAULT_BRANDING.gallery_title_template || '',
@@ -88,6 +90,7 @@ export function GalleryBrandingCard() {
         primary_color: branding.primary_color || DEFAULT_BRANDING.primary_color,
         secondary_color: branding.secondary_color || DEFAULT_BRANDING.secondary_color,
         background_color: branding.background_color || '#ffffff',
+        text_color: branding.text_color || '#1e293b',
         heading_font: branding.heading_font || 'Inter',
         body_font: branding.body_font || 'Inter',
         gallery_title_template: branding.gallery_title_template || '',
@@ -115,6 +118,10 @@ export function GalleryBrandingCard() {
       toast({ variant: 'destructive', title: 'Invalid background color format' });
       return;
     }
+    if (!isValidHexColor(local.text_color)) {
+      toast({ variant: 'destructive', title: 'Invalid text color format' });
+      return;
+    }
 
     try {
       await updateBranding({
@@ -124,6 +131,7 @@ export function GalleryBrandingCard() {
         primary_color: local.primary_color,
         secondary_color: local.secondary_color,
         background_color: local.background_color,
+        text_color: local.text_color,
         heading_font: local.heading_font,
         body_font: local.body_font,
         gallery_title_template: local.gallery_title_template || null,
@@ -308,6 +316,25 @@ export function GalleryBrandingCard() {
                 />
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="text_color">Text Color</Label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={local.text_color}
+                  onChange={(e) => setLocal({ ...local, text_color: e.target.value })}
+                  className="h-9 w-12 cursor-pointer rounded border bg-transparent p-0.5"
+                />
+                <Input
+                  id="text_color"
+                  value={local.text_color}
+                  onChange={(e) => setLocal({ ...local, text_color: e.target.value })}
+                  placeholder="#1e293b"
+                  className={cn(!isValidHexColor(local.text_color) && 'border-destructive')}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Color Preview */}
@@ -323,15 +350,23 @@ export function GalleryBrandingCard() {
               >
                 Gallery Header
               </div>
-              <div className="p-3 flex gap-2">
+              <div className="p-3 flex gap-2 items-center">
                 <div className="w-16 h-12 rounded bg-muted" />
                 <div className="w-16 h-12 rounded bg-muted" />
-                <button
-                  className="px-3 py-1.5 text-xs text-white rounded"
-                  style={{ backgroundColor: local.secondary_color }}
-                >
-                  View
-                </button>
+                <div className="flex flex-col gap-1">
+                  <span
+                    className="text-xs font-medium"
+                    style={{ color: local.text_color }}
+                  >
+                    Sample Text
+                  </span>
+                  <button
+                    className="px-3 py-1.5 text-xs text-white rounded"
+                    style={{ backgroundColor: local.secondary_color }}
+                  >
+                    View
+                  </button>
+                </div>
               </div>
             </div>
           </div>
