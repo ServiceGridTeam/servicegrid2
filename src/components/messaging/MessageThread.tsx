@@ -12,6 +12,7 @@ import { MessageBubble } from './MessageBubble';
 import { MessageComposer } from './MessageComposer';
 import { TypingIndicator } from './TypingIndicator';
 import { useMessages, type MessageWithDetails } from '@/hooks/useMessages';
+import { useReadReceipts } from '@/hooks/useReadReceipts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { cn } from '@/lib/utils';
@@ -53,6 +54,8 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
     typingUsers,
     markAsRead,
   } = useMessages(conversationId);
+
+  const { receiptsByMessage } = useReadReceipts({ conversationId });
 
   // Group messages by date
   const groupedMessages = useMemo((): GroupedMessages[] => {
@@ -228,6 +231,10 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
                 <div className="space-y-3">
                   {group.messages.map((message, idx) => {
                     const globalIndex = messages.findIndex((m) => m.id === message.id);
+                    const receipts = receiptsByMessage[message.id] || [];
+                    // Filter out sender's own receipt for display
+                    const displayReceipts = receipts.filter(r => r.reader_profile_id !== message.sender_profile_id);
+                    
                     return (
                       <MessageBubble
                         key={message.id}
@@ -239,6 +246,7 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
                         onDelete={deleteMessage}
                         onReply={handleReply}
                         showSender={shouldShowSender(message, globalIndex)}
+                        readReceipts={displayReceipts}
                       />
                     );
                   })}
