@@ -21,6 +21,9 @@ import Invoices from "./pages/Invoices";
 import InvoiceNew from "./pages/InvoiceNew";
 import InvoiceDetail from "./pages/InvoiceDetail";
 import InvoiceEdit from "./pages/InvoiceEdit";
+import Subscriptions from "./pages/Subscriptions";
+import SubscriptionNew from "./pages/SubscriptionNew";
+import SubscriptionDetail from "./pages/SubscriptionDetail";
 import CalendarPage from "./pages/Calendar";
 import RoutesPage from "./pages/Routes";
 import Payments from "./pages/Payments";
@@ -122,6 +125,9 @@ const App = () => (
               <Route path="/invoices/new" element={<InvoiceNew />} />
               <Route path="/invoices/:id" element={<InvoiceDetail />} />
               <Route path="/invoices/:id/edit" element={<InvoiceEdit />} />
+              <Route path="/subscriptions" element={<Subscriptions />} />
+              <Route path="/subscriptions/new" element={<SubscriptionNew />} />
+              <Route path="/subscriptions/:id" element={<SubscriptionDetail />} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/routes" element={<RoutesPage />} />
               <Route path="/payments" element={<Payments />} />
