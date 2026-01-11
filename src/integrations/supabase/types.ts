@@ -6066,6 +6066,156 @@ export type Database = {
           },
         ]
       }
+      service_plans: {
+        Row: {
+          available_in_portal: boolean | null
+          base_price: number
+          billing_model: string
+          business_id: string
+          code: string | null
+          created_at: string
+          created_by: string | null
+          default_frequency: string
+          default_line_items: Json | null
+          deleted_at: string | null
+          deleted_by: string | null
+          description: string | null
+          estimated_duration_minutes: number | null
+          id: string
+          internal_notes: string | null
+          is_active: boolean | null
+          is_taxable: boolean | null
+          name: string
+          sort_order: number | null
+          tax_rate_override: number | null
+          updated_at: string
+        }
+        Insert: {
+          available_in_portal?: boolean | null
+          base_price: number
+          billing_model: string
+          business_id: string
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_frequency: string
+          default_line_items?: Json | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          estimated_duration_minutes?: number | null
+          id?: string
+          internal_notes?: string | null
+          is_active?: boolean | null
+          is_taxable?: boolean | null
+          name: string
+          sort_order?: number | null
+          tax_rate_override?: number | null
+          updated_at?: string
+        }
+        Update: {
+          available_in_portal?: boolean | null
+          base_price?: number
+          billing_model?: string
+          business_id?: string
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_frequency?: string
+          default_line_items?: Json | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          estimated_duration_minutes?: number | null
+          id?: string
+          internal_notes?: string | null
+          is_active?: boolean | null
+          is_taxable?: boolean | null
+          name?: string
+          sort_order?: number | null
+          tax_rate_override?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_plans_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_plans_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_plans_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_metrics: {
+        Row: {
+          dimensions: Json | null
+          id: string
+          metric_name: string
+          metric_value: number
+          recorded_at: string
+        }
+        Insert: {
+          dimensions?: Json | null
+          id?: string
+          metric_name: string
+          metric_value: number
+          recorded_at?: string
+        }
+        Update: {
+          dimensions?: Json | null
+          id?: string
+          metric_name?: string
+          metric_value?: number
+          recorded_at?: string
+        }
+        Relationships: []
+      }
+      subscription_number_sequences: {
+        Row: {
+          business_id: string
+          created_at: string
+          next_number: number
+          prefix: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          next_number?: number
+          prefix?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          next_number?: number
+          prefix?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_number_sequences_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_availability: {
         Row: {
           business_id: string
@@ -6874,6 +7024,10 @@ export type Database = {
       }
       generate_service_request_number: {
         Args: { bus_id: string }
+        Returns: string
+      }
+      generate_subscription_number: {
+        Args: { p_business_id: string }
         Returns: string
       }
       get_customer_account_businesses: {
