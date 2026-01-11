@@ -32,6 +32,8 @@ import {
   Loader2,
   AlertCircle,
   RotateCcw,
+  Check,
+  CheckCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { 
@@ -45,6 +47,13 @@ import {
 import { AttachmentPreview } from './AttachmentPreview';
 import type { MessageWithDetails } from '@/hooks/useMessages';
 
+interface ReadReceipt {
+  id: string;
+  reader_name?: string;
+  reader_avatar?: string | null;
+  read_at: string;
+}
+
 interface MessageBubbleProps {
   message: MessageWithDetails;
   isOwn: boolean;
@@ -55,6 +64,7 @@ interface MessageBubbleProps {
   onReply?: (message: MessageWithDetails) => void;
   onRetry?: (content: string) => void;
   showSender?: boolean;
+  readReceipts?: ReadReceipt[];
 }
 
 export function MessageBubble({
@@ -67,6 +77,7 @@ export function MessageBubble({
   onReply,
   onRetry,
   showSender = true,
+  readReceipts,
 }: MessageBubbleProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
@@ -312,6 +323,23 @@ export function MessageBubble({
           )}>
             {formatMessageTime(message.created_at)}
           </span>
+        )}
+
+        {/* Read receipts - only for own messages */}
+        {isOwn && !isSending && !hasError && (
+          <div className={cn('flex items-center gap-1 mt-0.5', isOwn && 'justify-end')}>
+            {readReceipts && readReceipts.length > 0 ? (
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <CheckCheck className="h-3 w-3 text-primary" />
+                <span>
+                  Seen by {readReceipts.slice(0, 2).map(r => r.reader_name).join(', ')}
+                  {readReceipts.length > 2 && ` +${readReceipts.length - 2}`}
+                </span>
+              </div>
+            ) : (
+              <Check className="h-3 w-3 text-muted-foreground/50" />
+            )}
+          </div>
         )}
       </div>
 

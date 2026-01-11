@@ -11,3 +11,4 @@ export { NewChatDialog } from './NewChatDialog';
 export { ConversationHeader } from './ConversationHeader';
 export { ReassignWorkerDropdown } from './ReassignWorkerDropdown';
 export { AttachmentPreview } from './AttachmentPreview';
+export { ConversationActivityFeed } from './ConversationActivityFeed';
