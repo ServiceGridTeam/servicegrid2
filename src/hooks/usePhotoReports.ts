@@ -6,37 +6,36 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
 
-export interface ReportConfig {
-  layout: 'grid' | 'timeline' | 'before_after' | 'single';
-  page_size: 'letter' | 'a4';
-  orientation: 'portrait' | 'landscape';
-  photos_per_page: number;
-  include_annotations: boolean;
-  include_timestamps: boolean;
-  include_gps: boolean;
-  include_descriptions: boolean;
-  cover_title?: string;
-  cover_subtitle?: string;
-  include_cover: boolean;
-  include_toc: boolean;
-}
+// Use the actual database type
+type PhotoReportRow = Database['public']['Tables']['photo_reports']['Row'];
 
 export interface PhotoReport {
   id: string;
   job_id: string;
   business_id: string;
   report_type: string;
-  status: 'pending' | 'generating' | 'ready' | 'failed' | 'expired';
-  config: ReportConfig;
-  media_ids: string[];
-  file_url?: string;
-  page_count?: number;
-  file_size_bytes?: number;
-  generated_at?: string;
-  expires_at?: string;
-  error_message?: string;
-  created_at: string;
+  title: string;
+  status: string | null;
+  layout: string | null;
+  paper_size: string | null;
+  orientation: string | null;
+  photos_per_page: number | null;
+  include_annotations: boolean | null;
+  include_timestamps: boolean | null;
+  include_gps: boolean | null;
+  include_descriptions: boolean | null;
+  include_comparisons: boolean | null;
+  include_media_ids: string[] | null;
+  file_url: string | null;
+  page_count: number | null;
+  file_size_bytes: number | null;
+  completed_at: string | null;
+  expires_at: string | null;
+  error_message: string | null;
+  error_code: string | null;
+  created_at: string | null;
   created_by: string;
 }
 
@@ -68,25 +67,52 @@ export function useCreateReport() {
       jobId,
       businessId,
       mediaIds,
-      config,
+      title,
       reportType = 'standard',
+      layout = 'grid',
+      paperSize = 'letter',
+      orientation = 'portrait',
+      photosPerPage = 6,
+      includeAnnotations = true,
+      includeTimestamps = true,
+      includeGps = false,
+      includeDescriptions = true,
+      includeComparisons = false,
     }: {
       jobId: string;
       businessId: string;
       mediaIds: string[];
-      config?: Partial<ReportConfig>;
+      title?: string;
       reportType?: string;
+      layout?: string;
+      paperSize?: string;
+      orientation?: string;
+      photosPerPage?: number;
+      includeAnnotations?: boolean;
+      includeTimestamps?: boolean;
+      includeGps?: boolean;
+      includeDescriptions?: boolean;
+      includeComparisons?: boolean;
     }) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      const response = await supabase.functions.invoke('generate-photo-report/trigger', {
+      const response = await supabase.functions.invoke('generate-photo-report', {
         body: {
           job_id: jobId,
           business_id: businessId,
-          media_ids: mediaIds,
-          config,
+          include_media_ids: mediaIds,
+          title: title || 'Photo Report',
           report_type: reportType,
+          layout,
+          paper_size: paperSize,
+          orientation,
+          photos_per_page: photosPerPage,
+          include_annotations: includeAnnotations,
+          include_timestamps: includeTimestamps,
+          include_gps: includeGps,
+          include_descriptions: includeDescriptions,
+          include_comparisons: includeComparisons,
         },
       });
 
@@ -119,12 +145,12 @@ export function useReportStatus(reportId: string | null, enabled = true) {
       
       const { data, error } = await supabase
         .from('photo_reports')
-        .select('id, status, file_url, page_count, generated_at, error_message')
+        .select('id, status, file_url, page_count, completed_at, error_message')
         .eq('id', reportId)
         .single();
 
       if (error) throw error;
-      return data as Pick<PhotoReport, 'id' | 'status' | 'file_url' | 'page_count' | 'generated_at' | 'error_message'>;
+      return data as Pick<PhotoReport, 'id' | 'status' | 'file_url' | 'page_count' | 'completed_at' | 'error_message'>;
     },
     enabled: !!reportId && enabled,
     refetchInterval: (query) => {
@@ -166,15 +192,14 @@ export function useDeleteReport() {
 }
 
 // Default report config
-export const defaultReportConfig: ReportConfig = {
-  layout: 'grid',
-  page_size: 'letter',
-  orientation: 'portrait',
+export const defaultReportConfig = {
+  layout: 'grid' as const,
+  paper_size: 'letter' as const,
+  orientation: 'portrait' as const,
   photos_per_page: 6,
   include_annotations: true,
   include_timestamps: true,
   include_gps: false,
   include_descriptions: true,
-  include_cover: true,
-  include_toc: false,
+  include_comparisons: false,
 };
