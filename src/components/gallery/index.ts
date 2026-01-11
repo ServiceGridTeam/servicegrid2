@@ -10,3 +10,6 @@ export { PublicGalleryViewer } from './PublicGalleryViewer';
 export { GalleryEmailGate } from './GalleryEmailGate';
 export { GalleryPhotoCard } from './GalleryPhotoCard';
 export { GalleryLightbox } from './GalleryLightbox';
+export { GalleryCommentsSection } from './GalleryCommentsSection';
+export { CommentThread } from './CommentThread';
+export { CommentForm } from './CommentForm';
