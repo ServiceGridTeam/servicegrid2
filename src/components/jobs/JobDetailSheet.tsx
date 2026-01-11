@@ -24,6 +24,7 @@ import { PhotoCaptureButton } from "./PhotoCaptureButton";
 import { MediaGalleryPreview } from "./MediaGalleryPreview";
 import { PhotoTimeline, CategoryOrganizer } from "@/components/photos";
 import { ComparisonsList } from "@/components/comparisons";
+import { GalleryShareCard } from "@/components/gallery";
 import { TimeEntriesTable } from "@/components/team/TimeEntriesTable";
 import { useUpdateJob, type JobWithCustomer } from "@/hooks/useJobs";
 import { useBusiness } from "@/hooks/useBusiness";
@@ -54,6 +55,7 @@ import {
   AlignLeft,
   Columns,
   Layers,
+  Share2,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -576,6 +578,15 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
                   )}
                 </>
               )}
+              
+              {/* Gallery Sharing */}
+              <div className="mt-4 pt-4 border-t">
+                <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                  <Share2 className="h-4 w-4" />
+                  Gallery Sharing
+                </h4>
+                <GalleryShareCard jobId={job.id} />
+              </div>
             </div>
             <Separator />
 
