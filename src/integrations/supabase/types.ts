@@ -862,6 +862,143 @@ export type Database = {
           },
         ]
       }
+      checklist_events: {
+        Row: {
+          actor_id: string | null
+          actor_name: string | null
+          business_id: string
+          created_at: string
+          event_type: string
+          id: string
+          item_id: string | null
+          item_label: string | null
+          job_checklist_id: string
+          metadata: Json | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_name?: string | null
+          business_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          item_id?: string | null
+          item_label?: string | null
+          job_checklist_id: string
+          metadata?: Json | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_name?: string | null
+          business_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          item_id?: string | null
+          item_label?: string | null
+          job_checklist_id?: string
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_events_job_checklist_id_fkey"
+            columns: ["job_checklist_id"]
+            isOneToOne: false
+            referencedRelation: "job_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_templates: {
+        Row: {
+          allow_notes: boolean
+          auto_apply: boolean
+          business_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          items: Json
+          job_type: string | null
+          name: string
+          require_all_photos: boolean
+          updated_at: string
+        }
+        Insert: {
+          allow_notes?: boolean
+          auto_apply?: boolean
+          business_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          items?: Json
+          job_type?: string | null
+          name: string
+          require_all_photos?: boolean
+          updated_at?: string
+        }
+        Update: {
+          allow_notes?: boolean
+          auto_apply?: boolean
+          business_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          items?: Json
+          job_type?: string | null
+          name?: string
+          require_all_photos?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_templates_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_templates_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clock_events: {
         Row: {
           accuracy_meters: number | null
@@ -3098,6 +3235,173 @@ export type Database = {
           },
         ]
       }
+      job_checklist_items: {
+        Row: {
+          category: string | null
+          checked: boolean
+          checked_at: string | null
+          checked_by: string | null
+          checked_by_name: string | null
+          created_at: string
+          description: string | null
+          id: string
+          item_order: number
+          job_checklist_id: string
+          label: string
+          max_photos: number
+          min_photos: number
+          notes: string | null
+          photo_ids: string[] | null
+          photo_required: boolean
+          template_item_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          checked?: boolean
+          checked_at?: string | null
+          checked_by?: string | null
+          checked_by_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_order?: number
+          job_checklist_id: string
+          label: string
+          max_photos?: number
+          min_photos?: number
+          notes?: string | null
+          photo_ids?: string[] | null
+          photo_required?: boolean
+          template_item_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          checked?: boolean
+          checked_at?: string | null
+          checked_by?: string | null
+          checked_by_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_order?: number
+          job_checklist_id?: string
+          label?: string
+          max_photos?: number
+          min_photos?: number
+          notes?: string | null
+          photo_ids?: string[] | null
+          photo_required?: boolean
+          template_item_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_checklist_items_checked_by_fkey"
+            columns: ["checked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_checklist_items_job_checklist_id_fkey"
+            columns: ["job_checklist_id"]
+            isOneToOne: false
+            referencedRelation: "job_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_checklists: {
+        Row: {
+          attached_photos: number
+          business_id: string
+          completed_at: string | null
+          completed_items: number
+          created_at: string
+          id: string
+          job_id: string
+          required_photos: number
+          started_at: string | null
+          status: string
+          template_id: string | null
+          total_items: number
+          updated_at: string
+          version: number
+          waive_reason: string | null
+          waived_at: string | null
+          waived_by: string | null
+        }
+        Insert: {
+          attached_photos?: number
+          business_id: string
+          completed_at?: string | null
+          completed_items?: number
+          created_at?: string
+          id?: string
+          job_id: string
+          required_photos?: number
+          started_at?: string | null
+          status?: string
+          template_id?: string | null
+          total_items?: number
+          updated_at?: string
+          version?: number
+          waive_reason?: string | null
+          waived_at?: string | null
+          waived_by?: string | null
+        }
+        Update: {
+          attached_photos?: number
+          business_id?: string
+          completed_at?: string | null
+          completed_items?: number
+          created_at?: string
+          id?: string
+          job_id?: string
+          required_photos?: number
+          started_at?: string | null
+          status?: string
+          template_id?: string | null
+          total_items?: number
+          updated_at?: string
+          version?: number
+          waive_reason?: string | null
+          waived_at?: string | null
+          waived_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_checklists_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_checklists_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_checklists_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_checklists_waived_by_fkey"
+            columns: ["waived_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_media: {
         Row: {
           altitude: number | null
@@ -3566,6 +3870,9 @@ export type Database = {
           assignment_reasoning: string | null
           auto_assigned: boolean | null
           business_id: string
+          checklist_id: string | null
+          checklist_progress: number | null
+          checklist_status: string | null
           city: string | null
           clock_in_distance_meters: number | null
           clock_in_location_lat: number | null
@@ -3621,6 +3928,7 @@ export type Database = {
           scheduled_end: string | null
           scheduled_start: string | null
           service_request_id: string | null
+          service_type: string | null
           state: string | null
           status: string | null
           subscription_id: string | null
@@ -3645,6 +3953,9 @@ export type Database = {
           assignment_reasoning?: string | null
           auto_assigned?: boolean | null
           business_id: string
+          checklist_id?: string | null
+          checklist_progress?: number | null
+          checklist_status?: string | null
           city?: string | null
           clock_in_distance_meters?: number | null
           clock_in_location_lat?: number | null
@@ -3700,6 +4011,7 @@ export type Database = {
           scheduled_end?: string | null
           scheduled_start?: string | null
           service_request_id?: string | null
+          service_type?: string | null
           state?: string | null
           status?: string | null
           subscription_id?: string | null
@@ -3724,6 +4036,9 @@ export type Database = {
           assignment_reasoning?: string | null
           auto_assigned?: boolean | null
           business_id?: string
+          checklist_id?: string | null
+          checklist_progress?: number | null
+          checklist_status?: string | null
           city?: string | null
           clock_in_distance_meters?: number | null
           clock_in_location_lat?: number | null
@@ -3779,6 +4094,7 @@ export type Database = {
           scheduled_end?: string | null
           scheduled_start?: string | null
           service_request_id?: string | null
+          service_type?: string | null
           state?: string | null
           status?: string | null
           subscription_id?: string | null
@@ -3819,6 +4135,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "job_checklists"
             referencedColumns: ["id"]
           },
           {
