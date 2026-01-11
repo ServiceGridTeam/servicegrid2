@@ -6664,6 +6664,21 @@ export type Database = {
         }[]
       }
       cleanup_expired_rate_limits: { Args: never; Returns: undefined }
+      cleanup_expired_report_files: {
+        Args: never
+        Returns: {
+          files_marked: number
+          storage_paths: string[]
+        }[]
+      }
+      enqueue_report_generation: {
+        Args: {
+          p_business_id: string
+          p_priority?: number
+          p_report_id: string
+        }
+        Returns: string
+      }
       generate_comparison_share_token: { Args: never; Returns: string }
       generate_secure_share_token: {
         Args: never
@@ -6820,6 +6835,14 @@ export type Database = {
       validate_portal_session: {
         Args: { session_token: string }
         Returns: string
+      }
+      validate_share_token: {
+        Args: { p_token: string }
+        Returns: {
+          error_code: string
+          is_valid: boolean
+          share_id: string
+        }[]
       }
     }
     Enums: {
