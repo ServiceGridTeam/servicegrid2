@@ -8174,6 +8174,10 @@ export type Database = {
         Args: { p_entry_id: string }
         Returns: number
       }
+      can_manage_conversation: {
+        Args: { _conversation_id: string; _profile_id?: string }
+        Returns: boolean
+      }
       cancel_subscription: {
         Args: {
           p_cancelled_by?: string
@@ -8368,6 +8372,10 @@ export type Database = {
             Args: { p_fingerprint_hash: string; p_share_id: string }
             Returns: boolean
           }
+      is_conversation_participant: {
+        Args: { _conversation_id: string; _profile_id?: string }
+        Returns: boolean
+      }
       pause_subscription: {
         Args: {
           p_end_date?: string
