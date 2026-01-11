@@ -8340,6 +8340,10 @@ export type Database = {
       }
       get_user_business_id: { Args: never; Returns: string }
       get_user_business_ids: { Args: { p_user_id?: string }; Returns: string[] }
+      get_user_conversation_ids: {
+        Args: { p_profile_id?: string }
+        Returns: string[]
+      }
       get_user_role_in_business: {
         Args: { p_business_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
