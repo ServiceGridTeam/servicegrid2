@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Building2, Bell, CreditCard, CheckCircle, AlertCircle, ExternalLink, Users, Puzzle, Mail, Zap } from "lucide-react";
+import { Loader2, User, Building2, Bell, CreditCard, CheckCircle, AlertCircle, ExternalLink, Users, Puzzle, Mail, Zap, ClipboardList } from "lucide-react";
 import { TeamManagement } from "@/components/settings/TeamManagement";
 import { GoogleMapsVerificationCard } from "@/components/settings/GoogleMapsVerificationCard";
 import { GeofenceSettingsCard } from "@/components/settings/GeofenceSettingsCard";
@@ -27,6 +27,7 @@ import { RoleGate } from "@/components/auth/RoleGate";
 import { EmailConnectionCard, EmailRulesManager } from "@/components/email";
 import { useEmailConnections } from "@/hooks/useEmailConnections";
 import { AutomationSettingsCard } from "@/components/settings/AutomationSettingsCard";
+import { ChecklistTemplateManager } from "@/components/checklists";
 
 export default function Settings() {
   const { data: profile, isLoading: profileLoading } = useProfile();
@@ -153,6 +154,10 @@ export default function Settings() {
           <TabsTrigger value="integrations" className="gap-2">
             <Puzzle className="h-4 w-4" />
             Integrations
+          </TabsTrigger>
+          <TabsTrigger value="checklists" className="gap-2">
+            <ClipboardList className="h-4 w-4" />
+            Checklists
           </TabsTrigger>
           <TabsTrigger value="notifications" className="gap-2">
             <Bell className="h-4 w-4" />
@@ -533,6 +538,10 @@ export default function Settings() {
               <TagManager />
             </div>
           </RoleGate>
+        </TabsContent>
+
+        <TabsContent value="checklists" className="space-y-6">
+          <ChecklistTemplateManager />
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">
