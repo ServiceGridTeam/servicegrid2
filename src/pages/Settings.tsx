@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Building2, Bell, CreditCard, CheckCircle, AlertCircle, ExternalLink, Users, Puzzle, Mail } from "lucide-react";
+import { Loader2, User, Building2, Bell, CreditCard, CheckCircle, AlertCircle, ExternalLink, Users, Puzzle, Mail, Zap } from "lucide-react";
 import { TeamManagement } from "@/components/settings/TeamManagement";
 import { GoogleMapsVerificationCard } from "@/components/settings/GoogleMapsVerificationCard";
 import { GeofenceSettingsCard } from "@/components/settings/GeofenceSettingsCard";
@@ -26,6 +26,7 @@ import { TagManager } from "@/components/tags/TagManager";
 import { RoleGate } from "@/components/auth/RoleGate";
 import { EmailConnectionCard, EmailRulesManager } from "@/components/email";
 import { useEmailConnections } from "@/hooks/useEmailConnections";
+import { AutomationSettingsCard } from "@/components/settings/AutomationSettingsCard";
 
 export default function Settings() {
   const { data: profile, isLoading: profileLoading } = useProfile();
@@ -144,6 +145,10 @@ export default function Settings() {
           <TabsTrigger value="payments" className="gap-2">
             <CreditCard className="h-4 w-4" />
             Payments
+          </TabsTrigger>
+          <TabsTrigger value="automations" className="gap-2">
+            <Zap className="h-4 w-4" />
+            Automations
           </TabsTrigger>
           <TabsTrigger value="integrations" className="gap-2">
             <Puzzle className="h-4 w-4" />

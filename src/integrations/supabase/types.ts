@@ -181,15 +181,153 @@ export type Database = {
           },
         ]
       }
+      automation_failed_queue: {
+        Row: {
+          attempts: number
+          business_id: string
+          created_at: string
+          error_history: Json | null
+          error_message: string | null
+          id: string
+          last_attempt_at: string
+          max_attempts: number
+          next_retry_at: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          rule_id: string | null
+          status: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          attempts?: number
+          business_id: string
+          created_at?: string
+          error_history?: Json | null
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string
+          max_attempts?: number
+          next_retry_at?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          rule_id?: string | null
+          status?: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          attempts?: number
+          business_id?: string
+          created_at?: string
+          error_history?: Json | null
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string
+          max_attempts?: number
+          next_retry_at?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          rule_id?: string | null
+          status?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_failed_queue_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_failed_queue_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_logs: {
+        Row: {
+          action_type: string
+          business_id: string
+          created_at: string
+          cron_run_id: string | null
+          id: string
+          idempotency_key: string | null
+          result: Json | null
+          rule_id: string | null
+          rule_name: string
+          status: string
+          target_id: string
+          target_type: string
+          trigger_type: string
+        }
+        Insert: {
+          action_type: string
+          business_id: string
+          created_at?: string
+          cron_run_id?: string | null
+          id?: string
+          idempotency_key?: string | null
+          result?: Json | null
+          rule_id?: string | null
+          rule_name: string
+          status: string
+          target_id: string
+          target_type: string
+          trigger_type: string
+        }
+        Update: {
+          action_type?: string
+          business_id?: string
+          created_at?: string
+          cron_run_id?: string | null
+          id?: string
+          idempotency_key?: string | null
+          result?: Json | null
+          rule_id?: string | null
+          rule_name?: string
+          status?: string
+          target_id?: string
+          target_type?: string
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_logs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_logs_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_rules: {
         Row: {
           action_config: Json | null
           action_type: string
           business_id: string
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           description: string | null
+          execution_count: number | null
           id: string
           is_active: boolean | null
+          last_error_at: string | null
+          last_error_message: string | null
+          last_executed_at: string | null
           name: string
           trigger_config: Json | null
           trigger_type: string
@@ -200,9 +338,15 @@ export type Database = {
           action_type: string
           business_id: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
+          execution_count?: number | null
           id?: string
           is_active?: boolean | null
+          last_error_at?: string | null
+          last_error_message?: string | null
+          last_executed_at?: string | null
           name: string
           trigger_config?: Json | null
           trigger_type: string
@@ -213,9 +357,15 @@ export type Database = {
           action_type?: string
           business_id?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
+          execution_count?: number | null
           id?: string
           is_active?: boolean | null
+          last_error_at?: string | null
+          last_error_message?: string | null
+          last_executed_at?: string | null
           name?: string
           trigger_config?: Json | null
           trigger_type?: string
@@ -227,6 +377,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_rules_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -765,6 +922,30 @@ export type Database = {
           status?: string
           user_id?: string
           within_geofence?: boolean
+        }
+        Relationships: []
+      }
+      cron_locks: {
+        Row: {
+          expires_at: string
+          heartbeat_at: string | null
+          lock_name: string
+          locked_at: string
+          locked_by: string
+        }
+        Insert: {
+          expires_at: string
+          heartbeat_at?: string | null
+          lock_name: string
+          locked_at?: string
+          locked_by: string
+        }
+        Update: {
+          expires_at?: string
+          heartbeat_at?: string | null
+          lock_name?: string
+          locked_at?: string
+          locked_by?: string
         }
         Relationships: []
       }
@@ -2713,6 +2894,7 @@ export type Database = {
           paid_at: string | null
           public_token: string | null
           quote_id: string | null
+          reminder_count: number | null
           sent_at: string | null
           show_photos: boolean | null
           status: string | null
@@ -2742,6 +2924,7 @@ export type Database = {
           paid_at?: string | null
           public_token?: string | null
           quote_id?: string | null
+          reminder_count?: number | null
           sent_at?: string | null
           show_photos?: boolean | null
           status?: string | null
@@ -2771,6 +2954,7 @@ export type Database = {
           paid_at?: string | null
           public_token?: string | null
           quote_id?: string | null
+          reminder_count?: number | null
           sent_at?: string | null
           show_photos?: boolean | null
           status?: string | null
@@ -6654,6 +6838,7 @@ export type Database = {
           reason: string
         }[]
       }
+      cleanup_automation_data: { Args: never; Returns: Json }
       cleanup_expired_annotation_locks: { Args: never; Returns: number }
       cleanup_expired_gallery_data: {
         Args: never
@@ -6781,6 +6966,10 @@ export type Database = {
           thumbnail_url: string
           total_count: number
         }[]
+      }
+      seed_default_automation_rules: {
+        Args: { p_business_id: string }
+        Returns: undefined
       }
       set_job_cover_photo: {
         Args: { p_job_id: string; p_media_id: string }
