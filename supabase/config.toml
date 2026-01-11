@@ -182,3 +182,9 @@ verify_jwt = false
 
 [functions.cleanup-gallery-data]
 verify_jwt = false
+
+[functions.generate-subscription-jobs]
+verify_jwt = false
+
+[functions.generate-subscription-invoices]
+verify_jwt = false
