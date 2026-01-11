@@ -278,6 +278,7 @@ export function MessageThread({ conversationId, className }: MessageThreadProps)
 
       {/* Composer */}
       <MessageComposer
+        conversationId={conversationId}
         onSend={handleSend}
         onTyping={sendTyping}
         replyTo={replyTo}

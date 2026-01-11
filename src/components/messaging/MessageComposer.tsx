@@ -7,19 +7,23 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 import { 
   Send, 
   Paperclip, 
   X, 
   Image as ImageIcon,
   FileText,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { triggerHaptic } from '@/lib/messageUtils';
+import { triggerHaptic, formatFileSize } from '@/lib/messageUtils';
+import { useAttachmentUpload } from '@/hooks/useAttachmentUpload';
 import type { MessageWithDetails } from '@/hooks/useMessages';
 import type { Attachment } from '@/lib/messageUtils';
 
 interface MessageComposerProps {
+  conversationId: string;
   onSend: (content: string, attachments?: Attachment[], replyToId?: string) => void;
   onTyping?: (isTyping: boolean) => void;
   replyTo?: MessageWithDetails | null;
@@ -30,6 +34,7 @@ interface MessageComposerProps {
 }
 
 export function MessageComposer({
+  conversationId,
   onSend,
   onTyping,
   replyTo,
@@ -40,9 +45,12 @@ export function MessageComposer({
 }: MessageComposerProps) {
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const { uploadAttachments, isUploading, progress } = useAttachmentUpload();
 
   // Auto-resize textarea
   useEffect(() => {
@@ -81,8 +89,9 @@ export function MessageComposer({
     handleTyping();
   }, [handleTyping]);
 
-  const handleSend = useCallback(() => {
-    if (!content.trim() && attachments.length === 0) return;
+  const handleSend = useCallback(async () => {
+    if (!content.trim() && attachments.length === 0 && pendingFiles.length === 0) return;
+    if (isUploading) return;
     
     // 0ms haptic feedback
     triggerHaptic();
@@ -95,17 +104,26 @@ export function MessageComposer({
       }
     }
     
-    onSend(content.trim(), attachments.length > 0 ? attachments : undefined, replyTo?.id);
+    let finalAttachments = [...attachments];
+    
+    // Upload any pending files first
+    if (pendingFiles.length > 0) {
+      const uploadedAttachments = await uploadAttachments(pendingFiles, conversationId);
+      finalAttachments = [...finalAttachments, ...uploadedAttachments];
+    }
+    
+    onSend(content.trim(), finalAttachments.length > 0 ? finalAttachments : undefined, replyTo?.id);
     
     // Reset state
     setContent('');
     setAttachments([]);
+    setPendingFiles([]);
     
     // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
-  }, [content, attachments, replyTo?.id, onSend, onTyping]);
+  }, [content, attachments, pendingFiles, replyTo?.id, onSend, onTyping, isUploading, uploadAttachments, conversationId]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Send on Enter (without Shift)
@@ -119,9 +137,13 @@ export function MessageComposer({
     const files = e.target.files;
     if (!files) return;
 
-    // Convert files to attachments (mock - would upload in real implementation)
-    const newAttachments: Attachment[] = Array.from(files).map((file) => ({
-      id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    // Add files to pending list with local preview
+    const newFiles = Array.from(files);
+    setPendingFiles((prev) => [...prev, ...newFiles]);
+    
+    // Create local preview attachments
+    const newAttachments: Attachment[] = newFiles.map((file, index) => ({
+      id: `pending-${Date.now()}-${index}`,
       name: file.name,
       url: URL.createObjectURL(file),
       type: file.type.startsWith('image/') ? 'image' as const : 
@@ -140,10 +162,20 @@ export function MessageComposer({
   }, []);
 
   const handleRemoveAttachment = useCallback((attachmentId: string) => {
+    const index = attachments.findIndex((a) => a.id === attachmentId);
+    if (index !== -1 && attachmentId.startsWith('pending-')) {
+      // Also remove from pending files
+      setPendingFiles((prev) => prev.filter((_, i) => i !== index - (attachments.length - pendingFiles.length)));
+    }
     setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
-  }, []);
+  }, [attachments, pendingFiles]);
 
-  const canSend = (content.trim() || attachments.length > 0) && !disabled;
+  const canSend = (content.trim() || attachments.length > 0) && !disabled && !isUploading;
+  
+  // Calculate overall upload progress
+  const overallProgress = Object.values(progress).length > 0
+    ? Object.values(progress).reduce((sum, p) => sum + p, 0) / Object.values(progress).length
+    : 0;
 
   return (
     <div className={cn('border-t bg-background', className)}>
@@ -226,6 +258,17 @@ export function MessageComposer({
         )}
       </AnimatePresence>
 
+      {/* Upload progress bar */}
+      {isUploading && (
+        <div className="px-4 py-2 border-b">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            <span>Uploading attachments...</span>
+          </div>
+          <Progress value={overallProgress} className="h-1" />
+        </div>
+      )}
+
       {/* Input area */}
       <div className="flex items-end gap-2 p-4">
         {/* Attachment button */}
@@ -234,7 +277,7 @@ export function MessageComposer({
           size="icon"
           className="shrink-0"
           onClick={() => fileInputRef.current?.click()}
-          disabled={disabled}
+          disabled={disabled || isUploading}
         >
           <Paperclip className="h-5 w-5" />
         </Button>
@@ -254,7 +297,7 @@ export function MessageComposer({
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          disabled={disabled}
+          disabled={disabled || isUploading}
           className="min-h-[40px] max-h-[150px] resize-none py-2"
           rows={1}
         />
@@ -266,7 +309,11 @@ export function MessageComposer({
           onClick={handleSend}
           disabled={!canSend}
         >
-          <Send className="h-5 w-5" />
+          {isUploading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Send className="h-5 w-5" />
+          )}
         </Button>
       </div>
     </div>
