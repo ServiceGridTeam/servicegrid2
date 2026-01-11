@@ -7609,6 +7609,16 @@ export type Database = {
           facet_value: string
         }[]
       }
+      get_subscription_stats: {
+        Args: { p_business_id: string }
+        Returns: {
+          active_count: number
+          monthly_recurring_revenue: number
+          paused_count: number
+          pending_invoices_count: number
+          upcoming_services_count: number
+        }[]
+      }
       get_user_business_id: { Args: never; Returns: string }
       get_user_business_ids: { Args: { p_user_id?: string }; Returns: string[] }
       get_user_role_in_business: {
