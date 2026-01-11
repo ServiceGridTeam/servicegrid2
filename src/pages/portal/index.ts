@@ -8,3 +8,4 @@ export { default as PortalSchedule } from './PortalSchedule';
 export { default as PortalJobDetail } from './PortalJobDetail';
 export { default as PortalServiceRequest } from './PortalServiceRequest';
 export { default as PortalAccount } from './PortalAccount';
+export { default as PortalSubscriptions } from './PortalSubscriptions';
