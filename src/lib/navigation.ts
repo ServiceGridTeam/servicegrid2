@@ -18,6 +18,7 @@ import {
   Inbox,
   Star,
   Camera,
+  BarChart3,
   LucideIcon,
 } from 'lucide-react';
 import type { AppRole } from './permissions';
@@ -111,6 +112,12 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
     url: '/photos',
     icon: Camera,
     minRole: 'technician',
+  },
+  {
+    title: 'Gallery Analytics',
+    url: '/gallery-analytics',
+    icon: BarChart3,
+    minRole: 'admin',
   },
 ];
 

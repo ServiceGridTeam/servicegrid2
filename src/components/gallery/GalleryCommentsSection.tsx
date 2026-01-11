@@ -17,6 +17,7 @@ interface GalleryCommentsSectionProps {
   token: string;
   mediaId: string;
   allowComments: boolean;
+  commentsEnabled?: boolean; // Feature flag from business settings
   isCollapsible?: boolean;
   defaultExpanded?: boolean;
 }
@@ -25,6 +26,7 @@ export function GalleryCommentsSection({
   token,
   mediaId,
   allowComments,
+  commentsEnabled = true,
   isCollapsible = true,
   defaultExpanded = false,
 }: GalleryCommentsSectionProps) {
@@ -132,7 +134,12 @@ export function GalleryCommentsSection({
     </div>
   );
 
-  // Not allowed message
+  // Not enabled at business level
+  if (!commentsEnabled) {
+    return null;
+  }
+
+  // Not allowed for this gallery
   if (!allowComments) {
     return (
       <div className="border-t bg-muted/30">
