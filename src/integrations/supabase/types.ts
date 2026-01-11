@@ -8182,6 +8182,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_conversation_participant: {
+        Args: { p_conversation_id: string; p_profile_id?: string }
+        Returns: boolean
+      }
       check_duplicate_photo: {
         Args: { p_business_id: string; p_content_hash: string }
         Returns: {
@@ -8340,10 +8344,6 @@ export type Database = {
       }
       get_user_business_id: { Args: never; Returns: string }
       get_user_business_ids: { Args: { p_user_id?: string }; Returns: string[] }
-      get_user_conversation_ids: {
-        Args: { p_profile_id?: string }
-        Returns: string[]
-      }
       get_user_role_in_business: {
         Args: { p_business_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -8372,8 +8372,8 @@ export type Database = {
             Args: { p_fingerprint_hash: string; p_share_id: string }
             Returns: boolean
           }
-      is_participant_in_conversation: {
-        Args: { p_conversation_id: string; p_profile_id?: string }
+      is_business_admin_or_owner: {
+        Args: { p_business_id: string }
         Returns: boolean
       }
       pause_subscription: {
