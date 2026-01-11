@@ -6160,6 +6160,105 @@ export type Database = {
           },
         ]
       }
+      subscription_events: {
+        Row: {
+          actor_id: string | null
+          actor_type: string
+          business_id: string
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          notes: string | null
+          subscription_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type?: string
+          business_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          subscription_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string
+          business_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_events_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_items: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          quantity: number
+          sort_order: number
+          subscription_id: string
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          quantity?: number
+          sort_order?: number
+          subscription_id: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          quantity?: number
+          sort_order?: number
+          subscription_id?: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_items_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_metrics: {
         Row: {
           dimensions: Json | null
@@ -6212,6 +6311,278 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: true
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_schedules: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          invoice_id: string | null
+          is_customer_skip: boolean | null
+          job_id: string | null
+          scheduled_date: string
+          skip_reason: string | null
+          skipped_at: string | null
+          skipped_by: string | null
+          status: string
+          subscription_id: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          is_customer_skip?: boolean | null
+          job_id?: string | null
+          scheduled_date: string
+          skip_reason?: string | null
+          skipped_at?: string | null
+          skipped_by?: string | null
+          status?: string
+          subscription_id: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          is_customer_skip?: boolean | null
+          job_id?: string | null
+          scheduled_date?: string
+          skip_reason?: string | null
+          skipped_at?: string | null
+          skipped_by?: string | null
+          status?: string
+          subscription_id?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_schedules_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_schedules_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_schedules_skipped_by_fkey"
+            columns: ["skipped_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_schedules_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          allow_customer_pause: boolean | null
+          allow_customer_skip: boolean | null
+          billing_model: string
+          business_id: string
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          converted_from_quote_at: string | null
+          created_at: string
+          created_by: string | null
+          custom_interval_days: number | null
+          customer_id: string
+          customer_notes: string | null
+          customer_skips_this_year: number | null
+          description: string | null
+          discount_amount: number | null
+          discount_percent: number | null
+          end_date: string | null
+          frequency: string
+          id: string
+          internal_notes: string | null
+          last_billing_date: string | null
+          last_payment_failure_at: string | null
+          last_payment_failure_reason: string | null
+          last_service_date: string | null
+          max_customer_skips_per_year: number | null
+          name: string
+          next_billing_date: string | null
+          next_service_date: string | null
+          pause_end_date: string | null
+          pause_reason: string | null
+          pause_start_date: string | null
+          payment_failure_count: number | null
+          preferred_day_of_week: number | null
+          preferred_time_window: Json | null
+          previous_status: string | null
+          price: number
+          service_plan_id: string | null
+          source_quote_id: string | null
+          start_date: string
+          status: string
+          status_changed_at: string | null
+          subscription_number: string
+          tax_rate: number | null
+          timezone: string
+          total_invoices_generated: number | null
+          total_jobs_generated: number | null
+          total_revenue: number | null
+          updated_at: string
+        }
+        Insert: {
+          allow_customer_pause?: boolean | null
+          allow_customer_skip?: boolean | null
+          billing_model?: string
+          business_id: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          converted_from_quote_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_interval_days?: number | null
+          customer_id: string
+          customer_notes?: string | null
+          customer_skips_this_year?: number | null
+          description?: string | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          end_date?: string | null
+          frequency?: string
+          id?: string
+          internal_notes?: string | null
+          last_billing_date?: string | null
+          last_payment_failure_at?: string | null
+          last_payment_failure_reason?: string | null
+          last_service_date?: string | null
+          max_customer_skips_per_year?: number | null
+          name: string
+          next_billing_date?: string | null
+          next_service_date?: string | null
+          pause_end_date?: string | null
+          pause_reason?: string | null
+          pause_start_date?: string | null
+          payment_failure_count?: number | null
+          preferred_day_of_week?: number | null
+          preferred_time_window?: Json | null
+          previous_status?: string | null
+          price?: number
+          service_plan_id?: string | null
+          source_quote_id?: string | null
+          start_date: string
+          status?: string
+          status_changed_at?: string | null
+          subscription_number: string
+          tax_rate?: number | null
+          timezone?: string
+          total_invoices_generated?: number | null
+          total_jobs_generated?: number | null
+          total_revenue?: number | null
+          updated_at?: string
+        }
+        Update: {
+          allow_customer_pause?: boolean | null
+          allow_customer_skip?: boolean | null
+          billing_model?: string
+          business_id?: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          converted_from_quote_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_interval_days?: number | null
+          customer_id?: string
+          customer_notes?: string | null
+          customer_skips_this_year?: number | null
+          description?: string | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          end_date?: string | null
+          frequency?: string
+          id?: string
+          internal_notes?: string | null
+          last_billing_date?: string | null
+          last_payment_failure_at?: string | null
+          last_payment_failure_reason?: string | null
+          last_service_date?: string | null
+          max_customer_skips_per_year?: number | null
+          name?: string
+          next_billing_date?: string | null
+          next_service_date?: string | null
+          pause_end_date?: string | null
+          pause_reason?: string | null
+          pause_start_date?: string | null
+          payment_failure_count?: number | null
+          preferred_day_of_week?: number | null
+          preferred_time_window?: Json | null
+          previous_status?: string | null
+          price?: number
+          service_plan_id?: string | null
+          source_quote_id?: string | null
+          start_date?: string
+          status?: string
+          status_changed_at?: string | null
+          subscription_number?: string
+          tax_rate?: number | null
+          timezone?: string
+          total_invoices_generated?: number | null
+          total_jobs_generated?: number | null
+          total_revenue?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_service_plan_id_fkey"
+            columns: ["service_plan_id"]
+            isOneToOne: false
+            referencedRelation: "service_plans"
             referencedColumns: ["id"]
           },
         ]
