@@ -89,6 +89,15 @@ interface ErrorResponse {
 
 type ApiResponse = GalleryResponse | EmailRequiredResponse | ErrorResponse;
 
+// Type guard functions for proper type narrowing
+function isEmailRequiredResponse(data: ApiResponse): data is EmailRequiredResponse {
+  return 'requires_email' in data && data.requires_email === true;
+}
+
+function isErrorResponse(data: ApiResponse): data is ErrorResponse {
+  return 'error' in data;
+}
+
 export function usePublicGallery(token: string | undefined) {
   const [email, setEmail] = useState<string | null>(null);
   const [fingerprint, setFingerprint] = useState<string | null>(null);
@@ -126,7 +135,7 @@ export function usePublicGallery(token: string | undefined) {
     const data = await response.json() as ApiResponse;
 
     // Handle email required response
-    if ('requires_email' in data && data.requires_email) {
+    if (isEmailRequiredResponse(data)) {
       return {
         gallery: null,
         requiresEmail: true,
@@ -136,7 +145,7 @@ export function usePublicGallery(token: string | undefined) {
     }
 
     // Handle error response
-    if ('error' in data) {
+    if (isErrorResponse(data)) {
       return {
         gallery: null,
         requiresEmail: false,
@@ -145,7 +154,7 @@ export function usePublicGallery(token: string | undefined) {
       };
     }
 
-    // Success
+    // Success - TypeScript now knows it's GalleryResponse
     return {
       gallery: data.gallery,
       requiresEmail: false,

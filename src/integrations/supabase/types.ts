@@ -4471,6 +4471,7 @@ export type Database = {
           revoked_at: string | null
           revoked_by: string | null
           share_token: string
+          show_job_details: boolean | null
           token_hash: string
           unique_visitors: number | null
           updated_at: string | null
@@ -4502,6 +4503,7 @@ export type Database = {
           revoked_at?: string | null
           revoked_by?: string | null
           share_token: string
+          show_job_details?: boolean | null
           token_hash: string
           unique_visitors?: number | null
           updated_at?: string | null
@@ -4533,6 +4535,7 @@ export type Database = {
           revoked_at?: string | null
           revoked_by?: string | null
           share_token?: string
+          show_job_details?: boolean | null
           token_hash?: string
           unique_visitors?: number | null
           updated_at?: string | null
