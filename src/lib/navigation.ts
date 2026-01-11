@@ -19,6 +19,7 @@ import {
   Star,
   Camera,
   BarChart3,
+  RefreshCw,
   LucideIcon,
 } from 'lucide-react';
 import type { AppRole } from './permissions';
@@ -75,6 +76,12 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
     title: 'Invoices',
     url: '/invoices',
     icon: Receipt,
+    minRole: 'admin',
+  },
+  {
+    title: 'Subscriptions',
+    url: '/subscriptions',
+    icon: RefreshCw,
     minRole: 'admin',
   },
   {
