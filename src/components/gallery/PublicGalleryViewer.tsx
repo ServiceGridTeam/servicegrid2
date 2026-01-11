@@ -19,9 +19,10 @@ import { ComparisonDisplayMode } from '@/types/annotations';
 
 interface PublicGalleryViewerProps {
   gallery: GalleryData;
+  shareToken: string;
 }
 
-export function PublicGalleryViewer({ gallery }: PublicGalleryViewerProps) {
+export function PublicGalleryViewer({ gallery, shareToken }: PublicGalleryViewerProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -170,6 +171,8 @@ export function PublicGalleryViewer({ gallery }: PublicGalleryViewerProps) {
         onOpenChange={setLightboxOpen}
         onIndexChange={setLightboxIndex}
         allowDownload={gallery.permissions.allow_download}
+        allowComments={gallery.permissions.allow_comments}
+        shareToken={shareToken}
       />
     </div>
   );

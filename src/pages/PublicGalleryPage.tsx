@@ -66,8 +66,8 @@ export default function PublicGalleryPage() {
   }
 
   // Gallery loaded
-  if (gallery) {
-    return <PublicGalleryViewer gallery={gallery} />;
+  if (gallery && token) {
+    return <PublicGalleryViewer gallery={gallery} shareToken={token} />;
   }
 
   // Fallback - shouldn't reach here

@@ -13,8 +13,10 @@ import {
   Download,
   ZoomIn,
   ZoomOut,
+  MessageCircle,
 } from 'lucide-react';
 import type { GalleryPhoto } from '@/hooks/usePublicGallery';
+import { GalleryCommentsSection } from './GalleryCommentsSection';
 
 interface GalleryLightboxProps {
   photos: GalleryPhoto[];
@@ -23,6 +25,8 @@ interface GalleryLightboxProps {
   onOpenChange: (open: boolean) => void;
   onIndexChange: (index: number) => void;
   allowDownload: boolean;
+  allowComments?: boolean;
+  shareToken?: string;
 }
 
 export function GalleryLightbox({
@@ -32,8 +36,11 @@ export function GalleryLightbox({
   onOpenChange,
   onIndexChange,
   allowDownload,
+  allowComments = false,
+  shareToken,
 }: GalleryLightboxProps) {
   const [isZoomed, setIsZoomed] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const currentPhoto = photos[currentIndex];
@@ -186,6 +193,21 @@ export function GalleryLightbox({
             {isZoomed ? <ZoomOut className="h-4 w-4" /> : <ZoomIn className="h-4 w-4" />}
           </Button>
 
+          {/* Comments toggle */}
+          {allowComments && shareToken && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`text-white hover:bg-white/20 h-8 w-8 ${showComments ? 'bg-white/20' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowComments(!showComments);
+              }}
+            >
+              <MessageCircle className="h-4 w-4" />
+            </Button>
+          )}
+
           {/* Download */}
           {allowDownload && (
             <Button
@@ -203,11 +225,27 @@ export function GalleryLightbox({
         </div>
 
         {/* Photo description */}
-        {currentPhoto.description && (
+        {currentPhoto.description && !showComments && (
           <div className="absolute bottom-16 left-1/2 -translate-x-1/2 max-w-md text-center">
             <p className="text-white text-sm bg-black/60 rounded-lg px-4 py-2">
               {currentPhoto.description}
             </p>
+          </div>
+        )}
+
+        {/* Comments section */}
+        {showComments && allowComments && shareToken && (
+          <div 
+            className="absolute bottom-16 left-4 right-4 max-h-[50vh] overflow-hidden rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GalleryCommentsSection
+              token={shareToken}
+              mediaId={currentPhoto.id}
+              allowComments={allowComments}
+              isCollapsible={false}
+              defaultExpanded={true}
+            />
           </div>
         )}
       </DialogContent>
