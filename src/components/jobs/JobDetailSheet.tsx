@@ -24,7 +24,7 @@ import { PhotoCaptureButton } from "./PhotoCaptureButton";
 import { MediaGalleryPreview } from "./MediaGalleryPreview";
 import { PhotoTimeline, CategoryOrganizer } from "@/components/photos";
 import { ComparisonsList } from "@/components/comparisons";
-import { GalleryShareCard } from "@/components/gallery";
+import { GalleryShareCard, PhotoReportsSection } from "@/components/gallery";
 import { TimeEntriesTable } from "@/components/team/TimeEntriesTable";
 import { useUpdateJob, type JobWithCustomer } from "@/hooks/useJobs";
 import { useBusiness } from "@/hooks/useBusiness";
@@ -586,6 +586,11 @@ export function JobDetailSheet({ job, open, onOpenChange, onEdit }: JobDetailShe
                   Gallery Sharing
                 </h4>
                 <GalleryShareCard jobId={job.id} />
+              </div>
+
+              {/* Photo Reports */}
+              <div className="mt-4 pt-4 border-t">
+                <PhotoReportsSection jobId={job.id} />
               </div>
             </div>
             <Separator />
