@@ -7459,6 +7459,14 @@ export type Database = {
         Args: { p_entry_id: string }
         Returns: number
       }
+      cancel_subscription: {
+        Args: {
+          p_cancelled_by?: string
+          p_reason?: string
+          p_subscription_id: string
+        }
+        Returns: boolean
+      }
       check_duplicate_photo: {
         Args: { p_business_id: string; p_content_hash: string }
         Returns: {
@@ -7499,6 +7507,27 @@ export type Database = {
           storage_paths: string[]
         }[]
       }
+      create_subscription: {
+        Args: {
+          p_activate_immediately?: boolean
+          p_billing_model?: string
+          p_business_id: string
+          p_created_by?: string
+          p_customer_id: string
+          p_frequency?: string
+          p_internal_notes?: string
+          p_line_items?: Json
+          p_notes?: string
+          p_preferred_day?: number
+          p_preferred_time_end?: string
+          p_preferred_time_start?: string
+          p_price_per_visit?: number
+          p_service_plan_id?: string
+          p_start_date?: string
+          p_timezone?: string
+        }
+        Returns: string
+      }
       enqueue_report_generation: {
         Args: {
           p_business_id: string
@@ -7508,6 +7537,10 @@ export type Database = {
         Returns: string
       }
       generate_comparison_share_token: { Args: never; Returns: string }
+      generate_schedules_for_active_subscriptions: {
+        Args: { p_business_id?: string; p_months_ahead?: number }
+        Returns: number
+      }
       generate_secure_share_token: {
         Args: never
         Returns: {
@@ -7519,9 +7552,26 @@ export type Database = {
         Args: { bus_id: string }
         Returns: string
       }
+      generate_subscription_invoice: {
+        Args: {
+          p_billing_period_end?: string
+          p_billing_period_start?: string
+          p_schedule_id?: string
+          p_subscription_id: string
+        }
+        Returns: string
+      }
+      generate_subscription_job: {
+        Args: { p_schedule_id: string }
+        Returns: string
+      }
       generate_subscription_number: {
         Args: { p_business_id: string }
         Returns: string
+      }
+      generate_subscription_schedules: {
+        Args: { p_months_ahead?: number; p_subscription_id: string }
+        Returns: number
       }
       get_customer_account_businesses: {
         Args: { account_id: string }
@@ -7529,6 +7579,26 @@ export type Database = {
           business_id: string
           customer_id: string
           is_primary: boolean
+        }[]
+      }
+      get_pending_schedules_for_processing: {
+        Args: {
+          p_business_id: string
+          p_limit?: number
+          p_lookahead_days?: number
+          p_offset?: number
+        }
+        Returns: {
+          billing_model: string
+          customer_id: string
+          customer_name: string
+          frequency: string
+          preferred_time_end: string
+          preferred_time_start: string
+          schedule_id: string
+          scheduled_date: string
+          subscription_id: string
+          subscription_number: string
         }[]
       }
       get_photo_facets: {
@@ -7569,6 +7639,28 @@ export type Database = {
             Args: { p_fingerprint_hash: string; p_share_id: string }
             Returns: boolean
           }
+      pause_subscription: {
+        Args: {
+          p_end_date?: string
+          p_paused_by?: string
+          p_reason?: string
+          p_start_date?: string
+          p_subscription_id: string
+        }
+        Returns: boolean
+      }
+      portal_get_subscriptions: {
+        Args: { p_business_id: string; p_customer_id: string }
+        Returns: Json
+      }
+      portal_skip_visit: {
+        Args: {
+          p_customer_id: string
+          p_reason?: string
+          p_schedule_id: string
+        }
+        Returns: boolean
+      }
       rebuild_media_search_text: {
         Args: { p_media_id: string }
         Returns: undefined
@@ -7579,6 +7671,10 @@ export type Database = {
         Returns: boolean
       }
       release_stale_queue_locks: { Args: never; Returns: number }
+      resume_subscription: {
+        Args: { p_resumed_by?: string; p_subscription_id: string }
+        Returns: boolean
+      }
       save_annotation_version: {
         Args: { p_annotation_data: Json; p_media_id: string; p_user_id: string }
         Returns: Json
@@ -7630,6 +7726,15 @@ export type Database = {
           _phone?: string
         }
         Returns: string
+      }
+      skip_scheduled_visit: {
+        Args: {
+          p_expected_version?: number
+          p_reason?: string
+          p_schedule_id: string
+          p_skipped_by?: string
+        }
+        Returns: boolean
       }
       switch_active_business: { Args: { p_business_id: string }; Returns: Json }
       update_worker_status: {
