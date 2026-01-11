@@ -677,6 +677,7 @@ export type Database = {
           country: string | null
           created_at: string
           default_geofence_radius_meters: number | null
+          default_timezone: string | null
           email: string | null
           geofence_allow_override: boolean | null
           geofence_enforcement_mode: string | null
@@ -692,6 +693,8 @@ export type Database = {
           state: string | null
           stripe_account_id: string | null
           stripe_onboarding_complete: boolean | null
+          subscription_job_lookahead_days: number | null
+          subscription_max_payment_retries: number | null
           timezone: string | null
           updated_at: string
           visitor_hash_salt: string | null
@@ -705,6 +708,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           default_geofence_radius_meters?: number | null
+          default_timezone?: string | null
           email?: string | null
           geofence_allow_override?: boolean | null
           geofence_enforcement_mode?: string | null
@@ -720,6 +724,8 @@ export type Database = {
           state?: string | null
           stripe_account_id?: string | null
           stripe_onboarding_complete?: boolean | null
+          subscription_job_lookahead_days?: number | null
+          subscription_max_payment_retries?: number | null
           timezone?: string | null
           updated_at?: string
           visitor_hash_salt?: string | null
@@ -733,6 +739,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           default_geofence_radius_meters?: number | null
+          default_timezone?: string | null
           email?: string | null
           geofence_allow_override?: boolean | null
           geofence_enforcement_mode?: string | null
@@ -748,6 +755,8 @@ export type Database = {
           state?: string | null
           stripe_account_id?: string | null
           stripe_onboarding_complete?: boolean | null
+          subscription_job_lookahead_days?: number | null
+          subscription_max_payment_retries?: number | null
           timezone?: string | null
           updated_at?: string
           visitor_hash_salt?: string | null
@@ -1513,6 +1522,7 @@ export type Database = {
       }
       customers: {
         Row: {
+          active_subscription_count: number | null
           address_line1: string | null
           address_line2: string | null
           average_rating_given: number | null
@@ -1557,10 +1567,12 @@ export type Database = {
           tags: string[] | null
           total_photos_accessible: number | null
           total_reviews_given: number
+          total_subscription_value: number | null
           updated_at: string
           zip: string | null
         }
         Insert: {
+          active_subscription_count?: number | null
           address_line1?: string | null
           address_line2?: string | null
           average_rating_given?: number | null
@@ -1605,10 +1617,12 @@ export type Database = {
           tags?: string[] | null
           total_photos_accessible?: number | null
           total_reviews_given?: number
+          total_subscription_value?: number | null
           updated_at?: string
           zip?: string | null
         }
         Update: {
+          active_subscription_count?: number | null
           address_line1?: string | null
           address_line2?: string | null
           average_rating_given?: number | null
@@ -1653,6 +1667,7 @@ export type Database = {
           tags?: string[] | null
           total_photos_accessible?: number | null
           total_reviews_given?: number
+          total_subscription_value?: number | null
           updated_at?: string
           zip?: string | null
         }
@@ -2878,6 +2893,8 @@ export type Database = {
         Row: {
           amount_paid: number | null
           balance_due: number | null
+          billing_period_end: string | null
+          billing_period_start: string | null
           business_id: string
           created_at: string
           customer_id: string
@@ -2888,16 +2905,22 @@ export type Database = {
           id: string
           internal_notes: string | null
           invoice_number: string
+          is_subscription_invoice: boolean | null
           job_id: string | null
           last_reminder_sent_at: string | null
           notes: string | null
           paid_at: string | null
           public_token: string | null
           quote_id: string | null
+          refund_reason: string | null
+          refunded_amount: number | null
+          refunded_at: string | null
           reminder_count: number | null
           sent_at: string | null
           show_photos: boolean | null
           status: string | null
+          subscription_id: string | null
+          subscription_schedule_id: string | null
           subtotal: number | null
           tax_amount: number | null
           tax_rate: number | null
@@ -2908,6 +2931,8 @@ export type Database = {
         Insert: {
           amount_paid?: number | null
           balance_due?: number | null
+          billing_period_end?: string | null
+          billing_period_start?: string | null
           business_id: string
           created_at?: string
           customer_id: string
@@ -2918,16 +2943,22 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           invoice_number: string
+          is_subscription_invoice?: boolean | null
           job_id?: string | null
           last_reminder_sent_at?: string | null
           notes?: string | null
           paid_at?: string | null
           public_token?: string | null
           quote_id?: string | null
+          refund_reason?: string | null
+          refunded_amount?: number | null
+          refunded_at?: string | null
           reminder_count?: number | null
           sent_at?: string | null
           show_photos?: boolean | null
           status?: string | null
+          subscription_id?: string | null
+          subscription_schedule_id?: string | null
           subtotal?: number | null
           tax_amount?: number | null
           tax_rate?: number | null
@@ -2938,6 +2969,8 @@ export type Database = {
         Update: {
           amount_paid?: number | null
           balance_due?: number | null
+          billing_period_end?: string | null
+          billing_period_start?: string | null
           business_id?: string
           created_at?: string
           customer_id?: string
@@ -2948,16 +2981,22 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           invoice_number?: string
+          is_subscription_invoice?: boolean | null
           job_id?: string | null
           last_reminder_sent_at?: string | null
           notes?: string | null
           paid_at?: string | null
           public_token?: string | null
           quote_id?: string | null
+          refund_reason?: string | null
+          refunded_amount?: number | null
+          refunded_at?: string | null
           reminder_count?: number | null
           sent_at?: string | null
           show_photos?: boolean | null
           status?: string | null
+          subscription_id?: string | null
+          subscription_schedule_id?: string | null
           subtotal?: number | null
           tax_amount?: number | null
           tax_rate?: number | null
@@ -2999,6 +3038,20 @@ export type Database = {
             columns: ["quote_id"]
             isOneToOne: false
             referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_subscription_schedule_id_fkey"
+            columns: ["subscription_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_schedules"
             referencedColumns: ["id"]
           },
         ]
@@ -3549,6 +3602,8 @@ export type Database = {
           id: string
           internal_notes: string | null
           is_clocked_in: boolean | null
+          is_subscription_job: boolean | null
+          is_subscription_origin: boolean | null
           job_number: string
           latitude: number | null
           longitude: number | null
@@ -3556,6 +3611,7 @@ export type Database = {
           notes: string | null
           priority: string | null
           quote_id: string | null
+          recurring_converted_at: string | null
           review_completed_at: string | null
           review_id: string | null
           review_request_id: string | null
@@ -3567,6 +3623,9 @@ export type Database = {
           service_request_id: string | null
           state: string | null
           status: string | null
+          subscription_id: string | null
+          subscription_needs_invoice: boolean | null
+          subscription_schedule_id: string | null
           title: string
           total_billable_amount: number | null
           total_labor_cost: number | null
@@ -3622,6 +3681,8 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           is_clocked_in?: boolean | null
+          is_subscription_job?: boolean | null
+          is_subscription_origin?: boolean | null
           job_number: string
           latitude?: number | null
           longitude?: number | null
@@ -3629,6 +3690,7 @@ export type Database = {
           notes?: string | null
           priority?: string | null
           quote_id?: string | null
+          recurring_converted_at?: string | null
           review_completed_at?: string | null
           review_id?: string | null
           review_request_id?: string | null
@@ -3640,6 +3702,9 @@ export type Database = {
           service_request_id?: string | null
           state?: string | null
           status?: string | null
+          subscription_id?: string | null
+          subscription_needs_invoice?: boolean | null
+          subscription_schedule_id?: string | null
           title: string
           total_billable_amount?: number | null
           total_labor_cost?: number | null
@@ -3695,6 +3760,8 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           is_clocked_in?: boolean | null
+          is_subscription_job?: boolean | null
+          is_subscription_origin?: boolean | null
           job_number?: string
           latitude?: number | null
           longitude?: number | null
@@ -3702,6 +3769,7 @@ export type Database = {
           notes?: string | null
           priority?: string | null
           quote_id?: string | null
+          recurring_converted_at?: string | null
           review_completed_at?: string | null
           review_id?: string | null
           review_request_id?: string | null
@@ -3713,6 +3781,9 @@ export type Database = {
           service_request_id?: string | null
           state?: string | null
           status?: string | null
+          subscription_id?: string | null
+          subscription_needs_invoice?: boolean | null
+          subscription_schedule_id?: string | null
           title?: string
           total_billable_amount?: number | null
           total_labor_cost?: number | null
@@ -3783,6 +3854,20 @@ export type Database = {
             columns: ["service_request_id"]
             isOneToOne: false
             referencedRelation: "customer_service_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_subscription_schedule_id_fkey"
+            columns: ["subscription_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_schedules"
             referencedColumns: ["id"]
           },
         ]
@@ -5240,6 +5325,8 @@ export type Database = {
           business_id: string
           change_request_notes: string | null
           change_requested_at: string | null
+          converted_at: string | null
+          converted_to_subscription_id: string | null
           created_at: string
           customer_id: string
           customer_viewed_at: string | null
@@ -5247,9 +5334,17 @@ export type Database = {
           embedded_gallery_id: string | null
           id: string
           internal_notes: string | null
+          is_recurring: boolean | null
           notes: string | null
           public_token: string | null
           quote_number: string
+          recurring_billing_model: string | null
+          recurring_frequency: string | null
+          recurring_preferred_day: number | null
+          recurring_preferred_time_end: string | null
+          recurring_preferred_time_start: string | null
+          recurring_start_date: string | null
+          recurring_timezone: string | null
           sent_at: string | null
           show_photos: boolean | null
           signature_url: string | null
@@ -5269,6 +5364,8 @@ export type Database = {
           business_id: string
           change_request_notes?: string | null
           change_requested_at?: string | null
+          converted_at?: string | null
+          converted_to_subscription_id?: string | null
           created_at?: string
           customer_id: string
           customer_viewed_at?: string | null
@@ -5276,9 +5373,17 @@ export type Database = {
           embedded_gallery_id?: string | null
           id?: string
           internal_notes?: string | null
+          is_recurring?: boolean | null
           notes?: string | null
           public_token?: string | null
           quote_number: string
+          recurring_billing_model?: string | null
+          recurring_frequency?: string | null
+          recurring_preferred_day?: number | null
+          recurring_preferred_time_end?: string | null
+          recurring_preferred_time_start?: string | null
+          recurring_start_date?: string | null
+          recurring_timezone?: string | null
           sent_at?: string | null
           show_photos?: boolean | null
           signature_url?: string | null
@@ -5298,6 +5403,8 @@ export type Database = {
           business_id?: string
           change_request_notes?: string | null
           change_requested_at?: string | null
+          converted_at?: string | null
+          converted_to_subscription_id?: string | null
           created_at?: string
           customer_id?: string
           customer_viewed_at?: string | null
@@ -5305,9 +5412,17 @@ export type Database = {
           embedded_gallery_id?: string | null
           id?: string
           internal_notes?: string | null
+          is_recurring?: boolean | null
           notes?: string | null
           public_token?: string | null
           quote_number?: string
+          recurring_billing_model?: string | null
+          recurring_frequency?: string | null
+          recurring_preferred_day?: number | null
+          recurring_preferred_time_end?: string | null
+          recurring_preferred_time_start?: string | null
+          recurring_start_date?: string | null
+          recurring_timezone?: string | null
           sent_at?: string | null
           show_photos?: boolean | null
           signature_url?: string | null
@@ -5327,6 +5442,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_converted_to_subscription_id_fkey"
+            columns: ["converted_to_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
             referencedColumns: ["id"]
           },
           {
