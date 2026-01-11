@@ -16,6 +16,7 @@ export interface GalleryBranding {
   primary_color: string;
   secondary_color: string;
   background_color: string | null;
+  text_color: string | null;
   heading_font: string | null;
   body_font: string | null;
   gallery_title_template: string | null;
@@ -34,6 +35,7 @@ export const DEFAULT_BRANDING: Omit<GalleryBranding, 'id' | 'business_id'> = {
   primary_color: '#2563eb',
   secondary_color: '#64748b',
   background_color: '#ffffff',
+  text_color: '#1e293b',
   heading_font: 'Inter',
   body_font: 'Inter',
   gallery_title_template: 'Photo Gallery - Job #{job_number}',
