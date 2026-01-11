@@ -6,14 +6,20 @@ import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Plus, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ConversationList, MessageThread } from '@/components/messaging';
+import { ConversationList, MessageThread, ConversationHeader } from '@/components/messaging';
 import { NewChatDialog } from '@/components/messaging/NewChatDialog';
-import type { ConversationWithDetails } from '@/hooks/useConversations';
+import { useConversations, useConversation, type ConversationWithDetails } from '@/hooks/useConversations';
 
 export default function Messages() {
   const [selectedConversation, setSelectedConversation] = useState<ConversationWithDetails | null>(null);
   const [showNewChatDialog, setShowNewChatDialog] = useState(false);
   const [mobileView, setMobileView] = useState<'list' | 'thread'>('list');
+
+  // Get conversation actions
+  const { archiveConversation, unarchiveConversation, assignConversation, isArchiving } = useConversations();
+
+  // Get full conversation details when selected
+  const { data: conversationDetails } = useConversation(selectedConversation?.id);
 
   const handleSelectConversation = useCallback((conversation: ConversationWithDetails) => {
     setSelectedConversation(conversation);
@@ -29,6 +35,23 @@ export default function Messages() {
     setMobileView('thread');
     setShowNewChatDialog(false);
   }, []);
+
+  const handleArchive = useCallback((id: string) => {
+    archiveConversation(id);
+    setSelectedConversation(null);
+    setMobileView('list');
+  }, [archiveConversation]);
+
+  const handleUnarchive = useCallback((id: string) => {
+    unarchiveConversation(id);
+  }, [unarchiveConversation]);
+
+  const handleAssign = useCallback((conversationId: string, workerId: string | null) => {
+    assignConversation(conversationId, workerId);
+  }, [assignConversation]);
+
+  // Merge conversation details when available
+  const displayConversation = conversationDetails || selectedConversation;
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
@@ -72,7 +95,7 @@ export default function Messages() {
 
         {/* Message Thread - hidden on mobile when viewing list */}
         <div
-          className={`flex-1 ${
+          className={`flex-1 flex flex-col ${
             mobileView === 'list' ? 'hidden md:flex' : 'flex'
           }`}
         >
@@ -84,11 +107,21 @@ export default function Messages() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.15 }}
-                className="flex-1"
+                className="flex-1 flex flex-col"
               >
+                {/* Conversation Header */}
+                <ConversationHeader
+                  conversation={displayConversation as ConversationWithDetails}
+                  onArchive={handleArchive}
+                  onUnarchive={handleUnarchive}
+                  onAssign={handleAssign}
+                  isArchiving={isArchiving}
+                />
+                
+                {/* Message Thread */}
                 <MessageThread
                   conversationId={selectedConversation.id}
-                  className="h-full"
+                  className="flex-1"
                 />
               </motion.div>
             ) : (
