@@ -7774,6 +7774,10 @@ export type Database = {
         Args: { p_media_id: string; p_ttl_seconds?: number; p_user_id: string }
         Returns: Json
       }
+      apply_checklist_to_job: {
+        Args: { p_created_by: string; p_job_id: string; p_template_id: string }
+        Returns: string
+      }
       calculate_distance_meters: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number
@@ -7829,6 +7833,10 @@ export type Database = {
           files_marked: number
           storage_paths: string[]
         }[]
+      }
+      complete_checklist: {
+        Args: { p_checklist_id: string; p_completed_by: string }
+        Returns: boolean
       }
       create_subscription: {
         Args: {
@@ -7982,6 +7990,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      portal_get_checklist: {
+        Args: { p_business_id: string; p_customer_id: string; p_job_id: string }
+        Returns: Json
+      }
       portal_get_subscriptions: {
         Args: { p_business_id: string; p_customer_id: string }
         Returns: Json
@@ -8117,6 +8129,10 @@ export type Database = {
           is_valid: boolean
           share_id: string
         }[]
+      }
+      waive_checklist: {
+        Args: { p_checklist_id: string; p_reason: string; p_waived_by: string }
+        Returns: boolean
       }
     }
     Enums: {
