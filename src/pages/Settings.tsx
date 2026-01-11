@@ -459,6 +459,10 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="automations" className="space-y-6">
+          <AutomationSettingsCard />
+        </TabsContent>
+
         <TabsContent value="integrations" className="space-y-6">
           <div>
             <h2 className="text-lg font-semibold mb-1">External Integrations</h2>
