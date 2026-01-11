@@ -34,6 +34,7 @@ import Inbox from "./pages/Inbox";
 import Reviews from "./pages/Reviews";
 import Photos from "./pages/Photos";
 import GalleryAnalytics from "./pages/GalleryAnalytics";
+import Messages from "./pages/Messages";
 import OAuthCallback from "./pages/OAuthCallback";
 import NotFound from "./pages/NotFound";
 import PublicQuote from "./pages/PublicQuote";
@@ -137,6 +138,7 @@ const App = () => (
               <Route path="/reviews" element={<Reviews />} />
               <Route path="/photos" element={<Photos />} />
               <Route path="/gallery-analytics" element={<GalleryAnalytics />} />
+              <Route path="/messages" element={<Messages />} />
               <Route path="/settings" element={<Settings />} />
               {/* Marketing routes */}
               <Route path="/marketing/templates" element={<Templates />} />

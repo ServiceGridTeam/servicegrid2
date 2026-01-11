@@ -20,6 +20,7 @@ import {
   Camera,
   BarChart3,
   RefreshCw,
+  MessageSquare,
   LucideIcon,
 } from 'lucide-react';
 import type { AppRole } from './permissions';
@@ -95,6 +96,12 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
     url: '/inbox',
     icon: Mail,
     minRole: 'admin',
+  },
+  {
+    title: 'Messages',
+    url: '/messages',
+    icon: MessageSquare,
+    minRole: 'technician', // All team members can access messaging
   },
   {
     title: 'Team',
